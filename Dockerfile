@@ -280,7 +280,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.13.4"
+ARG GOVER="1.13.8"
 
 USER root
 RUN dnf -y install golang
