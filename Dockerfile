@@ -15,6 +15,7 @@ RUN \
     policycoreutils secilc && \
   dnf clean all && \
   useradd builder
+COPY ./sdk-fetch /usr/local/bin
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -32,11 +33,11 @@ ARG KVER="4.19.88"
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
 RUN \
-  curl -OJL https://github.com/buildroot/buildroot/archive/${BRVER}.tar.gz && \
-  grep buildroot-${BRVER}.tar.gz hashes | sha512sum --check - && \
+  sdk-fetch hashes && \
   tar xf buildroot-${BRVER}.tar.gz && \
   rm buildroot-${BRVER}.tar.gz && \
-  mv buildroot-${BRVER} buildroot
+  mv buildroot-${BRVER} buildroot && \
+  mv queue.h queue.h?rev=1.70
 
 WORKDIR /home/builder/buildroot
 COPY ./patches/buildroot/* ./
