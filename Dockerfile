@@ -257,17 +257,19 @@ USER builder
 WORKDIR /home/builder
 COPY ./hashes/rust ./hashes
 RUN \
-  curl -OJL https://static.rust-lang.org/dist/rustc-${RUSTVER}-src.tar.xz && \
-  grep rustc-${RUSTVER}-src.tar.xz hashes | sha512sum --check - && \
+  sdk-fetch hashes && \
   tar xf rustc-${RUSTVER}-src.tar.xz && \
   rm rustc-${RUSTVER}-src.tar.xz && \
   mv rustc-${RUSTVER}-src rust
 
 WORKDIR /home/builder/rust
+RUN \
+  dir=build/cache/$(awk '/^date:/ { print $2 }' src/stage0.txt); \
+  mkdir -p $dir && mv ../*.xz $dir
 COPY ./configs/rust/* ./
 RUN \
   cp config-${ARCH}.toml config.toml && \
-  ./x.py install
+  RUSTUP_DIST_SERVER=example:// python3 ./x.py install
 
 RUN \
   install -p -m 0644 -Dt licenses COPYRIGHT LICENSE-*

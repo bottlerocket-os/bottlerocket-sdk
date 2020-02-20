@@ -15,6 +15,7 @@ compiler-docs = false
 vendor = true
 submodules = false
 extended = true
+tools = ["cargo"]
 
 [rust]
 channel = "stable"
