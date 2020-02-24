@@ -8,7 +8,7 @@ SHA512 (bison-3.4.1.tar.xz) = 544d66bf11c55a69fad613bea429667c587fb0c3774f6894df
 SHA512 (gawk-4.2.1.tar.xz) = 0e3006a795dc3ac91359a7d2590c0cccbfd39b18a1d491617d68505c55a2800355b1439050681b4fcacf65fb0d533151a046babe0fd774503037bab363ef2ae4
 # https://mirrors.kernel.org/gnu/gcc/gcc-9.2.0/gcc-9.2.0.tar.xz
 SHA512 (gcc-9.2.0.tar.xz) = a12dff52af876aee0fd89a8d09cdc455f35ec46845e154023202392adc164848faf8ee881b59b681b696e27c69fd143a214014db4214db62f9891a1c8365c040
-# https://codeload.github.com/bminor/glibc/tar.gz/2d3fefd7ce64ac1015701c96916fffacc073a877
+# https://github.com/bminor/glibc/archive/2d3fefd7ce64ac1015701c96916fffacc073a877.tar.gz
 SHA512 (glibc-2.29-30-g2d3fefd7ce64ac1015701c96916fffacc073a877.tar.gz) = 0244e7023082027ed7c6a54778931aa551c3e5a3915ef69848f06afc6365dcf2522b85b8f2e7de40e6160a16545de442b14752bc43497e47d1d14bdde7ced9e9
 # https://mirrors.kernel.org/gnu/gmp/gmp-6.1.2.tar.xz
 SHA512 (gmp-6.1.2.tar.xz) = 9f098281c0593b76ee174b722936952671fab1dae353ce3ed436a31fe2bc9d542eca752353f6645b7077c1f395ab4fdd355c58e08e2a801368f1375690eee2c6

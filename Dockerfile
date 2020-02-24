@@ -56,8 +56,19 @@ RUN \
   make O=output/${ARCH}-gnu toolchain && \
   find output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include -name '.*' -delete
 
+WORKDIR /home/builder/buildroot/output/${ARCH}-gnu/build
 RUN \
-  install -p -m 0644 -Dt licenses output/${ARCH}-gnu/build/host-gcc-final-*/{COPYING3,COPYING.RUNTIME}
+  install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
+  install -p -m 0644 -Dt licenses/bison host-bison-*/COPYING && \
+  install -p -m 0644 -Dt licenses/gawk host-gawk-*/COPYING && \
+  install -p -m 0644 -Dt licenses/gcc host-gcc-final-*/{COPYING,COPYING.LIB,COPYING.RUNTIME,COPYING3,COPYING3.LIB} && \
+  install -p -m 0644 -Dt licenses/gmp host-gmp-*/COPYING{,v2,v3,.LESSERv3} && \
+  install -p -m 0644 -Dt licenses/isl host-isl-*/LICENSE && \
+  install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
+  install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
+  install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
+  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER} && \
+  install -p -m 0644 -Dt licenses/tar host-tar-*/COPYING
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -68,6 +79,18 @@ RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
   find output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include -name '.*' -delete
+
+WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
+RUN \
+  install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
+  install -p -m 0644 -Dt licenses/gcc host-gcc-final-*/{COPYING,COPYING.LIB,COPYING.RUNTIME,COPYING3,COPYING3.LIB} && \
+  install -p -m 0644 -Dt licenses/gmp host-gmp-*/COPYING{,v2,v3,.LESSERv3} && \
+  install -p -m 0644 -Dt licenses/isl host-isl-*/LICENSE && \
+  install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
+  install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
+  install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
+  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER} && \
+  install -p -m 0644 -Dt licenses/tar host-tar-*/COPYING
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -86,14 +109,17 @@ COPY --from=toolchain-gnu \
   /home/builder/buildroot/output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include/ \
   /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/include/
 COPY --from=toolchain-gnu \
-  /home/builder/buildroot/licenses/ \
-  /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses/bottlerocket-${ARCH}-libgcc/
+  /home/builder/buildroot/output/${ARCH}-gnu/build/licenses/ \
+  /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
 
 COPY --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/toolchain/ /
 COPY --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include/ \
   /${ARCH}-bottlerocket-linux-musl/sys-root/usr/include/
+COPY --from=toolchain-musl \
+  /home/builder/buildroot/output/${ARCH}-musl/build/licenses/ \
+  /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -106,8 +132,7 @@ ARG GLIBCVER="2.31"
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
 RUN \
-  curl -OJL https://ftp.gnu.org/gnu/glibc/glibc-${GLIBCVER}.tar.xz && \
-  grep glibc-${GLIBCVER}.tar.xz hashes | sha512sum --check - && \
+  sdk-fetch hashes && \
   tar xf glibc-${GLIBCVER}.tar.xz && \
   rm glibc-${GLIBCVER}.tar.xz && \
   mv glibc-${GLIBCVER} glibc && \
@@ -160,8 +185,7 @@ ARG MUSLVER="1.1.24"
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
 RUN \
-  curl -OJL https://www.musl-libc.org/releases/musl-${MUSLVER}.tar.gz && \
-  grep musl-${MUSLVER}.tar.gz hashes | sha512sum --check - && \
+  sdk-fetch hashes && \
   tar xf musl-${MUSLVER}.tar.gz && \
   rm musl-${MUSLVER}.tar.gz && \
   mv musl-${MUSLVER} musl
@@ -187,6 +211,8 @@ RUN \
 USER root
 WORKDIR /home/builder/musl
 RUN make install
+RUN \
+  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
 ARG LLVMVER="9.0.0"
 
@@ -194,14 +220,12 @@ USER builder
 WORKDIR /home/builder
 
 # Rust's musl targets depend on libunwind.
+COPY ./hashes/libunwind ./hashes
 RUN \
-  curl -OJL https://releases.llvm.org/${LLVMVER}/llvm-${LLVMVER}.src.tar.xz && \
-  grep llvm-${LLVMVER}.src.tar.xz hashes | sha512sum --check - && \
+  sdk-fetch hashes && \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
   rm llvm-${LLVMVER}.src.tar.xz && \
   mv llvm-${LLVMVER}.src llvm && \
-  curl -OJL https://releases.llvm.org/${LLVMVER}/libunwind-${LLVMVER}.src.tar.xz && \
-  grep libunwind-${LLVMVER}.src.tar.xz hashes | sha512sum --check - && \
   tar xf libunwind-${LLVMVER}.src.tar.xz && \
   rm libunwind-${LLVMVER}.src.tar.xz && \
   mv libunwind-${LLVMVER}.src libunwind && \
@@ -226,6 +250,8 @@ RUN \
 USER root
 WORKDIR /home/builder/libunwind/build
 RUN make install-unwind DESTDIR="${SYSROOT}"
+RUN \
+  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/libunwind ../LICENSE.TXT
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -292,8 +318,7 @@ USER builder
 WORKDIR /home/builder
 COPY ./hashes/go ./hashes
 RUN \
-  curl -OJL https://dl.google.com/go/go${GOVER}.src.tar.gz && \
-  grep go${GOVER}.src.tar.gz hashes | sha512sum --check - && \
+  sdk-fetch hashes && \
   tar xf go${GOVER}.src.tar.gz && \
   rm go${GOVER}.src.tar.gz
 
@@ -333,6 +358,9 @@ RUN \
   go install std && \
   go install -buildmode=pie std
 
+RUN \
+  install -p -m 0644 -Dt licenses LICENSE PATENTS
+
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-rust as sdk-license-scan
@@ -348,8 +376,7 @@ USER builder
 WORKDIR /home/builder/license-scan
 COPY ./hashes/license-scan ./hashes
 RUN \
-  curl -OJL https://github.com/spdx/license-list-data/archive/v${SPDXVER}.tar.gz && \
-  grep license-list-data-${SPDXVER}.tar.gz hashes | sha512sum --check - && \
+  sdk-fetch hashes && \
   tar xf license-list-data-${SPDXVER}.tar.gz license-list-data-${SPDXVER}/json/details && \
   rm license-list-data-${SPDXVER}.tar.gz && \
   mv license-list-data-${SPDXVER} license-list-data
@@ -357,6 +384,7 @@ COPY license-scan /home/builder/license-scan
 RUN cargo build --release --locked
 RUN install -p -m 0755 target/release/bottlerocket-license-scan /usr/libexec/tools/
 RUN cp -r license-list-data/json/details /usr/libexec/tools/spdx-data
+COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-scan
 # quine - scan the license tool itself for licenses
 RUN \
   /usr/libexec/tools/bottlerocket-license-scan \
@@ -391,13 +419,16 @@ COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
 COPY --chown=0:0 --from=sdk-rust /usr/libexec/rust/ /usr/libexec/rust/
 COPY --chown=0:0 --from=sdk-rust \
   /home/builder/rust/licenses/ \
-  /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses/bottlerocket-${ARCH}-libstd-rust/
+  /usr/share/licenses/rust/
 
 # "sdk-go" has the Go toolchain and standard library builds.
 COPY --chown=0:0 --from=sdk-go /home/builder/go/bin /usr/libexec/go/bin/
 COPY --chown=0:0 --from=sdk-go /home/builder/go/lib /usr/libexec/go/lib/
 COPY --chown=0:0 --from=sdk-go /home/builder/go/pkg /usr/libexec/go/pkg/
 COPY --chown=0:0 --from=sdk-go /home/builder/go/src /usr/libexec/go/src/
+COPY --chown=0:0 --from=sdk-go \
+  /home/builder/go/licenses/ \
+  /usr/share/licenses/go/
 
 # "sdk-license-scan" has our attribution generation tool.
 COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
@@ -438,6 +469,11 @@ RUN \
     strip -g $b ; \
     ln -s ../libexec/tools/${b##*/} /usr/bin/${b##*/} ; \
   done
+
+# Make the licenses in the sys-roots easier to find.
+RUN \
+  ln -sr /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu && \
+  ln -sr /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl
 
 # Reset permissions for `builder`.
 RUN chown builder:builder -R /home/builder
