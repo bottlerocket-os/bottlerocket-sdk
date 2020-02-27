@@ -277,7 +277,7 @@ RUN \
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG RUSTVER="1.41.0"
+ARG RUSTVER="1.41.1"
 
 USER builder
 WORKDIR /home/builder
