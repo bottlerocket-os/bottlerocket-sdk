@@ -1,0 +1,4 @@
+# https://releases.llvm.org/9.0.0/llvm-9.0.0.src.tar.xz
+SHA512 (llvm-9.0.0.src.tar.xz) = 1bb3341e1d231559b948f1505b33c2e2e03989f9b8bbfef0e0cdaff5ac43f85574c9ec5ac53399b914f497d6899425d861411024e8d7e1d1a338c1c6951ac658
+# https://releases.llvm.org/9.0.0/libunwind-9.0.0.src.tar.xz
+SHA512 (libunwind-9.0.0.src.tar.xz) = 55b44439b76638a7c5ea25dd3713a3f6a2d54bcfb7bf34d3388753f0d25be2e843b5f05dc1c0052d7a9cd5a141c6818f4da42bc9174a16d89e819ea262ad5706
