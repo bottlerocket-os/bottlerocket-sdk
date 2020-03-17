@@ -277,7 +277,7 @@ RUN \
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG RUSTVER="1.41.1"
+ARG RUSTVER="1.42.0"
 
 USER builder
 WORKDIR /home/builder
@@ -309,7 +309,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.13.8"
+ARG GOVER="1.14"
 
 USER root
 RUN dnf -y install golang
