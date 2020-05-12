@@ -180,7 +180,7 @@ RUN make install
 FROM sdk as sdk-musl
 USER builder
 
-ARG MUSLVER="1.1.24"
+ARG MUSLVER="1.2.0"
 
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
