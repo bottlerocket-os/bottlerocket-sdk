@@ -1,7 +1,7 @@
-From bb41cbf1a393416e74efa9dc7bee0610a2ec3fbb Mon Sep 17 00:00:00 2001
+From 574d0c34d9f0645acacbd04f4060473ca756df25 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:58:27 +0000
-Subject: [PATCH 4/6] build gcc with TOOLS_DIR and SYSROOT_DIR
+Subject: [PATCH 4/5] build gcc with TOOLS_DIR and SYSROOT_DIR
 
 Most of the changes here are to the second and final stage of our GCC
 build, so that the binaries are written to the new output path, and
@@ -28,7 +28,7 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  3 files changed, 46 insertions(+), 15 deletions(-)
 
 diff --git a/package/gcc/gcc-final/gcc-final.mk b/package/gcc/gcc-final/gcc-final.mk
-index f478fde0d7..94b587fbb0 100644
+index 24d034b720..b0e59a8464 100644
 --- a/package/gcc/gcc-final/gcc-final.mk
 +++ b/package/gcc/gcc-final/gcc-final.mk
 @@ -45,9 +45,16 @@ define  HOST_GCC_FINAL_CONFIGURE_CMDS
@@ -50,29 +50,23 @@ index f478fde0d7..94b587fbb0 100644
  		$(QUIET) $(HOST_GCC_FINAL_CONF_OPTS) \
  	)
  endef
-@@ -63,18 +70,18 @@ HOST_GCC_FINAL_CONF_OPTS = \
- 	--enable-languages=$(GCC_FINAL_CROSS_LANGUAGES) \
- 	--with-build-time-tools=$(HOST_DIR)/$(GNU_TARGET_NAME)/bin
- 
--HOST_GCC_FINAL_GCC_LIB_DIR = $(HOST_DIR)/$(GNU_TARGET_NAME)/lib*
-+HOST_GCC_FINAL_GCC_LIB_DIR = $(TOOLS_DIR)/usr/$(GNU_TARGET_NAME)/lib*
- # The kernel wants to use the -m4-nofpu option to make sure that it
+@@ -68,12 +75,12 @@ HOST_GCC_FINAL_CONF_OPTS = \
  # doesn't use floating point operations.
  ifeq ($(BR2_sh4)$(BR2_sh4eb),y)
  HOST_GCC_FINAL_CONF_OPTS += "--with-multilib-list=m4,m4-nofpu"
- # check-package OverriddenVariable
 -HOST_GCC_FINAL_GCC_LIB_DIR = $(HOST_DIR)/$(GNU_TARGET_NAME)/lib/!m4*
 +HOST_GCC_FINAL_GCC_LIB_DIR = $(TOOLS_DIR)/usr/$(GNU_TARGET_NAME)/lib/!m4*
- endif
- ifeq ($(BR2_sh4a)$(BR2_sh4aeb),y)
+ else ifeq ($(BR2_sh4a)$(BR2_sh4aeb),y)
  HOST_GCC_FINAL_CONF_OPTS += "--with-multilib-list=m4a,m4a-nofpu"
- # check-package OverriddenVariable
 -HOST_GCC_FINAL_GCC_LIB_DIR = $(HOST_DIR)/$(GNU_TARGET_NAME)/lib/!m4*
 +HOST_GCC_FINAL_GCC_LIB_DIR = $(TOOLS_DIR)/usr/$(GNU_TARGET_NAME)/lib/!m4*
+ else
+-HOST_GCC_FINAL_GCC_LIB_DIR = $(HOST_DIR)/$(GNU_TARGET_NAME)/lib*
++HOST_GCC_FINAL_GCC_LIB_DIR = $(TOOLS_DIR)/usr/$(GNU_TARGET_NAME)/lib*
  endif
  
  ifeq ($(BR2_GCC_SUPPORTS_LIBCILKRTS),y)
-@@ -89,7 +96,7 @@ ifeq ($(BR2_PTHREADS_NONE),y)
+@@ -88,7 +95,7 @@ ifeq ($(BR2_PTHREADS_NONE),y)
  HOST_GCC_FINAL_CONF_OPTS += --disable-libcilkrts
  endif
  
@@ -81,7 +75,7 @@ index f478fde0d7..94b587fbb0 100644
  # disable libcilkrts as there is no static version
  HOST_GCC_FINAL_CONF_OPTS += --disable-libcilkrts
  endif
-@@ -97,10 +104,8 @@ endif
+@@ -96,10 +103,8 @@ endif
  endif # BR2_GCC_SUPPORTS_LIBCILKRTS
  
  # Disable shared libs like libstdc++ if we do static since it confuses linking
@@ -94,7 +88,7 @@ index f478fde0d7..94b587fbb0 100644
  endif
  
  ifeq ($(BR2_GCC_ENABLE_OPENMP),y)
-@@ -119,22 +124,27 @@ HOST_GCC_FINAL_CONF_ENV = \
+@@ -118,22 +123,27 @@ HOST_GCC_FINAL_CONF_ENV = \
  
  HOST_GCC_FINAL_MAKE_OPTS += $(HOST_GCC_COMMON_MAKE_OPTS)
  
@@ -125,7 +119,7 @@ index f478fde0d7..94b587fbb0 100644
  
  # coldfire is not working without removing these object files from libgcc.a
  ifeq ($(BR2_m68k_cf),y)
-@@ -147,6 +157,7 @@ endif
+@@ -146,6 +156,7 @@ endif
  
  # Cannot use the HOST_GCC_FINAL_USR_LIBS mechanism below, because we want
  # libgcc_s to be installed in /lib and not /usr/lib.
@@ -133,7 +127,7 @@ index f478fde0d7..94b587fbb0 100644
  define HOST_GCC_FINAL_INSTALL_LIBGCC
  	-cp -dpf $(HOST_GCC_FINAL_GCC_LIB_DIR)/libgcc_s* \
  		$(STAGING_DIR)/lib/
-@@ -155,6 +166,7 @@ define HOST_GCC_FINAL_INSTALL_LIBGCC
+@@ -154,6 +165,7 @@ define HOST_GCC_FINAL_INSTALL_LIBGCC
  endef
  
  HOST_GCC_FINAL_POST_INSTALL_HOOKS += HOST_GCC_FINAL_INSTALL_LIBGCC
@@ -141,7 +135,7 @@ index f478fde0d7..94b587fbb0 100644
  
  define HOST_GCC_FINAL_INSTALL_LIBATOMIC
  	-cp -dpf $(HOST_GCC_FINAL_GCC_LIB_DIR)/libatomic* \
-@@ -192,7 +204,7 @@ define HOST_GCC_FINAL_INSTALL_STATIC_LIBS
+@@ -197,7 +209,7 @@ define HOST_GCC_FINAL_INSTALL_STATIC_LIBS
  	done
  endef
  
@@ -150,7 +144,7 @@ index f478fde0d7..94b587fbb0 100644
  define HOST_GCC_FINAL_INSTALL_SHARED_LIBS
  	for i in $(HOST_GCC_FINAL_USR_LIBS) ; do \
  		cp -dpf $(HOST_GCC_FINAL_GCC_LIB_DIR)/$${i}.so* \
-@@ -211,4 +223,20 @@ endef
+@@ -216,4 +228,20 @@ endef
  HOST_GCC_FINAL_POST_INSTALL_HOOKS += HOST_GCC_FINAL_INSTALL_USR_LIBS
  endif
  
@@ -196,10 +190,10 @@ index f5bc6c5b77..9f34effd10 100644
  
  $(eval $(host-autotools-package))
 diff --git a/package/gcc/gcc.mk b/package/gcc/gcc.mk
-index 86e1d4df51..f0f3efbef8 100644
+index 50f2a3fcb7..469243de22 100644
 --- a/package/gcc/gcc.mk
 +++ b/package/gcc/gcc.mk
-@@ -83,12 +83,12 @@ HOST_GCC_COMMON_DEPENDENCIES = \
+@@ -80,12 +80,12 @@ HOST_GCC_COMMON_DEPENDENCIES = \
  
  HOST_GCC_COMMON_CONF_OPTS = \
  	--target=$(GNU_TARGET_NAME) \

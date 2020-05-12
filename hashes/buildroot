@@ -1,23 +1,23 @@
-# https://github.com/buildroot/buildroot/archive/2019.08.3.tar.gz
-SHA512 (buildroot-2019.08.3.tar.gz) = d5c00a38c92eb115648cd807ea70a24b18663261f884ea76246bf703f23f605563c161ad2d2d1121d7003ecbd61ee8caaff087a6a78b4ffd054c84071650c997
-# https://mirrors.kernel.org/gnu/binutils/binutils-2.32.tar.xz
-SHA512 (binutils-2.32.tar.xz) = d326408f12a03d9a61a9de56584c2af12f81c2e50d2d7e835d51565df8314df01575724afa1e43bd0db45cfc9916b41519b67dfce03232aa4978704492a6994a
-# https://mirrors.kernel.org/gnu/bison/bison-3.4.1.tar.xz
-SHA512 (bison-3.4.1.tar.xz) = 544d66bf11c55a69fad613bea429667c587fb0c3774f6894df81cb3c7931a554f79e6b71d6a6e9109e164e524c632127c967877f71328cd0b69a683d29ed128d
-# https://mirrors.kernel.org/gnu/gawk/gawk-4.2.1.tar.xz
-SHA512 (gawk-4.2.1.tar.xz) = 0e3006a795dc3ac91359a7d2590c0cccbfd39b18a1d491617d68505c55a2800355b1439050681b4fcacf65fb0d533151a046babe0fd774503037bab363ef2ae4
-# https://mirrors.kernel.org/gnu/gcc/gcc-9.2.0/gcc-9.2.0.tar.xz
-SHA512 (gcc-9.2.0.tar.xz) = a12dff52af876aee0fd89a8d09cdc455f35ec46845e154023202392adc164848faf8ee881b59b681b696e27c69fd143a214014db4214db62f9891a1c8365c040
-# https://github.com/bminor/glibc/archive/2d3fefd7ce64ac1015701c96916fffacc073a877.tar.gz
-SHA512 (glibc-2.29-30-g2d3fefd7ce64ac1015701c96916fffacc073a877.tar.gz) = 0244e7023082027ed7c6a54778931aa551c3e5a3915ef69848f06afc6365dcf2522b85b8f2e7de40e6160a16545de442b14752bc43497e47d1d14bdde7ced9e9
+# https://github.com/buildroot/buildroot/archive/2020.02.2.tar.gz
+SHA512 (buildroot-2020.02.2.tar.gz) = 267ad1e27f8b7f051d3596dbb1225e7b313f7fe4365593d98d2df4ec5b66c8f45518cf4af7a3bb756f720540472ad2d0d280bd72f7ae0ebbf45c406de4153ae7
+# https://mirrors.kernel.org/gnu/binutils/binutils-2.33.1.tar.xz
+SHA512 (binutils-2.33.1.tar.xz) = b7a6767c6c7ca6b5cafa7080e6820b7bb3a53b7148348c438d99905defbdf0d30c9744a484ee01c9441a8153901808513366b15ba9533e20c9673c262ade36ac
+# https://mirrors.kernel.org/gnu/bison/bison-3.4.2.tar.xz
+SHA512 (bison-3.4.2.tar.xz) = 00d2b37187b93100ec4b220ce2752d12ccf68f9d0d39b380d375d36dd8a22aa1d6e60156918f95e4493f9531c5d42d8fad38fd807307b491c1ca7ca4177823d9
+# https://mirrors.kernel.org/gnu/gawk/gawk-5.0.1.tar.xz
+SHA512 (gawk-5.0.1.tar.xz) = ff9842a91035f843482d93eac8a35cddf2ce16acaa43a0112c1efff08802aebf705ee70d47eff74a190dca7be330c31f7204ad27cb63bdee65333f9b9c984212
+# https://mirrors.kernel.org/gnu/gcc/gcc-9.3.0/gcc-9.3.0.tar.xz
+SHA512 (gcc-9.3.0.tar.xz) = 4b9e3639eef6e623747a22c37a904b4750c93b6da77cf3958d5047e9b5ebddb7eebe091cc16ca0a227c0ecbd2bf3b984b221130f269a97ee4cc18f9cf6c444de
+# https://github.com/bminor/glibc/archive/4748829f86a458b76642f3e98b1d80f7b868e427.tar.gz
+SHA512 (glibc-2.30-67-g4748829f86a458b76642f3e98b1d80f7b868e427.tar.gz) = 8b44b7b37be2dba26a98f8ea52a7bbc2521e354fd39f898612053670a526748be62898465ad9f82043322fe74fb09a55cb9a4df2e341275bbec71aaa140d86bb
 # https://mirrors.kernel.org/gnu/gmp/gmp-6.1.2.tar.xz
 SHA512 (gmp-6.1.2.tar.xz) = 9f098281c0593b76ee174b722936952671fab1dae353ce3ed436a31fe2bc9d542eca752353f6645b7077c1f395ab4fdd355c58e08e2a801368f1375690eee2c6
-# http://isl.gforge.inria.fr/isl-0.18.tar.xz
-SHA512 (isl-0.18.tar.xz) = 3606609765fc34740ab3014e2256d6bba7ff730463b014a0e4f5fcfb2e3dbef974503dff1f3702b307ef79ff86c5bc2c3ce3c3c8511533971fd5d53ab45f6eea
-# https://www.musl-libc.org/releases/musl-1.1.23.tar.gz
-SHA512 (musl-1.1.23.tar.gz) = a2278de9903852b08352d3e734a39d4616caa602496997ba843e8fea0e1c481761776745faf04536a149d1c4af416b68df681b6fbc9ae2de8794e18c2e853b09
-# https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.19.88.tar.xz
-SHA512 (linux-4.19.88.tar.xz) = 9918a1d5dd79380e328f8091fa8390d4e86f134cb502609ca11e31dfdec8b3cdbc54a68d8992ada204ba72bd4abeaa195741d3bb2bb6e55f3f6edaa87f2f7fe7
+# http://isl.gforge.inria.fr/isl-0.22.tar.xz
+SHA512 (isl-0.22.tar.xz) = 7c3c9502ea07e4d47a823841837c3aa0b9d7ba0fe58deaf180734e44c18e53735ec783645da0bdc56b617c9e639b226cc03b40a947f852e1e787166a64f59424
+# https://musl.libc.org/releases/musl-1.1.24.tar.gz
+SHA512 (musl-1.1.24.tar.gz) = 8987f1e194ea616f34f4f21fe9def28fb7f81d7060e38619206c6349f79db3bbb76bae8b711f5f9b8ed038799c9aea1a4cbec69e0bc4131e246203e133149e77
+# https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.4.40.tar.xz
+SHA512 (linux-5.4.40.tar.xz) = c8785d30f7b88f3a6e565789974ecf1a055900ab4b66e358070547506aecab57b5d34afb77140cb2aeb803498c407d34f7fc11c29fbba00f6d4dedea8dd8788a
 # https://mirrors.kernel.org/gnu/m4/m4-1.4.18.tar.xz
 SHA512 (m4-1.4.18.tar.xz) = 06f583efc3855cd8477d8347544f4ae5153a3e50aea74d21968afa7214784ea3ddfc02d0a2b11324120d76a19f2e804d20de11a456b5da929eb6ae469519b174
 # https://mirrors.kernel.org/gnu/mpc/mpc-1.1.0.tar.gz
