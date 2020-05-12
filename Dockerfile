@@ -1,4 +1,4 @@
-FROM fedora:30 as base
+FROM fedora:32 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -8,9 +8,9 @@ RUN \
   dnf -y install \
     rpmdevtools dnf-plugins-core createrepo_c \
     cmake git meson perl-ExtUtils-MakeMaker python which \
-    bc hostname intltool grub2-tools gperf kmod rsync wget \
+    bc hostname intltool gperf kmod rsync wget \
     dwarves elfutils-devel libcap-devel openssl-devel \
-    createrepo_c e2fsprogs gdisk grub2-tools \
+    createrepo_c e2fsprogs gdisk grub2-tools.$(uname -m) \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
     policycoreutils secilc && \
   dnf clean all && \
