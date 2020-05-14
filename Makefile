@@ -1,6 +1,6 @@
 ARCH ?= $(shell uname -m)
 
-VERSION := v0.10.1
+VERSION := v0.11.0
 TAG := bottlerocket/sdk-$(ARCH):$(VERSION)
 ARCHIVE := bottlerocket-sdk-$(ARCH)-$(VERSION).tar.gz
 

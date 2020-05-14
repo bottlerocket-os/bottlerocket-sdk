@@ -1,4 +1,4 @@
-FROM fedora:30 as base
+FROM fedora:32 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -8,9 +8,9 @@ RUN \
   dnf -y install \
     rpmdevtools dnf-plugins-core createrepo_c \
     cmake git meson perl-ExtUtils-MakeMaker python which \
-    bc hostname intltool grub2-tools gperf kmod rsync wget \
+    bc hostname intltool gperf kmod rsync wget \
     dwarves elfutils-devel libcap-devel openssl-devel \
-    createrepo_c e2fsprogs gdisk grub2-tools \
+    createrepo_c e2fsprogs gdisk grub2-tools.$(uname -m) \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
     policycoreutils secilc && \
   dnf clean all && \
@@ -27,8 +27,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2019.08.3"
-ARG KVER="4.19.88"
+ARG BRVER="2020.02.2"
+ARG KVER="5.4.40"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -50,7 +50,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="4.19.88"
+ARG KVER="5.4.40"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -74,7 +74,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="4.19.88"
+ARG KVER="5.4.40"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -99,7 +99,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="4.19.88"
+ARG KVER="5.4.40"
 
 WORKDIR /
 
@@ -145,7 +145,7 @@ ARG SYSROOT="/${TARGET}/sys-root"
 ARG CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
 ARG CXXFLAGS="${CFLAGS}"
 ARG CPPFLAGS=""
-ARG KVER="4.19"
+ARG KVER="5.4"
 
 WORKDIR /home/builder/glibc/build
 RUN \
@@ -180,7 +180,7 @@ RUN make install
 FROM sdk as sdk-musl
 USER builder
 
-ARG MUSLVER="1.1.24"
+ARG MUSLVER="1.2.0"
 
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
@@ -214,7 +214,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="9.0.0"
+ARG LLVMVER="10.0.0"
 
 USER builder
 WORKDIR /home/builder
@@ -277,7 +277,7 @@ RUN \
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG RUSTVER="1.42.0"
+ARG RUSTVER="1.43.1"
 
 USER builder
 WORKDIR /home/builder
@@ -309,7 +309,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.14.1"
+ARG GOVER="1.14.2"
 
 USER root
 RUN dnf -y install golang
@@ -370,7 +370,7 @@ RUN \
   mkdir -p /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan && \
   chown -R builder:builder /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan
 
-ARG SPDXVER="3.7"
+ARG SPDXVER="3.8"
 
 USER builder
 WORKDIR /home/builder/license-scan

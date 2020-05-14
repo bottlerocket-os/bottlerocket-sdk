@@ -1,7 +1,7 @@
-From ca0ae13b3e36a1eb5b913e550c1986582145ee1a Mon Sep 17 00:00:00 2001
+From d0e32987e7f722c5f02aeb888ad21aed336a0fec Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:40:50 +0000
-Subject: [PATCH 3/6] build binutils with TOOLS_DIR and SYSROOT_DIR
+Subject: [PATCH 3/5] build binutils with TOOLS_DIR and SYSROOT_DIR
 
 The binutils build only needs one stage, so we can write the binaries
 directly to the new output path.
@@ -16,7 +16,7 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  1 file changed, 20 insertions(+), 3 deletions(-)
 
 diff --git a/package/binutils/binutils.mk b/package/binutils/binutils.mk
-index d60c032bde..0d54827e8a 100644
+index 876c9c59f8..94421286a0 100644
 --- a/package/binutils/binutils.mk
 +++ b/package/binutils/binutils.mk
 @@ -68,9 +68,10 @@ endif
