@@ -277,7 +277,7 @@ RUN \
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG RUSTVER="1.43.1"
+ARG RUSTVER="1.45.2"
 
 USER builder
 WORKDIR /home/builder
@@ -445,10 +445,7 @@ RUN \
 
 # Strip and deduplicate Rust's LLVM libraries.
 RUN \
-  export HOSTDIR="/usr/libexec/rust/lib/rustlib/x86_64-unknown-linux-gnu/" ; \
-  diff /usr/libexec/rust/lib/libLLVM-*.so ${HOSTDIR}/lib/libLLVM-*.so && \
-  strip -g /usr/libexec/rust/lib/libLLVM-*.so && \
-  ln -f /usr/libexec/rust/lib/libLLVM-*.so ${HOSTDIR}/lib/
+  strip -g /usr/libexec/rust/lib/libLLVM-*.so
 
 # Add Go programs to $PATH and sync timestamps to avoid rebuilds.
 RUN \
