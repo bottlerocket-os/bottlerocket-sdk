@@ -100,10 +100,10 @@ fn main() -> Result<()> {
             let mut builder = cargo_metadata::MetadataCommand::new();
             builder.manifest_path(manifest_path);
             if locked {
-                builder.other_options(&["--locked".to_owned()]);
+                builder.other_options(vec!["--locked".to_owned()]);
             }
             if offline {
-                builder.other_options(&["--offline".to_owned()]);
+                builder.other_options(vec!["--offline".to_owned()]);
             }
             let metadata = builder.exec()?;
             for package in metadata.packages {
