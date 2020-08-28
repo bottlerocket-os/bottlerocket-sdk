@@ -1,12 +1,7 @@
 [build]
-build = "x86_64-unknown-linux-gnu"
-
-host = [
-  "x86_64-unknown-linux-gnu",
-]
-
 target = [
-  "x86_64-unknown-linux-musl",
+  "x86_64-bottlerocket-linux-gnu",
+  "x86_64-bottlerocket-linux-musl",
 ]
 
 docs = false
@@ -27,7 +22,15 @@ rpath = false
 prefix = "/usr/libexec/rust"
 sysconfdir = "/usr/libexec/rust/etc"
 
-[target.x86_64-unknown-linux-musl]
+[target.x86_64-bottlerocket-linux-gnu]
+cc = "x86_64-bottlerocket-linux-gnu-gcc"
+cxx = "x86_64-bottlerocket-linux-gnu-g++"
+ar = "/usr/bin/x86_64-bottlerocket-linux-gnu-ar"
+ranlib = "/usr/bin/x86_64-bottlerocket-linux-gnu-ranlib"
+linker = "x86_64-bottlerocket-linux-gnu-gcc"
+crt-static = false
+
+[target.x86_64-bottlerocket-linux-musl]
 cc = "x86_64-bottlerocket-linux-musl-gcc"
 cxx = "x86_64-bottlerocket-linux-musl-g++"
 ar = "/usr/bin/x86_64-bottlerocket-linux-musl-ar"

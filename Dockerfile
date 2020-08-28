@@ -276,7 +276,7 @@ RUN \
   chown -R builder:builder /usr/libexec/rust
 
 ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
+ARG VENDOR="bottlerocket"
 ARG RUSTVER="1.45.2"
 
 USER builder
@@ -292,6 +292,46 @@ WORKDIR /home/builder/rust
 RUN \
   dir=build/cache/$(awk '/^date:/ { print $2 }' src/stage0.txt); \
   mkdir -p $dir && mv ../*.xz $dir
+
+# For any architecture, we rely on two or more of Rust's native targets:
+#
+# 1) the host platform
+#    (x86_64-unknown-linux-gnu for a Fedora x86_64 host)
+# 2) the target platform for dynamically linked builds
+#    (x86_64-unknown-linux-gnu for a Bottlerocket x86_64 target)
+# 3) the target platform for statically linked builds
+#    (x86_64-unknown-linux-musl for a Bottlerocket x86_64 target)
+#
+# We need to override the C compiler used for linking the targets in #2 and #3,
+# to ensure that the libraries in our sysroot are used instead of the host's
+# libraries.
+#
+# If the target in #1 is the same as #2 or #3, then we're in trouble. This can
+# happen with build scripts, which may require us to build for the host before
+# we can build for the target. In this scenario, we have to pick from two bad
+# options: link host programs with the target's libraries, which may fail to
+# run if the host's libraries are too old; or link target programs with the
+# host's libraries, which may fail to run if the host's libraries are too new.
+#
+# To resolve this, we create vendor-specific targets based on the native ones.
+# That allows us to leave the settings for the host platform alone, while also
+# ensuring that the target platform always uses the libraries from our sysroot.
+# These vendor targets are effectively the same as the "unknown" targets, so we
+# just need to copy them, change the "vendor" field, and refer to them in the
+# module so `rustc` knows they exist.
+
+RUN \
+  for libc in gnu musl ; do \
+    cp src/librustc_target/spec/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs ; \
+    sed -i -e 's@target_vendor: "unknown"@target_vendor: "'${VENDOR}'"@' \
+      src/librustc_target/spec/${ARCH}_${VENDOR}_linux_${libc}.rs ; \
+    sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
+      src/librustc_target/spec/mod.rs ; \
+  done && \
+  grep -Fq ${VENDOR} src/librustc_target/spec/mod.rs && \
+  grep -Fq ${VENDOR} src/librustc_target/spec/${ARCH}_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} src/librustc_target/spec/${ARCH}_${VENDOR}_linux_musl.rs
+
 COPY ./configs/rust/* ./
 RUN \
   cp config-${ARCH}.toml config.toml && \
