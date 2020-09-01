@@ -21,4 +21,4 @@ make ARCH=x86_64
 make ARCH=aarch64
 ```
 
-Currently it assumes an x86_64 build host for both cases.
+It supports either an x86_64 or an aarch64 build host for both cases.
