@@ -92,6 +92,15 @@ RUN \
   install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER} && \
   install -p -m 0644 -Dt licenses/tar host-tar-*/COPYING
 
+# For kernel module development, we only need one toolchain, and it doesn't
+# matter which one we pick since the kernel doesn't use the C library. Record
+# the files we need so they can be archived later.
+WORKDIR /home/builder/buildroot/output/${ARCH}-musl/toolchain
+RUN find . -type f -printf '%P\n' > ../build/toolchain.txt
+
+WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
+RUN find licenses -type f -printf '%P\n' > toolchain-licenses.txt
+
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Add our cross-compilers to the base SDK layer.
@@ -432,6 +441,31 @@ RUN \
     --spdx-data /usr/libexec/tools/spdx-data \
     --out-dir /usr/share/licenses/bottlerocket-license-scan/vendor \
     cargo --locked Cargo.toml
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk as toolchain-final
+
+ARG ARCH
+ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
+
+COPY --from=toolchain-musl \
+  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain.txt \
+  /tmp/toolchain.txt
+
+COPY --from=toolchain-musl \
+  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain-licenses.txt \
+  /tmp/toolchain-licenses.txt
+
+WORKDIR /tmp
+
+RUN \
+  tar cvf toolchain.tar --transform "s,^,toolchain/," \
+    -C / -T toolchain.txt && \
+  tar rvf toolchain.tar --transform "s,^,toolchain/licenses/," \
+    -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
+  xz -T0 toolchain.tar
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
