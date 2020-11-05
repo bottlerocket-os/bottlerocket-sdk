@@ -26,5 +26,3 @@ SHA512 (mpc-1.1.0.tar.gz) = 72d657958b07c7812dc9c7cbae093118ce0e454c68a585bfb0e2
 SHA512 (mpfr-4.0.2.tar.xz) = d583555d08863bf36c89b289ae26bae353d9a31f08ee3894520992d2c26e5683c4c9c193d7ad139632f71c0a476d85ea76182702a98bf08dde7b6f65a54f8b88
 # http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/sys/queue.h?rev=1.70
 SHA512 (queue.h) = 2f0d5e6e4dc3350285cf17009265dddcbe12431c111868eea39bc8cb038ab7c1f2acacbb21735c4e9d4a1fd106a8fc0f8611ea33987d4faba37dde5ce6da0750
-# https://mirrors.kernel.org/gnu/tar/tar-1.29.cpio.gz
-SHA512 (tar-1.29.cpio.gz) = f004683b68db8a35bb517b92286063acedd01cf88fec2d61b7649fdcb8db855559c98de688b207c146ce01ea5778185f447da924c4c5061db739a8a7528718a5
