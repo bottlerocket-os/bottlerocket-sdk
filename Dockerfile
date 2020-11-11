@@ -19,7 +19,21 @@ COPY ./sdk-fetch /usr/local/bin
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM base as toolchain
+# We expect our C cross-compiler to be used on other distros for building kernel
+# modules, so we build it with an older glibc for compatibility.
+FROM ubuntu:16.04 as compat
+RUN \
+  apt-get update && \
+  apt-get -y dist-upgrade && \
+  apt-get -y install \
+    autoconf automake bc build-essential cpio curl file git \
+    libexpat1-dev libtool libz-dev pkgconf python3 unzip wget && \
+  useradd -m -u 1000 builder
+COPY ./sdk-fetch /usr/local/bin
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM compat as toolchain
 USER builder
 
 # Configure Git for any subsequent use.
@@ -57,6 +71,7 @@ RUN \
   find output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include -name '.*' -delete
 
 WORKDIR /home/builder/buildroot/output/${ARCH}-gnu/build
+SHELL ["/bin/bash", "-c"]
 RUN \
   install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
   install -p -m 0644 -Dt licenses/bison host-bison-*/COPYING && \
@@ -67,8 +82,7 @@ RUN \
   install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
   install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
   install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
-  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER} && \
-  install -p -m 0644 -Dt licenses/tar host-tar-*/COPYING
+  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -81,6 +95,7 @@ RUN \
   find output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include -name '.*' -delete
 
 WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
+SHELL ["/bin/bash", "-c"]
 RUN \
   install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
   install -p -m 0644 -Dt licenses/gcc host-gcc-final-*/{COPYING,COPYING.LIB,COPYING.RUNTIME,COPYING3,COPYING3.LIB} && \
@@ -89,8 +104,16 @@ RUN \
   install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
   install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
   install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
-  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER} && \
-  install -p -m 0644 -Dt licenses/tar host-tar-*/COPYING
+  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER}
+
+# For kernel module development, we only need one toolchain, and it doesn't
+# matter which one we pick since the kernel doesn't use the C library. Record
+# the files we need so they can be archived later.
+WORKDIR /home/builder/buildroot/output/${ARCH}-musl/toolchain
+RUN find . -type f -printf '%P\n' > ../build/toolchain.txt
+
+WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
+RUN find licenses -type f -printf '%P\n' > toolchain-licenses.txt
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -277,7 +300,7 @@ RUN \
 
 ARG ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.46.0"
+ARG RUSTVER="1.47.0"
 
 USER builder
 WORKDIR /home/builder
@@ -349,7 +372,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.14.7"
+ARG GOVER="1.15.4"
 
 USER root
 RUN dnf -y install golang
@@ -432,6 +455,31 @@ RUN \
     --spdx-data /usr/libexec/tools/spdx-data \
     --out-dir /usr/share/licenses/bottlerocket-license-scan/vendor \
     cargo --locked Cargo.toml
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk as toolchain-final
+
+ARG ARCH
+ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
+
+COPY --from=toolchain-musl \
+  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain.txt \
+  /tmp/toolchain.txt
+
+COPY --from=toolchain-musl \
+  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain-licenses.txt \
+  /tmp/toolchain-licenses.txt
+
+WORKDIR /tmp
+
+RUN \
+  tar cvf toolchain.tar --transform "s,^,toolchain/," \
+    -C / -T toolchain.txt && \
+  tar rvf toolchain.tar --transform "s,^,toolchain/licenses/," \
+    -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
+  xz -T0 toolchain.tar
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
