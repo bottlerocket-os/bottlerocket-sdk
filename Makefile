@@ -1,7 +1,7 @@
 ARCH ?= $(shell uname -m)
 HOST_ARCH ?= $(shell uname -m)
 
-VERSION := v0.14.0
+VERSION := v0.15.0
 
 SDK_TAG := bottlerocket/sdk-$(ARCH):$(VERSION)-$(HOST_ARCH)
 SDK_ARCHIVE := bottlerocket-sdk-$(ARCH)-$(VERSION).$(HOST_ARCH).tar.gz
