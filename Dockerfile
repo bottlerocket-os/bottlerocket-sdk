@@ -299,8 +299,9 @@ RUN \
   chown -R builder:builder /usr/libexec/rust
 
 ARG ARCH
+ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.47.0"
+ARG RUSTVER="1.49.0"
 
 USER builder
 WORKDIR /home/builder
@@ -345,19 +346,21 @@ RUN \
 
 RUN \
   for libc in gnu musl ; do \
-    cp src/librustc_target/spec/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs ; \
-    sed -i -e 's@target_vendor: "unknown"@target_vendor: "'${VENDOR}'"@' \
-      src/librustc_target/spec/${ARCH}_${VENDOR}_linux_${libc}.rs ; \
+    cp compiler/rustc_target/src/spec/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
+    sed -i -e '/let mut base = super::linux_'${libc}'_base::opts();/a base.vendor = "'${VENDOR}'".to_string();' \
+      compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
     sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
-      src/librustc_target/spec/mod.rs ; \
+      compiler/rustc_target/src/spec/mod.rs ; \
   done && \
-  grep -Fq ${VENDOR} src/librustc_target/spec/mod.rs && \
-  grep -Fq ${VENDOR} src/librustc_target/spec/${ARCH}_${VENDOR}_linux_gnu.rs && \
-  grep -Fq ${VENDOR} src/librustc_target/spec/${ARCH}_${VENDOR}_linux_musl.rs
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/mod.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_musl.rs
 
+# In addition to our vendor-specific targets, we also need to build for the host
+# platform, since that is no longer done implicitly.
 COPY ./configs/rust/* ./
 RUN \
-  cp config-${ARCH}.toml config.toml && \
+  sed -e "s,@HOST_TRIPLE@,${HOST_ARCH}-unknown-linux-gnu,g" config-${ARCH}.toml.in > config.toml && \
   RUSTUP_DIST_SERVER=example:// python3 ./x.py install
 
 RUN \
@@ -530,10 +533,6 @@ RUN \
   done && \
   echo '/usr/libexec/rust/lib' > /etc/ld.so.conf.d/rust.conf && \
   ldconfig
-
-# Strip and deduplicate Rust's LLVM libraries.
-RUN \
-  strip -g /usr/libexec/rust/lib/libLLVM-*.so
 
 # Add Go programs to $PATH and sync timestamps to avoid rebuilds.
 RUN \

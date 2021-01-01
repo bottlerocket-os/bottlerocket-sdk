@@ -1,5 +1,6 @@
 [build]
 target = [
+  "@HOST_TRIPLE@",
   "x86_64-bottlerocket-linux-gnu",
   "x86_64-bottlerocket-linux-musl",
 ]

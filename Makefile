@@ -16,7 +16,8 @@ $(SDK_ARCHIVE) :
 		--tag $(SDK_TAG) \
 		--target sdk-final \
 		--squash \
-		--build-arg ARCH=$(ARCH)
+		--build-arg ARCH=$(ARCH) \
+		--build-arg HOST_ARCH=$(HOST_ARCH)
 	@docker image save $(SDK_TAG) | gzip --fast > $(@)
 
 $(TOOLCHAIN_ARCHIVE) :
@@ -24,7 +25,8 @@ $(TOOLCHAIN_ARCHIVE) :
 		--tag $(TOOLCHAIN_TAG) \
 		--target toolchain-final \
 		--squash \
-		--build-arg ARCH=$(ARCH)
+		--build-arg ARCH=$(ARCH) \
+		--build-arg HOST_ARCH=$(HOST_ARCH)
 	@docker run --rm --entrypoint cat $(TOOLCHAIN_TAG) /tmp/toolchain.tar.xz > $(@)
 
 upload : $(SDK_ARCHIVE) $(TOOLCHAIN_ARCHIVE)
