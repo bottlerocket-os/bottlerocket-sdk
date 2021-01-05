@@ -1,3 +1,6 @@
+# See the example config for more details on these settings:
+# https://github.com/rust-lang/rust/blob/master/config.toml.example
+
 [build]
 target = [
   "@HOST_TRIPLE@",
