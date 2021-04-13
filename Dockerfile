@@ -150,7 +150,7 @@ COPY --from=toolchain-musl \
 FROM sdk as sdk-gnu
 USER builder
 
-ARG GLIBCVER="2.32"
+ARG GLIBCVER="2.33"
 
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
