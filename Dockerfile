@@ -301,7 +301,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.49.0"
+ARG RUSTVER="1.51.0"
 
 USER builder
 WORKDIR /home/builder
@@ -527,12 +527,16 @@ COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-license-scan /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
 
 # Add Rust programs and libraries to the path.
+# Also add symlinks to help out with sysroot discovery.
 RUN \
   for b in /usr/libexec/rust/bin/* ; do \
     ln -s ../libexec/rust/bin/${b##*/} /usr/bin/${b##*/} ; \
   done && \
   echo '/usr/libexec/rust/lib' > /etc/ld.so.conf.d/rust.conf && \
-  ldconfig
+  ldconfig && \
+  for d in /usr/lib64 /usr/lib ; do \
+    ln -s ../libexec/rust/lib/rustlib ${d}/rustlib ; \
+  done
 
 # Add Go programs to $PATH and sync timestamps to avoid rebuilds.
 RUN \
