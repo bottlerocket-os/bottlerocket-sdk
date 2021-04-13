@@ -1,7 +1,7 @@
-From 8cc74c9606fe76b65c36497f24955cf648d584a6 Mon Sep 17 00:00:00 2001
+From ce9da3957e01aa81af49210bb7fec3d8cb440690 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:15:02 +0000
-Subject: [PATCH 1/5] disable shared for host builds of gmp, isl, mpc, mpfr
+Subject: [PATCH 1/6] disable shared for host builds of gmp, isl, mpc, mpfr
 
 Building these GCC dependencies as static libraries avoids the need to
 provide the shared library paths at runtime, using either rpath entries
@@ -17,7 +17,7 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  5 files changed, 17 insertions(+), 1 deletion(-)
 
 diff --git a/package/Makefile.in b/package/Makefile.in
-index 285e2837ef..d220a7d01d 100644
+index 51f5cbce4f..01677cd82b 100644
 --- a/package/Makefile.in
 +++ b/package/Makefile.in
 @@ -228,7 +228,7 @@ HOST_CPPFLAGS  = -I$(HOST_DIR)/include
@@ -30,10 +30,10 @@ index 285e2837ef..d220a7d01d 100644
  # host-intltool should be executed with the system perl, so we save
  # the path to the system perl, before a host-perl built by Buildroot
 diff --git a/package/gmp/gmp.mk b/package/gmp/gmp.mk
-index d124463a98..883cd196e6 100644
+index 5e16ef1916..a84228937d 100644
 --- a/package/gmp/gmp.mk
 +++ b/package/gmp/gmp.mk
-@@ -13,6 +13,10 @@ GMP_LICENSE_FILES = COPYING.LESSERv3 COPYINGv2
+@@ -14,6 +14,10 @@ GMP_CPE_ID_VENDOR = gmplib
  GMP_DEPENDENCIES = host-m4
  HOST_GMP_DEPENDENCIES = host-m4
  
@@ -72,10 +72,10 @@ index 0e84bc2770..485910e5c3 100644
  $(eval $(autotools-package))
  $(eval $(host-autotools-package))
 diff --git a/package/mpfr/mpfr.mk b/package/mpfr/mpfr.mk
-index ef2999eb16..a65c189228 100644
+index 837aff3aa5..939730b17e 100644
 --- a/package/mpfr/mpfr.mk
 +++ b/package/mpfr/mpfr.mk
-@@ -14,5 +14,9 @@ MPFR_DEPENDENCIES = gmp
+@@ -15,5 +15,9 @@ MPFR_DEPENDENCIES = gmp
  HOST_MPFR_DEPENDENCIES = host-gmp
  MPFR_MAKE_OPTS = RANLIB=$(TARGET_RANLIB)
  
@@ -86,5 +86,5 @@ index ef2999eb16..a65c189228 100644
  $(eval $(autotools-package))
  $(eval $(host-autotools-package))
 -- 
-2.21.0
+2.21.3
 

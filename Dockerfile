@@ -41,8 +41,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2020.02.2"
-ARG KVER="5.4.40"
+ARG BRVER="2021.02.1"
+ARG KVER="5.4.107"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -64,7 +64,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.4.40"
+ARG KVER="5.4.107"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -88,7 +88,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.4.40"
+ARG KVER="5.4.107"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -122,7 +122,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.4.40"
+ARG KVER="5.4.107"
 
 WORKDIR /
 
