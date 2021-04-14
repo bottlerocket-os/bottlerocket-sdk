@@ -462,6 +462,38 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-license-scan as sdk-cargo-deny
+
+USER root
+RUN \
+  mkdir -p /usr/share/licenses/cargo-deny && \
+  chown -R builder:builder /usr/share/licenses/cargo-deny
+
+ARG DENYVER="0.6.2"
+
+USER builder
+WORKDIR /home/builder
+COPY ./hashes/cargo-deny ./hashes
+RUN \
+  sdk-fetch hashes && \
+  tar xf cargo-deny-${DENYVER}.tar.gz && \
+  rm cargo-deny-${DENYVER}.tar.gz && \
+  mv cargo-deny-${DENYVER} cargo-deny
+
+WORKDIR /home/builder/cargo-deny
+COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny
+COPY ./configs/cargo-deny/clarify.toml .
+RUN \
+  cargo build --release --locked && \
+  install -p -m 0755 target/release/cargo-deny /usr/libexec/tools/ && \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/cargo-deny/vendor \
+    cargo --locked Cargo.toml
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as toolchain-final
 
 ARG ARCH
@@ -526,6 +558,10 @@ COPY --chown=0:0 --from=sdk-go \
 COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
 # quine - include the licenses for the license scan tool itself
 COPY --chown=0:0 --from=sdk-license-scan /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
+
+# "sdk-cargo-deny" has the cargo deny command and licenses.
+COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
