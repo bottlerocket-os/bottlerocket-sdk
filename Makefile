@@ -27,7 +27,7 @@ $(TOOLCHAIN_ARCHIVE) :
 		--squash \
 		--build-arg ARCH=$(ARCH) \
 		--build-arg HOST_ARCH=$(HOST_ARCH)
-	@docker run --rm --entrypoint cat $(TOOLCHAIN_TAG) /tmp/toolchain.tar.xz > $(@)
+	@docker image save $(TOOLCHAIN_TAG) | gzip --fast > $(@)
 
 upload : $(SDK_ARCHIVE) $(TOOLCHAIN_ARCHIVE)
 	@aws s3 cp $(SDK_ARCHIVE) s3://thar-upstream-lookaside-cache/$(SDK_TAG).tar.gz

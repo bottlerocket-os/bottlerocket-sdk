@@ -494,7 +494,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as toolchain-final
+FROM sdk as toolchain-archive
 
 ARG ARCH
 ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
@@ -515,7 +515,10 @@ RUN \
     -C / -T toolchain.txt && \
   tar rvf toolchain.tar --transform "s,^,toolchain/licenses/," \
     -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
-  xz -T0 toolchain.tar
+  tar xvf toolchain.tar -C /
+
+FROM scratch as toolchain-final
+COPY --from=toolchain-archive /toolchain /toolchain
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
