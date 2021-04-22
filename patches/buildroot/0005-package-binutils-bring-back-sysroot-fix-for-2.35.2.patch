@@ -1,21 +1,21 @@
-From c25324e3169bba47c8c314c40380c51e67d4135c Mon Sep 17 00:00:00 2001
+From d1948dc041fa07b3befe55322adeb095c299ec42 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Fri, 15 Mar 2019 18:32:49 +0000
-Subject: [PATCH 5/5] package/binutils: bring back sysroot fix for 2.33.1
+Subject: [PATCH 5/6] package/binutils: bring back sysroot fix for 2.35.2
 
 Signed-off-by: Ben Cressey <bcressey@amazon.com>
 ---
  .../9001-add-sysroot-fix-from-bug-3049.patch  | 51 +++++++++++++++++++
  1 file changed, 51 insertions(+)
- create mode 100644 package/binutils/2.33.1/9001-add-sysroot-fix-from-bug-3049.patch
+ create mode 100644 package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch
 
-diff --git a/package/binutils/2.33.1/9001-add-sysroot-fix-from-bug-3049.patch b/package/binutils/2.33.1/9001-add-sysroot-fix-from-bug-3049.patch
+diff --git a/package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch b/package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch
 new file mode 100644
-index 0000000000..6a8d8f2867
+index 0000000000..9094fba8cb
 --- /dev/null
-+++ b/package/binutils/2.33.1/9001-add-sysroot-fix-from-bug-3049.patch
++++ b/package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch
 @@ -0,0 +1,51 @@
-+From 043bbcc9e4577e9086b9ca74534c844bde550df0 Mon Sep 17 00:00:00 2001
++From 275729079c3e9c051c748396a1b91a556bae8729 Mon Sep 17 00:00:00 2001
 +From: Romain Naour <romain.naour@gmail.com>
 +Date: Fri, 25 Dec 2015 11:42:48 +0100
 +Subject: [PATCH] add sysroot fix from bug #3049
@@ -33,10 +33,10 @@ index 0000000000..6a8d8f2867
 + 1 file changed, 8 insertions(+), 2 deletions(-)
 +
 +diff --git a/ld/ldfile.c b/ld/ldfile.c
-+index fcadc08c..8d06d44e 100644
++index e39170b5..de6c46e7 100644
 +--- a/ld/ldfile.c
 ++++ b/ld/ldfile.c
-+@@ -338,18 +338,24 @@ ldfile_open_file_search (const char *arch,
++@@ -340,18 +340,24 @@ ldfile_open_file_search (const char *arch,
 +      directory first.  */
 +   if (!entry->flags.maybe_archive)
 +     {
@@ -64,8 +64,8 @@ index 0000000000..6a8d8f2867
 + 
 +       if (IS_ABSOLUTE_PATH (entry->filename))
 +-- 
-+2.17.2
++2.21.3
 +
 -- 
-2.21.0
+2.21.3
 

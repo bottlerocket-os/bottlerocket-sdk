@@ -1,4 +1,4 @@
-FROM fedora:32 as base
+FROM fedora:33 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -8,11 +8,11 @@ RUN \
   dnf -y install \
     rpmdevtools dnf-plugins-core createrepo_c \
     cmake git meson perl-ExtUtils-MakeMaker python which \
-    bc hostname intltool gperf kmod rsync wget \
+    bc hostname intltool gperf kmod rsync wget openssl \
     dwarves elfutils-devel libcap-devel openssl-devel \
     createrepo_c e2fsprogs gdisk grub2-tools.$(uname -m) \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
-    policycoreutils secilc qemu-img && \
+    perl-FindBin perl-open policycoreutils secilc qemu-img && \
   dnf clean all && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
@@ -41,8 +41,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2020.02.2"
-ARG KVER="5.4.40"
+ARG BRVER="2021.02.1"
+ARG KVER="5.4.107"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -64,7 +64,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.4.40"
+ARG KVER="5.4.107"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -88,7 +88,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.4.40"
+ARG KVER="5.4.107"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -122,7 +122,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.4.40"
+ARG KVER="5.4.107"
 
 WORKDIR /
 
@@ -150,7 +150,7 @@ COPY --from=toolchain-musl \
 FROM sdk as sdk-gnu
 USER builder
 
-ARG GLIBCVER="2.32"
+ARG GLIBCVER="2.33"
 
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
@@ -203,7 +203,7 @@ RUN make install
 FROM sdk as sdk-musl
 USER builder
 
-ARG MUSLVER="1.2.1"
+ARG MUSLVER="1.2.2"
 
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
@@ -237,7 +237,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="10.0.0"
+ARG LLVMVER="11.1.0"
 
 USER builder
 WORKDIR /home/builder
@@ -301,7 +301,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.49.0"
+ARG RUSTVER="1.51.0"
 
 USER builder
 WORKDIR /home/builder
@@ -375,7 +375,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.15.6"
+ARG GOVER="1.16.3"
 
 USER root
 RUN dnf -y install golang
@@ -420,6 +420,7 @@ RUN \
   export GOPROXY="off" ; \
   export GOSUMDB="off" ; \
   export GOROOT="${PWD}" ; \
+  export GOPATH="${PWD}/go" ; \
   export PATH="${PWD}/bin:${PATH}" ; \
   go install std && \
   go install -buildmode=pie std
@@ -436,7 +437,7 @@ RUN \
   mkdir -p /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan && \
   chown -R builder:builder /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan
 
-ARG SPDXVER="3.8"
+ARG SPDXVER="3.12"
 
 USER builder
 WORKDIR /home/builder/license-scan
@@ -461,7 +462,39 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as toolchain-final
+FROM sdk-license-scan as sdk-cargo-deny
+
+USER root
+RUN \
+  mkdir -p /usr/share/licenses/cargo-deny && \
+  chown -R builder:builder /usr/share/licenses/cargo-deny
+
+ARG DENYVER="0.6.2"
+
+USER builder
+WORKDIR /home/builder
+COPY ./hashes/cargo-deny ./hashes
+RUN \
+  sdk-fetch hashes && \
+  tar xf cargo-deny-${DENYVER}.tar.gz && \
+  rm cargo-deny-${DENYVER}.tar.gz && \
+  mv cargo-deny-${DENYVER} cargo-deny
+
+WORKDIR /home/builder/cargo-deny
+COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny
+COPY ./configs/cargo-deny/clarify.toml .
+RUN \
+  cargo build --release --locked && \
+  install -p -m 0755 target/release/cargo-deny /usr/libexec/tools/ && \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/cargo-deny/vendor \
+    cargo --locked Cargo.toml
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk as toolchain-archive
 
 ARG ARCH
 ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
@@ -482,7 +515,10 @@ RUN \
     -C / -T toolchain.txt && \
   tar rvf toolchain.tar --transform "s,^,toolchain/licenses/," \
     -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
-  xz -T0 toolchain.tar
+  tar xvf toolchain.tar -C /
+
+FROM scratch as toolchain-final
+COPY --from=toolchain-archive /toolchain /toolchain
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -526,13 +562,21 @@ COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
 # quine - include the licenses for the license scan tool itself
 COPY --chown=0:0 --from=sdk-license-scan /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
 
+# "sdk-cargo-deny" has the cargo deny command and licenses.
+COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
+
 # Add Rust programs and libraries to the path.
+# Also add symlinks to help out with sysroot discovery.
 RUN \
   for b in /usr/libexec/rust/bin/* ; do \
     ln -s ../libexec/rust/bin/${b##*/} /usr/bin/${b##*/} ; \
   done && \
   echo '/usr/libexec/rust/lib' > /etc/ld.so.conf.d/rust.conf && \
-  ldconfig
+  ldconfig && \
+  for d in /usr/lib64 /usr/lib ; do \
+    ln -s ../libexec/rust/lib/rustlib ${d}/rustlib ; \
+  done
 
 # Add Go programs to $PATH and sync timestamps to avoid rebuilds.
 RUN \

@@ -1,7 +1,7 @@
-From 574d0c34d9f0645acacbd04f4060473ca756df25 Mon Sep 17 00:00:00 2001
+From 2cfff7d885f549abdddb6cd5e2fc1e31bd438829 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:58:27 +0000
-Subject: [PATCH 4/5] build gcc with TOOLS_DIR and SYSROOT_DIR
+Subject: [PATCH 4/6] build gcc with TOOLS_DIR and SYSROOT_DIR
 
 Most of the changes here are to the second and final stage of our GCC
 build, so that the binaries are written to the new output path, and
@@ -190,10 +190,10 @@ index f5bc6c5b77..9f34effd10 100644
  
  $(eval $(host-autotools-package))
 diff --git a/package/gcc/gcc.mk b/package/gcc/gcc.mk
-index 50f2a3fcb7..469243de22 100644
+index 5e419f7ede..e42a78986f 100644
 --- a/package/gcc/gcc.mk
 +++ b/package/gcc/gcc.mk
-@@ -80,12 +80,12 @@ HOST_GCC_COMMON_DEPENDENCIES = \
+@@ -72,12 +72,12 @@ HOST_GCC_COMMON_DEPENDENCIES = \
  
  HOST_GCC_COMMON_CONF_OPTS = \
  	--target=$(GNU_TARGET_NAME) \
@@ -208,5 +208,5 @@ index 50f2a3fcb7..469243de22 100644
  	--with-mpc=$(HOST_DIR) \
  	--with-mpfr=$(HOST_DIR) \
 -- 
-2.21.0
+2.21.3
 

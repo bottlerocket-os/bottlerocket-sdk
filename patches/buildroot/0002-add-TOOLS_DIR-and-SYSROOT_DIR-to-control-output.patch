@@ -1,7 +1,7 @@
-From 933d967e7f44208ed0fea9505fa74aab99157d2e Mon Sep 17 00:00:00 2001
+From 78baa715642100464bb466da17f3478d1815493e Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:35:06 +0000
-Subject: [PATCH 2/5] add TOOLS_DIR and SYSROOT_DIR to control output
+Subject: [PATCH 2/6] add TOOLS_DIR and SYSROOT_DIR to control output
 
 The sysroot directory is essential to our purpose of building a
 relocatable toolchain, as GCC will look for it relative to the
@@ -24,10 +24,10 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  2 files changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/Makefile b/Makefile
-index a72ce19865..44f19694cb 100644
+index 01352eec5d..b62aef81f2 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -212,6 +212,7 @@ PER_PACKAGE_DIR := $(BASE_DIR)/per-package
+@@ -218,6 +218,7 @@ PER_PACKAGE_DIR := $(BASE_DIR)/per-package
  # .config. HOST_DIR will be overwritten later when .config is included.
  HOST_DIR := $(BASE_DIR)/host
  GRAPHS_DIR := $(BASE_DIR)/graphs
@@ -35,7 +35,7 @@ index a72ce19865..44f19694cb 100644
  
  LEGAL_INFO_DIR = $(BASE_DIR)/legal-info
  REDIST_SOURCES_DIR_TARGET = $(LEGAL_INFO_DIR)/sources
-@@ -488,7 +489,9 @@ export BR2_CONFIG
+@@ -495,7 +496,9 @@ export BR2_CONFIG
  export BR2_REPRODUCIBLE
  export TARGET_DIR
  export STAGING_DIR
@@ -45,7 +45,7 @@ index a72ce19865..44f19694cb 100644
  export BINARIES_DIR
  export BASE_DIR
  
-@@ -1028,7 +1031,7 @@ savedefconfig: $(BUILD_DIR)/buildroot-config/conf outputmakefile
+@@ -1047,7 +1050,7 @@ savedefconfig: $(BUILD_DIR)/buildroot-config/conf outputmakefile
  
  # staging and target directories do NOT list these as
  # dependencies anywhere else
@@ -54,7 +54,7 @@ index a72ce19865..44f19694cb 100644
  	@mkdir -p $@
  
  # outputmakefile generates a Makefile in the output directory, if using a
-@@ -1060,7 +1063,7 @@ printvars:
+@@ -1079,7 +1082,7 @@ printvars:
  clean:
  	rm -rf $(BASE_TARGET_DIR) $(BINARIES_DIR) $(HOST_DIR) $(HOST_DIR_SYMLINK) \
  		$(BUILD_DIR) $(BASE_DIR)/staging \
@@ -64,7 +64,7 @@ index a72ce19865..44f19694cb 100644
  .PHONY: distclean
  distclean: clean
 diff --git a/package/Makefile.in b/package/Makefile.in
-index d220a7d01d..e6857eba55 100644
+index 01677cd82b..575f840945 100644
 --- a/package/Makefile.in
 +++ b/package/Makefile.in
 @@ -112,8 +112,9 @@ ifeq ($(BR2_xtensa),y)
@@ -79,5 +79,5 @@ index d220a7d01d..e6857eba55 100644
  ifeq ($(BR2_OPTIMIZE_0),y)
  TARGET_OPTIMIZATION = -O0
 -- 
-2.21.0
+2.21.3
 
