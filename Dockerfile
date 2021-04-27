@@ -12,7 +12,8 @@ RUN \
     dwarves elfutils-devel libcap-devel openssl-devel \
     createrepo_c e2fsprogs gdisk grub2-tools.$(uname -m) \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
-    perl-FindBin perl-open policycoreutils secilc qemu-img && \
+    perl-FindBin perl-open policycoreutils secilc qemu-img \
+    glib2-devel rpcgen && \
   dnf clean all && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
