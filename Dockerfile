@@ -382,11 +382,11 @@ USER root
 RUN dnf -y install golang
 
 USER builder
-WORKDIR /home/builder
-COPY ./hashes/go ./hashes
+WORKDIR /home/builder/sdk-go
+COPY ./hashes/go /home/builder/hashes
 RUN \
-  sdk-fetch hashes && \
-  tar xf go${GOVER}.src.tar.gz && \
+  sdk-fetch /home/builder/hashes && \
+  tar --strip-components=1 -xf go${GOVER}.src.tar.gz && \
   rm go${GOVER}.src.tar.gz
 
 ARG GOROOT_FINAL="/usr/libexec/go"
@@ -402,13 +402,17 @@ ARG CGO_CFLAGS="${CFLAGS}"
 ARG CGO_CXXFLAGS="${CXXFLAGS}"
 ARG CGO_LDFLAGS="${LDFLAGS}"
 
-WORKDIR /home/builder/go/src
+WORKDIR /home/builder/sdk-go/src
 RUN ./make.bash --no-clean
 
 # Build the standard library with and without PIE. Target binaries
 # should use PIE, but any host binaries generated during the build
 # might not.
-WORKDIR /home/builder/go
+WORKDIR /home/builder/sdk-go
+ENV GOOS="${GOOS}" \
+  GOROOT="/home/builder/sdk-go" \
+  GOPATH="/home/builder/gopath" \
+  PATH="/home/builder/sdk-go/bin:${PATH}"
 RUN \
   export GOARCH="${!GOARCH_ARCH}" ; \
   export CC="${TARGET}-gcc" ; \
@@ -418,11 +422,6 @@ RUN \
   export CXX_FOR_TARGET="${TARGET}-g++" ; \
   export CXX_FOR_${GOOS}_${GOARCH}="${TARGET}-g++" ; \
   export GOFLAGS="-mod=vendor" ; \
-  export GOPROXY="off" ; \
-  export GOSUMDB="off" ; \
-  export GOROOT="${PWD}" ; \
-  export GOPATH="${PWD}/go" ; \
-  export PATH="${PWD}/bin:${PATH}" ; \
   go install std && \
   go install -buildmode=pie std
 
@@ -550,12 +549,12 @@ COPY --chown=0:0 --from=sdk-rust \
   /usr/share/licenses/rust/
 
 # "sdk-go" has the Go toolchain and standard library builds.
-COPY --chown=0:0 --from=sdk-go /home/builder/go/bin /usr/libexec/go/bin/
-COPY --chown=0:0 --from=sdk-go /home/builder/go/lib /usr/libexec/go/lib/
-COPY --chown=0:0 --from=sdk-go /home/builder/go/pkg /usr/libexec/go/pkg/
-COPY --chown=0:0 --from=sdk-go /home/builder/go/src /usr/libexec/go/src/
+COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/bin /usr/libexec/go/bin/
+COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/lib /usr/libexec/go/lib/
+COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/pkg /usr/libexec/go/pkg/
+COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/src /usr/libexec/go/src/
 COPY --chown=0:0 --from=sdk-go \
-  /home/builder/go/licenses/ \
+  /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go/
 
 # "sdk-license-scan" has our attribution generation tool.
