@@ -454,7 +454,7 @@ COPY license-scan /home/builder/license-scan
 RUN cargo build --release --locked
 RUN install -p -m 0755 target/release/bottlerocket-license-scan /usr/libexec/tools/
 RUN cp -r license-list-data/json/details /usr/libexec/tools/spdx-data
-COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-scan
+COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-scan/
 # quine - scan the license tool itself for licenses
 RUN \
   /usr/libexec/tools/bottlerocket-license-scan \
@@ -484,7 +484,7 @@ RUN \
   mv cargo-deny-${DENYVER} cargo-deny
 
 WORKDIR /home/builder/cargo-deny
-COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny
+COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny/
 COPY ./configs/cargo-deny/clarify.toml .
 RUN \
   cargo build --release --locked && \
