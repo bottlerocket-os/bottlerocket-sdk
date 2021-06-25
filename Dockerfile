@@ -238,7 +238,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="11.1.0"
+ARG LLVMVER="12.0.0"
 
 USER builder
 WORKDIR /home/builder
@@ -250,6 +250,9 @@ RUN \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
   rm llvm-${LLVMVER}.src.tar.xz && \
   mv llvm-${LLVMVER}.src llvm && \
+  tar xf libcxx-${LLVMVER}.src.tar.xz && \
+  rm libcxx-${LLVMVER}.src.tar.xz && \
+  mv libcxx-${LLVMVER}.src libcxx && \
   tar xf libunwind-${LLVMVER}.src.tar.xz && \
   rm libunwind-${LLVMVER}.src.tar.xz && \
   mv libunwind-${LLVMVER}.src libunwind && \
