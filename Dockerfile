@@ -494,6 +494,45 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-go as sdk-govc
+
+USER root
+RUN \
+  mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
+  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
+
+ARG GOVMOMIVER="0.26.0"
+ARG GOVMOMISHORTCOMMIT="34586b6"
+ARG GOVMOMIDATE="2021-06-03T19:03:25Z"
+
+USER builder
+WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
+COPY ./hashes/govmomi /home/builder/hashes
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  tar --strip-components=1 -xf govmomi-${GOVMOMIVER}.tar.gz && \
+  rm govmomi-${GOVMOMIVER}.tar.gz
+
+COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
+RUN \
+  cp -p LICENSE.txt /usr/share/licenses/govmomi && \
+  go mod vendor && \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/govmomi \
+    go-vendor ./vendor
+
+RUN \
+  export CGO_ENABLED=0 ; \
+  export BUILD_VERSION_PKG="github.com/vmware/govmomi/govc/flags" ; \
+  go build -mod=vendor -o /usr/libexec/tools/govc -ldflags " \
+    -X ${BUILD_VERSION_PKG}.BuildVersion=${GOVMOMIVER} \
+    -X ${BUILD_VERSION_PKG}.BuildCommit=${GOVMOMISHORTCOMMIT} \
+    -X ${BUILD_VERSION_PKG}.BuildDate=${GOVMOMIDATE} \
+    " github.com/vmware/govmomi/govc
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as toolchain-archive
 
 ARG ARCH
@@ -565,6 +604,10 @@ COPY --chown=0:0 --from=sdk-license-scan /usr/share/licenses/bottlerocket-licens
 # "sdk-cargo-deny" has the cargo deny command and licenses.
 COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
+
+# "sdk-govc" has the VMware govc tool and licenses.
+COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/govc
+COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi /usr/share/licenses/govmomi
 
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
