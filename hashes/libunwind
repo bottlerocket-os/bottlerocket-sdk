@@ -1,4 +1,6 @@
-# https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-11.1.0.src.tar.xz
-SHA512 (llvm-11.1.0.src.tar.xz) = 07bf9973384151a18d5cc2892103e5f28a88c632e8e49662fde56d123632f2ed1b3710fa7a87b6b821955d0ec44160ff36f2aa4f233e389e14d628e9bf8dc764
-# https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/libunwind-11.1.0.src.tar.xz
-SHA512 (libunwind-11.1.0.src.tar.xz) = 507f29cf1a318d9761fe6306b2e9b57c02a342f138b47ec5420dce527132a33f7affcd386913792c472ceeb9fb1c1b105bba3234a1575aae0f68024e94c8d596
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/llvm-12.0.0.src.tar.xz
+SHA512 (llvm-12.0.0.src.tar.xz) = ec17153ef774a1e08085763bda7d0dfce6802fbaa17e89831695ce1b2eb015a6c2aebfaa9fe7985a83b9c51bd75d40bb4f1fc706dc16d4c0dc2b2722a1d8a24e
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/libcxx-12.0.0.src.tar.xz
+SHA512 (libcxx-12.0.0.src.tar.xz) = d8038e73b4f26191516608799288f5418ccfb4552ffd767b08179f0dba2730f0d872b28bd3db9fe244e7177101b599aa251d28a496c734b22b3c053db187d88d
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/libunwind-12.0.0.src.tar.xz
+SHA512 (libunwind-12.0.0.src.tar.xz) = 0fabbd3292fb14e423e0db9b76dd73d166e4942b9573bf37ed71d1f5198c59d5218277cb030b9cb2d4f071780f6125a24d387a41da2de3c187e9f9feba2024e8

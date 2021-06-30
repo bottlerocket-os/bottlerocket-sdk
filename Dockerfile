@@ -42,8 +42,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2021.02.1"
-ARG KVER="5.4.107"
+ARG BRVER="2021.02.3"
+ARG KVER="5.4.125"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -65,7 +65,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.4.107"
+ARG KVER="5.4.125"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -89,7 +89,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.4.107"
+ARG KVER="5.4.125"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -123,7 +123,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.4.107"
+ARG KVER="5.4.125"
 
 WORKDIR /
 
@@ -238,7 +238,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="11.1.0"
+ARG LLVMVER="12.0.0"
 
 USER builder
 WORKDIR /home/builder
@@ -250,6 +250,9 @@ RUN \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
   rm llvm-${LLVMVER}.src.tar.xz && \
   mv llvm-${LLVMVER}.src llvm && \
+  tar xf libcxx-${LLVMVER}.src.tar.xz && \
+  rm libcxx-${LLVMVER}.src.tar.xz && \
+  mv libcxx-${LLVMVER}.src libcxx && \
   tar xf libunwind-${LLVMVER}.src.tar.xz && \
   rm libunwind-${LLVMVER}.src.tar.xz && \
   mv libunwind-${LLVMVER}.src libunwind && \
@@ -302,7 +305,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.51.0"
+ARG RUSTVER="1.53.0"
 
 USER builder
 WORKDIR /home/builder
@@ -376,7 +379,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.16.3"
+ARG GOVER="1.16.5"
 
 USER root
 RUN dnf -y install golang
@@ -437,7 +440,7 @@ RUN \
   mkdir -p /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan && \
   chown -R builder:builder /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan
 
-ARG SPDXVER="3.12"
+ARG SPDXVER="3.13"
 
 USER builder
 WORKDIR /home/builder/license-scan
@@ -451,7 +454,7 @@ COPY license-scan /home/builder/license-scan
 RUN cargo build --release --locked
 RUN install -p -m 0755 target/release/bottlerocket-license-scan /usr/libexec/tools/
 RUN cp -r license-list-data/json/details /usr/libexec/tools/spdx-data
-COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-scan
+COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-scan/
 # quine - scan the license tool itself for licenses
 RUN \
   /usr/libexec/tools/bottlerocket-license-scan \
@@ -481,7 +484,7 @@ RUN \
   mv cargo-deny-${DENYVER} cargo-deny
 
 WORKDIR /home/builder/cargo-deny
-COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny
+COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny/
 COPY ./configs/cargo-deny/clarify.toml .
 RUN \
   cargo build --release --locked && \
