@@ -1,7 +1,9 @@
+TOP := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
+
 ARCH ?= $(shell uname -m)
 HOST_ARCH ?= $(shell uname -m)
 
-VERSION := v0.23.1
+VERSION := $(shell cat $(TOP)VERSION)
 
 SDK_TAG := bottlerocket/sdk-$(ARCH):$(VERSION)-$(HOST_ARCH)
 TOOLCHAIN_TAG := bottlerocket/toolchain-$(ARCH):$(VERSION)-$(HOST_ARCH)
@@ -24,4 +26,9 @@ toolchain:
 		--build-arg ARCH=$(ARCH) \
 		--build-arg HOST_ARCH=$(HOST_ARCH)
 
-.PHONY: all sdk toolchain
+publish:
+	@test $${REGISTRY?not set!}
+	@test $${SDK_NAME?not set!}
+	$(TOP)publish-sdk --registry=$(REGISTRY) --sdk-name=$(SDK_NAME) --version=$(VERSION)
+
+.PHONY: all sdk toolchain publish
