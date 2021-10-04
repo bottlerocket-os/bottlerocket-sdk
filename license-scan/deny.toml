@@ -15,8 +15,19 @@ allow = [
     "BSL-1.0",
     "MIT",
     "Unlicense",
+    "Zlib",
 ]
 
 # FIXME: Remove this when a license is assigned for first-party packages
 [licenses.private]
 ignore = true
+
+[bans]
+# Deny multiple versions or wildcard dependencies.
+multiple-versions = "deny"
+wildcards = "deny"
+
+[sources]
+# Deny crates from unknown registries or git repositories.
+unknown-registry = "deny"
+unknown-git = "deny"
