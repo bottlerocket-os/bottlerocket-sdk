@@ -13,7 +13,7 @@ RUN \
     createrepo_c e2fsprogs gdisk grub2-tools.$(uname -m) \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
     perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
-    secilc qemu-img glib2-devel rpcgen && \
+    secilc qemu-img glib2-devel rpcgen erofs-utils && \
   dnf clean all && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
