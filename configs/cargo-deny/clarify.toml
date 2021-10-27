@@ -51,6 +51,7 @@ license-files = [
     { path = "libgit2/COPYING", hash = 0x6ad47cc8},
     { path = "libgit2/deps/http-parser/COPYING", hash = 0x81cd6118 },
     { path = "libgit2/deps/pcre/COPYING", hash = 0x30b9f959 },
+    { path = "libgit2/deps/pcre/LICENCE", hash = 0xe7b944da },
     { path = "libgit2/deps/zlib/COPYING", hash = 0x5f5980f4 },
 ]
 # we aren't distributing examples or build scripts, and we're not using winhttp
@@ -65,6 +66,14 @@ skip-files = [
 expression = "(MIT OR Apache-2.0) AND BSD-3-Clause"
 license-files = [
     { path = "libssh2/COPYING", hash = 0xd8679249 },
+]
+
+[clarify.libz-sys]
+expression = "(MIT OR Apache-2.0) AND Zlib"
+license-files = [
+    { path = "LICENSE-APACHE", hash = 0x24b54f4b },
+    { path = "LICENSE-MIT", hash = 0x88396382 },
+    { path = "src/zlib-ng/LICENSE.md", hash = 0xa03e2b4 },
 ]
 
 [clarify.openssl-src]
@@ -102,6 +111,7 @@ license-files = [
 # libzstd is GPL-2.0-only OR BSD-3-Clause (selecting BSD-3-Clause)
 expression = "(MIT OR Apache-2.0) AND BSD-3-Clause"
 license-files = [
+    { path = "LICENSE", hash = 0xa237d234 },
     { path = "zstd/LICENSE", hash = 0x79cda15 },
 ]
 skip-files = [

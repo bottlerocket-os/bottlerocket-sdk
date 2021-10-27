@@ -12,8 +12,8 @@ RUN \
     dwarves elfutils-devel libcap-devel openssl-devel \
     createrepo_c e2fsprogs gdisk grub2-tools.$(uname -m) \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
-    perl-FindBin perl-open policycoreutils secilc qemu-img \
-    glib2-devel rpcgen && \
+    perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
+    secilc qemu-img glib2-devel rpcgen erofs-utils && \
   dnf clean all && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
@@ -151,7 +151,7 @@ COPY --from=toolchain-musl \
 FROM sdk as sdk-gnu
 USER builder
 
-ARG GLIBCVER="2.33"
+ARG GLIBCVER="2.34"
 
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
@@ -238,7 +238,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="12.0.0"
+ARG LLVMVER="12.0.1"
 
 USER builder
 WORKDIR /home/builder
@@ -282,6 +282,71 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-musl as sdk-musl-openssl
+USER builder
+
+ARG OPENSSLVER="3.0.0"
+
+WORKDIR /home/builder
+COPY ./hashes/openssl ./hashes
+RUN \
+  sdk-fetch hashes && \
+  rpm2cpio openssl-${OPENSSLVER}-*.src.rpm | cpio -idmv && \
+  tar xf openssl-${OPENSSLVER}-hobbled.tar.xz && \
+  mv openssl-${OPENSSLVER} openssl && \
+  for p in *.patch ; do \
+    echo "applying ${p}" ; \
+    patch -d openssl -p1 < "${p}" ; \
+  done && \
+  cp ec_curve.c openssl/crypto/ec
+
+ARG ARCH
+ARG TARGET="${ARCH}-bottlerocket-linux-musl"
+ARG SYSROOT="/${TARGET}/sys-root"
+ARG CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+
+WORKDIR /home/builder/openssl
+RUN \
+  NO_FEATURES="" && \
+  for algorithm in \
+    aria bf blake2 camellia cast des dh dsa idea md4 \
+    mdc2 ocb rc2 rc4 rmd160 scrypt seed siphash siv \
+    sm2 sm3 sm4 whirlpool ; \
+  do \
+    NO_FEATURES+="no-${algorithm} " ; \
+  done && \
+  for feature in \
+    cmp cms deprecated dgram ec2m gost legacy padlockeng \
+    srp srtp ssl ssl-trace stdio tests ts ui-console \
+    dtls dtls1{,-method} dtls1_2{,-method} \
+    tls1{,-method} tls1_1{,-method} \
+    ; \
+  do \
+    NO_FEATURES+="no-${feature} " ; \
+  done && \
+  CC="gcc" \
+  CXX="g++" \
+  CROSS_COMPILE="${TARGET}-" \
+  ./Configure \
+    --prefix="${SYSROOT}/usr" \
+    --libdir="${SYSROOT}/usr/lib" \
+    --cross-compile-prefix="${TARGET}-" \
+    '-DDEVRANDOM="\"/dev/urandom\""' \
+    ${NO_FEATURES} \
+    enable-ec_nistp_64_gcc_128 \
+    "linux-${ARCH}" && \
+   perl configdata.pm --dump && \
+   make -j$(nproc)
+
+USER root
+WORKDIR /home/builder/openssl
+RUN make install_sw
+RUN \
+  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/openssl LICENSE.txt
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as sdk-libc
 
 ARG ARCH
@@ -305,7 +370,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.53.0"
+ARG RUSTVER="1.56.0"
 
 USER builder
 WORKDIR /home/builder
@@ -353,6 +418,8 @@ RUN \
     cp compiler/rustc_target/src/spec/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
     sed -i -e '/let mut base = super::linux_'${libc}'_base::opts();/a base.vendor = "'${VENDOR}'".to_string();' \
       compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
+    sed -i -e '/ \.\.super::linux_'${libc}'_base::opts()/i vendor: "'${VENDOR}'".to_string(),' \
+      compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
     sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
       compiler/rustc_target/src/spec/mod.rs ; \
   done && \
@@ -379,7 +446,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.16.5"
+ARG GOVER="1.16.9"
 
 USER root
 RUN dnf -y install golang
@@ -440,7 +507,7 @@ RUN \
   mkdir -p /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan && \
   chown -R builder:builder /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan
 
-ARG SPDXVER="3.13"
+ARG SPDXVER="3.14"
 
 USER builder
 WORKDIR /home/builder/license-scan
@@ -472,7 +539,7 @@ RUN \
   mkdir -p /usr/share/licenses/cargo-deny && \
   chown -R builder:builder /usr/share/licenses/cargo-deny
 
-ARG DENYVER="0.6.2"
+ARG DENYVER="0.9.1"
 
 USER builder
 WORKDIR /home/builder
@@ -504,9 +571,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ARG GOVMOMIVER="0.26.0"
-ARG GOVMOMISHORTCOMMIT="34586b6"
-ARG GOVMOMIDATE="2021-06-03T19:03:25Z"
+ARG GOVMOMIVER="0.27.0"
+ARG GOVMOMISHORTCOMMIT="086bb561"
+ARG GOVMOMIDATE="2021-10-14T20:30:09Z"
 
 USER builder
 WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
@@ -578,11 +645,11 @@ WORKDIR /
 # "sdk" has our C/C++ toolchain and kernel headers for both targets.
 COPY --from=sdk / /
 
-# "sdk-musl" has a superset of the above, and includes C library and headers.
+# "sdk-musl-openssl" includes the musl C library and OpenSSL, plus headers.
 # We omit "sdk-gnu" because we expect to build glibc again for the target OS,
 # while we will use the musl artifacts directly to generate static binaries
 # such as migrations.
-COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+COPY --chown=0:0 --from=sdk-musl-openssl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
 
 # "sdk-rust" has our Rust toolchain with the required targets.
 COPY --chown=0:0 --from=sdk-rust /usr/libexec/rust/ /usr/libexec/rust/
