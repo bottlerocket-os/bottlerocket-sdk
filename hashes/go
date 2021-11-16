@@ -1,2 +1,2 @@
-# https://golang.org/dl/go1.16.9.src.tar.gz
-SHA512 (go1.16.9.src.tar.gz) = e1c02ac64fcc13b94bb160c9129d5fcfa4a486df069e4f5a42b5d5827e0c82105a957a92926a1e4802e37fd5a148ffcc015e244a31367fd68cfe30c90d2de385
+# https://golang.org/dl/go1.16.10.src.tar.gz
+SHA512 (go1.16.10.src.tar.gz) = d12753bd7973beb7ab047a189bd0d7132b5ab8c35e943b12388289d59f9becaefb858d37cfcb808c1e12f3e06c883ef170d98ed99449e9beda636cab9bfff2b6
