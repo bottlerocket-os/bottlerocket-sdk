@@ -532,6 +532,28 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-license-scan as sdk-license-tool
+
+USER root
+RUN \
+  mkdir -p /usr/libexec/tools /home/builder/license-tool /usr/share/licenses/bottlerocket-license-tool && \
+  chown -R builder:builder /usr/libexec/tools /home/builder/license-tool /usr/share/licenses/bottlerocket-license-tool
+
+USER builder
+WORKDIR /home/builder/license-tool
+COPY license-tool /home/builder/license-tool
+COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-tool/
+RUN \
+  cargo build --release --locked && \
+  install -p -m 0755 target/release/bottlerocket-license-tool /usr/libexec/tools/ && \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/bottlerocket-license-tool/vendor \
+    cargo --locked Cargo.toml
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk-license-scan as sdk-cargo-deny
 
 USER root
@@ -670,6 +692,10 @@ COPY --chown=0:0 --from=sdk-go \
 COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
 # quine - include the licenses for the license scan tool itself
 COPY --chown=0:0 --from=sdk-license-scan /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
+
+# "sdk-license-tool" has our license fetching tool.
+COPY --chown=0:0 --from=sdk-license-tool /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-license-tool /usr/share/licenses/bottlerocket-license-tool/ /usr/share/licenses/bottlerocket-license-tool/
 
 # "sdk-cargo-deny" has the cargo deny command and licenses.
 COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/

@@ -1,0 +1,19 @@
+[package]
+name = "bottlerocket-license-tool"
+version = "0.1.0"
+authors = ["Arnaldo Garcia Rincon <agarrcia@amazon.com>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+anyhow = "1"
+argh = "0.1.7"
+reqwest = { version = "0.11.7", default-features = false, features = ["rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "~1.8", default-features = false, features = ["macros", "rt-multi-thread"] }  # LTS
+toml = "0.5"
+url = { version = "2.2.2", features = ["serde"] }
+
+[dev-dependencies]
+httptest = "0.15.4"
+tempfile = "3.2.0"
