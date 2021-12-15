@@ -1,4 +1,4 @@
-FROM fedora:33 as base
+FROM fedora:35 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
