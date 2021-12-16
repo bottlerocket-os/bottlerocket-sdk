@@ -1,4 +1,4 @@
-FROM fedora:33 as base
+FROM fedora:35 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -625,6 +625,19 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk as sdk-plus
+
+# Install any host tools that we don't need to build the software above, but
+# that we want in the final SDK. This happens in a separate stage so we don't
+# have to rebuild Rust every time we add new packages.
+USER root
+RUN \
+  dnf -y install --setopt=install_weak_deps=False \
+    java-11-openjdk-devel maven-openjdk11 maven-local \
+    maven-clean-plugin maven-shade-plugin
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as toolchain-archive
 
 ARG ARCH
@@ -664,8 +677,9 @@ ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
 ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
 
 WORKDIR /
-# "sdk" has our C/C++ toolchain and kernel headers for both targets.
-COPY --from=sdk / /
+# "sdk-plus" has our C/C++ toolchain and kernel headers for both targets, and
+# any other host programs we want available for OS builds.
+COPY --from=sdk-plus / /
 
 # "sdk-musl-openssl" includes the musl C library and OpenSSL, plus headers.
 # We omit "sdk-gnu" because we expect to build glibc again for the target OS,
