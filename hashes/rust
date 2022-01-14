@@ -1,15 +1,15 @@
-# https://static.rust-lang.org/dist/rustc-1.56.1-src.tar.xz
-SHA512 (rustc-1.56.1-src.tar.xz) = 193468e211cde9ebc5f6e30b8e3733b79bd8710fe6dd45c7ed8d4392f91010d30466787afd4d0b2041cd7dd994924fee8ad111048824e248bd994959e55bf15f
-### See https://github.com/rust-lang/rust/blob/1.56.1/src/stage0.txt for what to use below. ###
-# https://static.rust-lang.org/dist/2021-09-09/rust-std-1.55.0-x86_64-unknown-linux-gnu.tar.xz
-SHA512 (rust-std-1.55.0-x86_64-unknown-linux-gnu.tar.xz) = 88832a54efe6591bb2191e5a43c81639d590b012f51d5e086bed66ac4fce51bb93f6104bfbbca87614dfbfba78a096c2cdd9ad194e44bb4d409530a8f929d905
-# https://static.rust-lang.org/dist/2021-09-09/rustc-1.55.0-x86_64-unknown-linux-gnu.tar.xz
-SHA512 (rustc-1.55.0-x86_64-unknown-linux-gnu.tar.xz) = 3e3d32327d465b33c026974c2b7509474733c387eef65518b7fb29bbee544848b37a79fd8d212ffea868a4f70b92180e7c3c92233d195ccabc1589b16409a96d
-# https://static.rust-lang.org/dist/2021-09-09/cargo-1.55.0-x86_64-unknown-linux-gnu.tar.xz
-SHA512 (cargo-1.55.0-x86_64-unknown-linux-gnu.tar.xz) = d2434d0f8bf9ee83c0484bd3f35c91d6ba296537ef83149fa20ec2b79c24c53d73aacbbf31a8ffe22003ab0555e231b16b3e31c72e2d37f9aa18b749818d9e96
-# https://static.rust-lang.org/dist/2021-09-09/rust-std-1.55.0-aarch64-unknown-linux-gnu.tar.xz
-SHA512 (rust-std-1.55.0-aarch64-unknown-linux-gnu.tar.xz) = 8e6a7626807623bae3d86d3ae38eab65f983e0cf7c6b3d56f0389f451ac7b861265ee421253c5146b68f83237a0ad230e0fe65e01e276c2078bf673eeaf4aff0
-# https://static.rust-lang.org/dist/2021-09-09/rustc-1.55.0-aarch64-unknown-linux-gnu.tar.xz
-SHA512 (rustc-1.55.0-aarch64-unknown-linux-gnu.tar.xz) = 88854d2b9313bc2f2844c41ac5f5eab2b17928b294b0bf2f94f6c1d60fbe7623baaad672a1fb619a28875c8fe9f535e963ba51b0de4eb1c557136a0d2cc78af8
-# https://static.rust-lang.org/dist/2021-09-09/cargo-1.55.0-aarch64-unknown-linux-gnu.tar.xz
-SHA512 (cargo-1.55.0-aarch64-unknown-linux-gnu.tar.xz) = f1533c8de34c4a2ad8050480bbf3764046b21e956f06163558604a4d5e3b6997a76aa12e0be5c63728a6129d7373c0986aa619e10730933e5f9f8e76aa70a32f
+# https://static.rust-lang.org/dist/rustc-1.58.0-src.tar.xz
+SHA512 (rustc-1.58.0-src.tar.xz) = 70104f4d3b474dcb9935200ef0503f29cb15f10d38ba8630e1dadbb384924dd9137fced647794699efe83ac88083e4ae5f45712f0e1c8bc0a6f8c23eecdb0aeb
+### See https://github.com/rust-lang/rust/blob/1.58.0/src/stage0.json for what to use below. ###
+# https://static.rust-lang.org/dist/2021-12-02/rust-std-1.57.0-x86_64-unknown-linux-gnu.tar.xz
+SHA512 (rust-std-1.57.0-x86_64-unknown-linux-gnu.tar.xz) = 1257ab3648d6569c827096253b60075b32ac3529e42fc68220cd0b83cecc2fda1a8187c716f81556069cd931d4a79cc4f8b7f7ea89cb8f0d1f244b41f0d4a15c
+# https://static.rust-lang.org/dist/2021-12-02/rustc-1.57.0-x86_64-unknown-linux-gnu.tar.xz
+SHA512 (rustc-1.57.0-x86_64-unknown-linux-gnu.tar.xz) = dca0cf813d42bec4f0b5395c7bc1e0f0049d987247120dcbc87b5234ae32178e1b95b5ae955ec99125ab9e88e8c60d2665becd971c43b30a25ef2c63fc6de1c1
+# https://static.rust-lang.org/dist/2021-12-02/cargo-1.57.0-x86_64-unknown-linux-gnu.tar.xz
+SHA512 (cargo-1.57.0-x86_64-unknown-linux-gnu.tar.xz) = ca84cfc9f0d52443aa41da1e18fe013d1c0412882e061b391d80b6a2fcc3c6858c923ee2dd53174c60c845fbd26523b62a9e1279b888bdc3c409702754d94557
+# https://static.rust-lang.org/dist/2021-12-02/rust-std-1.57.0-aarch64-unknown-linux-gnu.tar.xz
+SHA512 (rust-std-1.57.0-aarch64-unknown-linux-gnu.tar.xz) = 3977195413b1272f1364defadc444ccf6152410e4f926f6617052648e79bf9888df0a8a2415a75c224ef79a52c801ed91952017bf6659aa0d41a8cc59c9251a4
+# https://static.rust-lang.org/dist/2021-12-02/rustc-1.57.0-aarch64-unknown-linux-gnu.tar.xz
+SHA512 (rustc-1.57.0-aarch64-unknown-linux-gnu.tar.xz) = 3931771ad8e352c8d412193f69d6791c38c843b9435e79237e3968cd460a9b6cdb2c1b84ed576500017bc70e81624d3c120b4a452821a588d0af5a20d298f9b4
+# https://static.rust-lang.org/dist/2021-12-02/cargo-1.57.0-aarch64-unknown-linux-gnu.tar.xz
+SHA512 (cargo-1.57.0-aarch64-unknown-linux-gnu.tar.xz) = f99ac5d4ad6c8abb30116cb88f7eb6bd7e2e681f71b4a0345af992d32fa78b2acbd130bc41c581539153ebb9908f24e81dbfa12d8eca9c31e01ef1f3d1e6cf37

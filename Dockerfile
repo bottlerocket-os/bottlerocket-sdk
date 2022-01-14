@@ -370,7 +370,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.56.1"
+ARG RUSTVER="1.58.0"
 
 USER builder
 WORKDIR /home/builder
@@ -383,7 +383,7 @@ RUN \
 
 WORKDIR /home/builder/rust
 RUN \
-  dir=build/cache/$(awk '/^date:/ { print $2 }' src/stage0.txt); \
+  dir=build/cache/$(jq -r '.compiler.date' src/stage0.json); \
   mkdir -p $dir && mv ../*.xz $dir
 
 # For any architecture, we rely on two or more of Rust's native targets:
