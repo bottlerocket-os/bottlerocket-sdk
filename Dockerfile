@@ -10,7 +10,7 @@ RUN \
     cmake git meson perl-ExtUtils-MakeMaker python which \
     bc hostname intltool gperf kmod rsync wget openssl \
     dwarves elfutils-devel libcap-devel openssl-devel \
-    createrepo_c e2fsprogs gdisk \
+    createrepo_c e2fsprogs gdisk python3-jinja2 \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
     perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
     secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck && \
