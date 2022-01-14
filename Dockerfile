@@ -1,4 +1,4 @@
-FROM fedora:35 as base
+FROM public.ecr.aws/docker/library/fedora:35 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -22,7 +22,7 @@ COPY ./sdk-fetch /usr/local/bin
 
 # We expect our C cross-compiler to be used on other distros for building kernel
 # modules, so we build it with an older glibc for compatibility.
-FROM ubuntu:16.04 as compat
+FROM public.ecr.aws/docker/library/ubuntu:16.04 as compat
 RUN \
   apt-get update && \
   apt-get -y dist-upgrade && \
