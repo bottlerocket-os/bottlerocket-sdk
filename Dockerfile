@@ -10,10 +10,10 @@ RUN \
     cmake git meson perl-ExtUtils-MakeMaker python which \
     bc hostname intltool gperf kmod rsync wget openssl \
     dwarves elfutils-devel libcap-devel openssl-devel \
-    createrepo_c e2fsprogs gdisk grub2-tools.$(uname -m) \
+    createrepo_c e2fsprogs gdisk python3-jinja2 \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
     perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
-    secilc qemu-img glib2-devel rpcgen erofs-utils && \
+    secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck && \
   dnf clean all && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
@@ -370,7 +370,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.56.1"
+ARG RUSTVER="1.58.0"
 
 USER builder
 WORKDIR /home/builder
@@ -383,7 +383,7 @@ RUN \
 
 WORKDIR /home/builder/rust
 RUN \
-  dir=build/cache/$(awk '/^date:/ { print $2 }' src/stage0.txt); \
+  dir=build/cache/$(jq -r '.compiler.date' src/stage0.json); \
   mkdir -p $dir && mv ../*.xz $dir
 
 # For any architecture, we rely on two or more of Rust's native targets:
@@ -446,7 +446,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.16.10"
+ARG GOVER="1.16.13"
 
 USER root
 RUN dnf -y install golang
