@@ -442,6 +442,34 @@ ENV PATH="/usr/libexec/rust/bin:$PATH" LD_LIBRARY_PATH="/usr/libexec/rust/lib"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-libc as sdk-bootconfig
+
+USER root
+
+# TODO Use the kernel sources from buildroot once they're new enough and we
+# deprecate the 5.4 variants
+ARG KERNELVER="5.10.109"
+
+RUN \
+  mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
+  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/bootconfig
+
+USER builder
+WORKDIR /home/builder
+COPY ./hashes/kernel /home/builder/hashes
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  tar -xf linux-${KERNELVER}.tar.xz && rm linux-${KERNELVER}.tar.xz
+
+WORKDIR /home/builder/linux-${KERNELVER}
+RUN \
+  cp -p COPYING LICENSES/preferred/GPL-2.0 /usr/share/licenses/bootconfig
+RUN \
+  make -C tools/bootconfig && \
+  cp tools/bootconfig/bootconfig /usr/libexec/tools/bootconfig
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk-libc as sdk-go
 
 ARG ARCH
@@ -718,6 +746,10 @@ COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/shar
 # "sdk-govc" has the VMware govc tool and licenses.
 COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/govc
 COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi /usr/share/licenses/govmomi
+
+# "sdk-bootconfig" has the bootconfig tool
+COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
+COPY --chown=0:0 --from=sdk-bootconfig /usr/share/licenses/bootconfig /usr/share/licenses/bootconfig
 
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
