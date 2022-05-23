@@ -22,6 +22,9 @@ codegen-units-std = 1
 debuginfo-level-std = 2
 rpath = false
 
+[llvm]
+static-libstdcpp = false
+
 [install]
 prefix = "/usr/libexec/rust"
 sysconfdir = "/usr/libexec/rust/etc"
