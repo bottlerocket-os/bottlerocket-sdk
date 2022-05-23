@@ -307,7 +307,7 @@ fn write_attribution(
             let rel_path = entry.path().strip_prefix(scan_dir)?;
             let data = fs::read_to_string(entry.path())
                 .with_context(|| format!("failed to read {}", entry.path().display()))?;
-            let file_hash = hash(&data.as_bytes());
+            let file_hash = hash(data.as_bytes());
             files.insert(rel_path.to_owned(), (data, file_hash));
         }
     }
@@ -396,7 +396,7 @@ fn write_attribution(
         if let Some(stated_license) = stated_license {
             stated_license.to_string()
         } else {
-            licenses.sort();
+            licenses.sort_unstable();
             licenses.dedup();
             let expression = licenses.join(" AND ");
             eprintln!("  = {}", expression);
