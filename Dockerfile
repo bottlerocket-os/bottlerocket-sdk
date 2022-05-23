@@ -285,14 +285,15 @@ RUN \
 FROM sdk-musl as sdk-musl-openssl
 USER builder
 
-ARG OPENSSLVER="3.0.0"
+ARG OPENSSLVER="3.0.2"
+ARG OPENSSLREV="4"
 
 WORKDIR /home/builder
 COPY ./hashes/openssl ./hashes
 RUN \
   sdk-fetch hashes && \
-  rpm2cpio openssl-${OPENSSLVER}-*.src.rpm | cpio -idmv && \
-  tar xf openssl-${OPENSSLVER}-hobbled.tar.xz && \
+  rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
+  tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
   mv openssl-${OPENSSLVER} openssl && \
   for p in *.patch ; do \
     echo "applying ${p}" ; \
