@@ -475,7 +475,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.16.13"
+ARG GOVER="1.18.2"
 
 USER root
 RUN dnf -y install golang
@@ -502,16 +502,14 @@ ARG CGO_CXXFLAGS="${CXXFLAGS}"
 ARG CGO_LDFLAGS="${LDFLAGS}"
 
 WORKDIR /home/builder/sdk-go/src
-RUN ./make.bash --no-clean
+RUN ./make.bash
 
 # Build the standard library with and without PIE. Target binaries
 # should use PIE, but any host binaries generated during the build
 # might not.
 WORKDIR /home/builder/sdk-go
-ENV GOOS="${GOOS}" \
-  GOROOT="/home/builder/sdk-go" \
-  GOPATH="/home/builder/gopath" \
-  PATH="/home/builder/sdk-go/bin:${PATH}"
+ENV PATH="/home/builder/sdk-go/bin:${PATH}" \
+  GO111MODULE="auto"
 RUN \
   export GOARCH="${!GOARCH_ARCH}" ; \
   export CC="${TARGET}-gcc" ; \
@@ -521,8 +519,8 @@ RUN \
   export CXX_FOR_TARGET="${TARGET}-g++" ; \
   export CXX_FOR_${GOOS}_${GOARCH}="${TARGET}-g++" ; \
   export GOFLAGS="-mod=vendor" ; \
-  go install std && \
-  go install -buildmode=pie std
+  go install std cmd && \
+  go install -buildmode=pie std cmd
 
 RUN \
   install -p -m 0644 -Dt licenses LICENSE PATENTS
