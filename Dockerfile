@@ -622,9 +622,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ARG GOVMOMIVER="0.27.1"
-ARG GOVMOMISHORTCOMMIT="6209be5b"
-ARG GOVMOMIDATE="2021-10-15T15:35:40Z"
+ARG GOVMOMIVER="0.28.0"
+ARG GOVMOMISHORTCOMMIT="ac1eba30"
+ARG GOVMOMIDATE="2022-04-27T15:48:05Z"
 
 USER builder
 WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
@@ -640,7 +640,7 @@ RUN \
   go mod vendor && \
   /usr/libexec/tools/bottlerocket-license-scan \
     --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/govmomi \
+    --out-dir /usr/share/licenses/govmomi/vendor \
     go-vendor ./vendor
 
 RUN \
@@ -745,8 +745,8 @@ COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 
 # "sdk-govc" has the VMware govc tool and licenses.
-COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/govc
-COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi /usr/share/licenses/govmomi
+COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/licenses/govmomi/
 
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
