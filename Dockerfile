@@ -310,7 +310,7 @@ WORKDIR /home/builder/openssl
 RUN \
   NO_FEATURES="" && \
   for algorithm in \
-    aria bf blake2 camellia cast des dh dsa idea md4 \
+    aria bf blake2 camellia cast des dsa idea md4 \
     mdc2 ocb rc2 rc4 rmd160 scrypt seed siphash siv \
     sm2 sm3 sm4 whirlpool ; \
   do \
@@ -318,7 +318,7 @@ RUN \
   done && \
   for feature in \
     cmp cms deprecated dgram ec2m gost legacy padlockeng \
-    srp srtp ssl ssl-trace stdio tests ts ui-console \
+    srp srtp ssl ssl-trace tests ts ui-console \
     dtls dtls1{,-method} dtls1_2{,-method} \
     tls1{,-method} tls1_1{,-method} \
     ; \
