@@ -285,14 +285,15 @@ RUN \
 FROM sdk-musl as sdk-musl-openssl
 USER builder
 
-ARG OPENSSLVER="3.0.0"
+ARG OPENSSLVER="3.0.2"
+ARG OPENSSLREV="4"
 
 WORKDIR /home/builder
 COPY ./hashes/openssl ./hashes
 RUN \
   sdk-fetch hashes && \
-  rpm2cpio openssl-${OPENSSLVER}-*.src.rpm | cpio -idmv && \
-  tar xf openssl-${OPENSSLVER}-hobbled.tar.xz && \
+  rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
+  tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
   mv openssl-${OPENSSLVER} openssl && \
   for p in *.patch ; do \
     echo "applying ${p}" ; \
@@ -370,7 +371,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.58.1"
+ARG RUSTVER="1.61.0"
 
 USER builder
 WORKDIR /home/builder
@@ -416,9 +417,9 @@ RUN \
 RUN \
   for libc in gnu musl ; do \
     cp compiler/rustc_target/src/spec/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
-    sed -i -e '/let mut base = super::linux_'${libc}'_base::opts();/a base.vendor = "'${VENDOR}'".to_string();' \
+    sed -i -e '/let mut base = super::linux_'${libc}'_base::opts();/a base.vendor = "'${VENDOR}'".into();' \
       compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
-    sed -i -e '/ \.\.super::linux_'${libc}'_base::opts()/i vendor: "'${VENDOR}'".to_string(),' \
+    sed -i -e '/ \.\.super::linux_'${libc}'_base::opts()/i vendor: "'${VENDOR}'".into(),' \
       compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
     sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
       compiler/rustc_target/src/spec/mod.rs ; \
@@ -474,7 +475,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.16.13"
+ARG GOVER="1.18.2"
 
 USER root
 RUN dnf -y install golang
@@ -501,16 +502,14 @@ ARG CGO_CXXFLAGS="${CXXFLAGS}"
 ARG CGO_LDFLAGS="${LDFLAGS}"
 
 WORKDIR /home/builder/sdk-go/src
-RUN ./make.bash --no-clean
+RUN ./make.bash
 
 # Build the standard library with and without PIE. Target binaries
 # should use PIE, but any host binaries generated during the build
 # might not.
 WORKDIR /home/builder/sdk-go
-ENV GOOS="${GOOS}" \
-  GOROOT="/home/builder/sdk-go" \
-  GOPATH="/home/builder/gopath" \
-  PATH="/home/builder/sdk-go/bin:${PATH}"
+ENV PATH="/home/builder/sdk-go/bin:${PATH}" \
+  GO111MODULE="auto"
 RUN \
   export GOARCH="${!GOARCH_ARCH}" ; \
   export CC="${TARGET}-gcc" ; \
@@ -520,8 +519,8 @@ RUN \
   export CXX_FOR_TARGET="${TARGET}-g++" ; \
   export CXX_FOR_${GOOS}_${GOARCH}="${TARGET}-g++" ; \
   export GOFLAGS="-mod=vendor" ; \
-  go install std && \
-  go install -buildmode=pie std
+  go install std cmd && \
+  go install -buildmode=pie std cmd
 
 RUN \
   install -p -m 0644 -Dt licenses LICENSE PATENTS
@@ -621,9 +620,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ARG GOVMOMIVER="0.27.1"
-ARG GOVMOMISHORTCOMMIT="6209be5b"
-ARG GOVMOMIDATE="2021-10-15T15:35:40Z"
+ARG GOVMOMIVER="0.28.0"
+ARG GOVMOMISHORTCOMMIT="ac1eba30"
+ARG GOVMOMIDATE="2022-04-27T15:48:05Z"
 
 USER builder
 WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
@@ -639,7 +638,7 @@ RUN \
   go mod vendor && \
   /usr/libexec/tools/bottlerocket-license-scan \
     --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/govmomi \
+    --out-dir /usr/share/licenses/govmomi/vendor \
     go-vendor ./vendor
 
 RUN \
@@ -744,8 +743,8 @@ COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 
 # "sdk-govc" has the VMware govc tool and licenses.
-COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/govc
-COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi /usr/share/licenses/govmomi
+COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/licenses/govmomi/
 
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig

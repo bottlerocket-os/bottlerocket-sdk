@@ -1,2 +1,2 @@
-# https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/source/tree/Packages/o/openssl-3.0.0-1.fc36.src.rpm
-SHA512 (openssl-3.0.0-1.fc36.src.rpm) = f0aa28ee6c2810e595310221a610c58861ef75b2c2002f6f65f715b25927fb3359b8dd3b0da7ce1d4578bfe9990f42190b8f4e94ed009ac53220dc381417ddf8
+# https://dl.fedoraproject.org/pub/fedora/linux/releases/36/Everything/source/tree/Packages/o/openssl-3.0.2-4.fc36.src.rpm
+SHA512 (openssl-3.0.2-4.fc36.src.rpm) = 61d07f1d83e474d84bba10932d396d2099e5fe3424d0a7fc6af2617620b42e715c4d411093507868064156de7333b62c9425449ca83a12156fbe9992ea976b1b

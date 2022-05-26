@@ -158,17 +158,17 @@ where
                         .await
                         .context(format!(
                             "Failed to download file from '{}'",
-                            license_url.to_string()
+                            license_url
                         ))?
                         .text()
                         .await?;
                     let mut dest = File::create(&path).context(format!(
                         "Failed to create file '{}'",
-                        path.display().to_string()
+                        path.display()
                     ))?;
                     io::copy(&mut content.as_bytes(), &mut dest).context(format!(
                         "Failed to copy content to '{}'",
-                        path.display().to_string()
+                        path.display()
                     ))?;
                 }
                 _ => bail!(
@@ -277,7 +277,7 @@ mod test_fetch_license {
             licenses: vec![License {
                 license_url: Some(Url::parse(&format!(
                     "file://{}",
-                    tmplicense.path().display().to_string()
+                    tmplicense.path().display()
                 ))?),
                 path: String::from("license-file.txt"),
             }],
