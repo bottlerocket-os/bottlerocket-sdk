@@ -285,16 +285,17 @@ RUN \
 FROM sdk-musl as sdk-musl-openssl
 USER builder
 
-ARG OPENSSLVER="3.0.2"
-ARG OPENSSLREV="4"
+ARG OPENSSLVER="3.0.5"
+ARG OPENSSLREV="1"
 
 WORKDIR /home/builder
 COPY ./hashes/openssl ./hashes
 RUN \
   sdk-fetch hashes && \
   rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
-  tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
+  tar xf openssl-${OPENSSLVER}-hobbled.tar.xz && \
   mv openssl-${OPENSSLVER} openssl && \
+  rm 0053-Add-SHA1-probes.patch && \
   for p in *.patch ; do \
     echo "applying ${p}" ; \
     patch -d openssl -p1 < "${p}" ; \
