@@ -65,9 +65,7 @@ fn main() -> Result<()> {
     };
 
     let mut store = Store::new();
-    store
-        .load_spdx(&opt.spdx_data, false)
-        .map_err(|err| err.compat())?;
+    store.load_spdx(&opt.spdx_data, false)?;
     let scanner = ScanStrategy::new(&store)
         .confidence_threshold(0.93)
         .shallow_limit(1.0)
@@ -324,10 +322,7 @@ fn write_attribution(
     } else {
         let mut licenses = Vec::new();
         for (file, (data, file_hash)) in &files {
-            let containing = scanner
-                .scan(&TextData::new(data))
-                .map_err(|e| e.compat())?
-                .containing;
+            let containing = scanner.scan(&TextData::new(data))?.containing;
             if containing.is_empty() {
                 if non_license(file) {
                     eprintln!(
