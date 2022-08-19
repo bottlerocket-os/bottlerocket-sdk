@@ -533,7 +533,7 @@ RUN \
   mkdir -p /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan && \
   chown -R builder:builder /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan
 
-ARG SPDXVER="3.14"
+ARG SPDXVER="3.18"
 
 USER builder
 WORKDIR /home/builder/license-scan
