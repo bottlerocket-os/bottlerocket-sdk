@@ -371,7 +371,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.61.0"
+ARG RUSTVER="1.64.0"
 
 USER builder
 WORKDIR /home/builder
