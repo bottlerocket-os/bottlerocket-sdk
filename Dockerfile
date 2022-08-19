@@ -586,7 +586,7 @@ RUN \
   mkdir -p /usr/share/licenses/cargo-deny && \
   chown -R builder:builder /usr/share/licenses/cargo-deny
 
-ARG DENYVER="0.9.1"
+ARG DENYVER="0.12.2"
 
 USER builder
 WORKDIR /home/builder
