@@ -619,9 +619,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ARG GOVMOMIVER="0.28.0"
-ARG GOVMOMISHORTCOMMIT="ac1eba30"
-ARG GOVMOMIDATE="2022-04-27T15:48:05Z"
+ARG GOVMOMIVER="0.29.0"
+ARG GOVMOMISHORTCOMMIT="69ac849"
+ARG GOVMOMIDATE="2022-07-06T16:00:32Z"
 
 USER builder
 WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
