@@ -238,7 +238,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="12.0.1"
+ARG LLVMVER="14.0.6"
 
 USER builder
 WORKDIR /home/builder
