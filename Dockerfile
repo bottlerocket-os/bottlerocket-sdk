@@ -42,8 +42,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2021.02.3"
-ARG KVER="5.4.125"
+ARG BRVER="2022.05.2"
+ARG KVER="5.10.129"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -65,7 +65,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.4.125"
+ARG KVER="5.10.129"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -89,7 +89,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.4.125"
+ARG KVER="5.10.129"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -123,7 +123,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.4.125"
+ARG KVER="5.10.129"
 
 WORKDIR /
 
@@ -447,9 +447,7 @@ FROM sdk-libc as sdk-bootconfig
 
 USER root
 
-# TODO Use the kernel sources from buildroot once they're new enough and we
-# deprecate the 5.4 variants
-ARG KERNELVER="5.10.109"
+ARG KVER="5.10.129"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
@@ -460,9 +458,9 @@ WORKDIR /home/builder
 COPY ./hashes/kernel /home/builder/hashes
 RUN \
   sdk-fetch /home/builder/hashes && \
-  tar -xf linux-${KERNELVER}.tar.xz && rm linux-${KERNELVER}.tar.xz
+  tar -xf linux-${KVER}.tar.xz && rm linux-${KVER}.tar.xz
 
-WORKDIR /home/builder/linux-${KERNELVER}
+WORKDIR /home/builder/linux-${KVER}
 RUN \
   cp -p COPYING LICENSES/preferred/GPL-2.0 /usr/share/licenses/bootconfig
 RUN \

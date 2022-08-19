@@ -1,7 +1,7 @@
-From 2cfff7d885f549abdddb6cd5e2fc1e31bd438829 Mon Sep 17 00:00:00 2001
+From ed6f8ff7bc4d686d6cdd0df4725a820086c67f27 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:58:27 +0000
-Subject: [PATCH 4/5] build gcc with TOOLS_DIR and SYSROOT_DIR
+Subject: [PATCH] build gcc with TOOLS_DIR and SYSROOT_DIR
 
 Most of the changes here are to the second and final stage of our GCC
 build, so that the binaries are written to the new output path, and
@@ -28,10 +28,10 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  3 files changed, 46 insertions(+), 15 deletions(-)
 
 diff --git a/package/gcc/gcc-final/gcc-final.mk b/package/gcc/gcc-final/gcc-final.mk
-index 24d034b720..b0e59a8464 100644
+index aa883beb7b..0f61ff0df1 100644
 --- a/package/gcc/gcc-final/gcc-final.mk
 +++ b/package/gcc/gcc-final/gcc-final.mk
-@@ -45,9 +45,16 @@ define  HOST_GCC_FINAL_CONFIGURE_CMDS
+@@ -45,9 +45,16 @@ define HOST_GCC_FINAL_CONFIGURE_CMDS
  		LDFLAGS="$(HOST_LDFLAGS)" \
  		$(HOST_GCC_FINAL_CONF_ENV) \
  		./configure \
@@ -190,10 +190,10 @@ index f5bc6c5b77..9f34effd10 100644
  
  $(eval $(host-autotools-package))
 diff --git a/package/gcc/gcc.mk b/package/gcc/gcc.mk
-index 5e419f7ede..e42a78986f 100644
+index 128cf8421d..5066ed55c5 100644
 --- a/package/gcc/gcc.mk
 +++ b/package/gcc/gcc.mk
-@@ -72,12 +72,12 @@ HOST_GCC_COMMON_DEPENDENCIES = \
+@@ -69,12 +69,12 @@ HOST_GCC_COMMON_DEPENDENCIES = \
  
  HOST_GCC_COMMON_CONF_OPTS = \
  	--target=$(GNU_TARGET_NAME) \
@@ -208,5 +208,5 @@ index 5e419f7ede..e42a78986f 100644
  	--with-mpc=$(HOST_DIR) \
  	--with-mpfr=$(HOST_DIR) \
 -- 
-2.21.3
+2.36.1
 

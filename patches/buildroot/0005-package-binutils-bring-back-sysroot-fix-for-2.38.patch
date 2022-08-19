@@ -1,21 +1,21 @@
-From d1948dc041fa07b3befe55322adeb095c299ec42 Mon Sep 17 00:00:00 2001
+From 958d6b24f0eab8b00392cee3c973ac9bed5a027a Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Fri, 15 Mar 2019 18:32:49 +0000
-Subject: [PATCH 5/5] package/binutils: bring back sysroot fix for 2.35.2
+Subject: [PATCH] package/binutils: bring back sysroot fix for 2.38
 
 Signed-off-by: Ben Cressey <bcressey@amazon.com>
 ---
- .../9001-add-sysroot-fix-from-bug-3049.patch  | 51 +++++++++++++++++++
- 1 file changed, 51 insertions(+)
- create mode 100644 package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch
+ .../9001-add-sysroot-fix-from-bug-3049.patch  | 53 +++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+ create mode 100644 package/binutils/2.38/9001-add-sysroot-fix-from-bug-3049.patch
 
-diff --git a/package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch b/package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch
+diff --git a/package/binutils/2.38/9001-add-sysroot-fix-from-bug-3049.patch b/package/binutils/2.38/9001-add-sysroot-fix-from-bug-3049.patch
 new file mode 100644
-index 0000000000..9094fba8cb
+index 0000000000..7674fa3ad9
 --- /dev/null
-+++ b/package/binutils/2.35.2/9001-add-sysroot-fix-from-bug-3049.patch
-@@ -0,0 +1,51 @@
-+From 275729079c3e9c051c748396a1b91a556bae8729 Mon Sep 17 00:00:00 2001
++++ b/package/binutils/2.38/9001-add-sysroot-fix-from-bug-3049.patch
+@@ -0,0 +1,53 @@
++From dc372679aa22f0a5341891924ccfce1e64537fd6 Mon Sep 17 00:00:00 2001
 +From: Romain Naour <romain.naour@gmail.com>
 +Date: Fri, 25 Dec 2015 11:42:48 +0100
 +Subject: [PATCH] add sysroot fix from bug #3049
@@ -28,12 +28,14 @@ index 0000000000..9094fba8cb
 +Signed-off-by: Sven Rebhan <odinshorse@googlemail.com>
 +[Romain: rebase on top of 2.26]
 +Signed-off-by: Romain Naour <romain.naour@gmail.com>
++[bcressey: rebase on top of 2.38]
++Signed-off-by: Ben Cressey <bcressey@amazon.com>
 +---
 + ld/ldfile.c | 10 ++++++++--
 + 1 file changed, 8 insertions(+), 2 deletions(-)
 +
 +diff --git a/ld/ldfile.c b/ld/ldfile.c
-+index e39170b5..de6c46e7 100644
++index 731ae5f7aed..7fda926c03c 100644
 +--- a/ld/ldfile.c
 ++++ b/ld/ldfile.c
 +@@ -340,18 +340,24 @@ ldfile_open_file_search (const char *arch,
@@ -53,19 +55,19 @@ index 0000000000..9094fba8cb
 + 	  if (ldfile_try_open_bfd (name, entry))
 + 	    {
 + 	      entry->filename = name;
-++	      entry->flags.sysrooted = TRUE;
-+ 	      return TRUE;
+++	      entry->flags.sysrooted = true;
++ 	      return true;
 + 	    }
 + 	  free (name);
 + 	}
 +-      else if (ldfile_try_open_bfd (entry->filename, entry))
 ++      if (ldfile_try_open_bfd (entry->filename, entry))
-+ 	return TRUE;
++ 	return true;
 + 
 +       if (IS_ABSOLUTE_PATH (entry->filename))
 +-- 
-+2.21.3
++2.36.1
 +
 -- 
-2.21.3
+2.36.1
 
