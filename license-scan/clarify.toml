@@ -25,15 +25,15 @@ license-files = [
 ]
 
 [clarify.crossbeam-channel]
-expression = "(MIT OR Apache-2.0) AND BSD-2-Clause AND CC-BY-3.0"
+expression = "MIT OR Apache-2.0"
 license-files = [
     { path = "LICENSE-APACHE", hash = 0x24b54f4b },
     { path = "LICENSE-MIT", hash = 0xbc436f08 },
-    { path = "LICENSE-THIRD-PARTY", hash = 0xc6242648 },
+    { path = "LICENSE-THIRD-PARTY", hash = 0x847bf39 },
 ]
 
 [clarify.crossbeam-queue]
-expression = "(MIT OR Apache-2.0) AND BSD-2-Clause-FreeBSD"
+expression = "MIT OR Apache-2.0"
 license-files = [
     { path = "LICENSE-APACHE", hash = 0x24b54f4b },
     { path = "LICENSE-MIT", hash = 0xbc436f08 },
@@ -58,12 +58,36 @@ license-files = [
     { path = "src/unicode_tables/LICENSE-UNICODE", hash = 0xa7f28b93 },
 ]
 
+[clarify.unicode-ident]
+expression = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
+license-files = [
+    { path = "LICENSE-APACHE", hash = 0x24b54f4b },
+    { path = "LICENSE-MIT", hash = 0x386ca1bc },
+    { path = "LICENSE-UNICODE", hash = 0x9698cbbe },
+]
+
+[clarify.zstd-safe]
+# zstd-safe is MIT OR Apache-2.0
+expression = "MIT OR Apache-2.0"
+license-files = [
+    { path = "LICENSE", hash = 0x742401ae },
+    { path = "LICENSE.Apache-2.0", hash = 0x7b466be4 },
+    { path = "LICENSE.Mit", hash = 0xa237d234 },
+]
+skip-files = [
+    "zstd/COPYING", # copy of the GPLv2 we are not choosing from libzstd's dual license
+    "zstd/build/LICENSE", # empty file
+    "zstd/contrib/linux-kernel/COPYING", # kernel source and patches for adding zstd (?!), not used
+]
+
 [clarify.zstd-sys]
 # zstd-sys is MIT OR Apache-2.0
 # libzstd is GPL-2.0-only OR BSD-3-Clause (selecting BSD-3-Clause)
 expression = "(MIT OR Apache-2.0) AND BSD-3-Clause"
 license-files = [
-    { path = "LICENSE", hash = 0xa237d234 },
+    { path = "LICENSE", hash = 0x742401ae },
+    { path = "LICENSE.Apache-2.0", hash = 0x7b466be4 },
+    { path = "LICENSE.Mit", hash = 0xa237d234 },
     { path = "zstd/LICENSE", hash = 0x79cda15 },
 ]
 skip-files = [

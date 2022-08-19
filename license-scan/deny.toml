@@ -11,16 +11,15 @@ confidence-threshold = 0.93
 
 allow = [
     "Apache-2.0",
-    "BSD-2-Clause",
     "BSL-1.0",
     "MIT",
     "Unlicense",
     "Zlib",
 ]
 
-# FIXME: Remove this when a license is assigned for first-party packages
-[licenses.private]
-ignore = true
+exceptions = [
+    { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-DFS-2016"] },
+]
 
 [bans]
 # Deny multiple versions or wildcard dependencies.
