@@ -526,12 +526,27 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-rust as sdk-license-scan
+FROM sdk-rust as sdk-cargo
+USER builder
+
+# Cache crates.io index here to avoid repeated downloads if a build fails.
+RUN cargo install lazy_static ||:
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-rust as rust-sources
+
+# Copy the sources without clarify.toml or deny.toml, so that validation failures
+# don't require a full rebuild from source every time those files are modified.
+COPY license-scan /license-scan
+COPY license-tool /license-tool
 
 USER root
-RUN \
-  mkdir -p /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan && \
-  chown -R builder:builder /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan
+RUN rm /license-{scan,tool}/{clarify,deny}.toml
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-cargo as sdk-license-scan
 
 ARG SPDXVER="3.18"
 
@@ -543,49 +558,22 @@ RUN \
   tar xf license-list-data-${SPDXVER}.tar.gz license-list-data-${SPDXVER}/json/details && \
   rm license-list-data-${SPDXVER}.tar.gz && \
   mv license-list-data-${SPDXVER} license-list-data
-COPY license-scan /home/builder/license-scan
+
+COPY --from=rust-sources /license-scan /home/builder/license-scan
 RUN cargo build --release --locked
-RUN install -p -m 0755 target/release/bottlerocket-license-scan /usr/libexec/tools/
-RUN cp -r license-list-data/json/details /usr/libexec/tools/spdx-data
-COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-scan/
-# quine - scan the license tool itself for licenses
-RUN \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --clarify clarify.toml \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/bottlerocket-license-scan/vendor \
-    cargo --locked Cargo.toml
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-license-scan as sdk-license-tool
-
-USER root
-RUN \
-  mkdir -p /usr/libexec/tools /home/builder/license-tool /usr/share/licenses/bottlerocket-license-tool && \
-  chown -R builder:builder /usr/libexec/tools /home/builder/license-tool /usr/share/licenses/bottlerocket-license-tool
+FROM sdk-cargo as sdk-license-tool
 
 USER builder
 WORKDIR /home/builder/license-tool
-COPY license-tool /home/builder/license-tool
-COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-tool/
-RUN \
-  cargo build --release --locked && \
-  install -p -m 0755 target/release/bottlerocket-license-tool /usr/libexec/tools/ && \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --clarify clarify.toml \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/bottlerocket-license-tool/vendor \
-    cargo --locked Cargo.toml
+COPY --from=rust-sources license-tool .
+RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-license-scan as sdk-cargo-deny
-
-USER root
-RUN \
-  mkdir -p /usr/share/licenses/cargo-deny && \
-  chown -R builder:builder /usr/share/licenses/cargo-deny
+FROM sdk-cargo as sdk-cargo-deny
 
 ARG DENYVER="0.12.2"
 
@@ -599,16 +587,95 @@ RUN \
   mv cargo-deny-${DENYVER} cargo-deny
 
 WORKDIR /home/builder/cargo-deny
-COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny/
+RUN cargo build --release --locked
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-cargo as sdk-rust-tools
+
+# Bring it all back together and run license-scan and cargo-deny on everything.
+
+COPY --from=sdk-cargo-deny \
+  /home/builder/cargo-deny \
+  /home/builder/cargo-deny
+
+COPY --from=sdk-license-tool \
+  /home/builder/license-tool \
+  /home/builder/license-tool
+
+COPY --from=sdk-license-scan \
+  /home/builder/license-scan \
+  /home/builder/license-scan
+
+COPY --chown=0:0 --from=sdk-cargo-deny \
+  /home/builder/cargo-deny/target/release/cargo-deny \
+  /usr/libexec/tools/
+
+COPY --chown=0:0 --from=sdk-license-tool \
+  /home/builder/license-tool/target/release/bottlerocket-license-tool \
+  /usr/libexec/tools/
+
+COPY --chown=0:0 --from=sdk-license-scan \
+  /home/builder/license-scan/target/release/bottlerocket-license-scan \
+  /usr/libexec/tools/
+
+COPY --chown=0:0 --from=sdk-license-scan \
+  /home/builder/license-scan/license-list-data/json/details \
+  /usr/libexec/tools/spdx-data
+
+COPY --chown=1000:1000 \
+  LICENSE-APACHE LICENSE-MIT \
+  /usr/share/licenses/cargo-deny/
+
+COPY --chown=1000:1000 \
+  COPYRIGHT LICENSE-APACHE LICENSE-MIT \
+  /usr/share/licenses/bottlerocket-license-tool/
+
+COPY --chown=1000:1000 \
+  COPYRIGHT LICENSE-APACHE LICENSE-MIT \
+  /usr/share/licenses/bottlerocket-license-scan/
+
+WORKDIR /home/builder/cargo-deny
 COPY ./configs/cargo-deny/clarify.toml .
 RUN \
-  cargo build --release --locked && \
-  install -p -m 0755 target/release/cargo-deny /usr/libexec/tools/ && \
   /usr/libexec/tools/bottlerocket-license-scan \
     --clarify clarify.toml \
     --spdx-data /usr/libexec/tools/spdx-data \
     --out-dir /usr/share/licenses/cargo-deny/vendor \
     cargo --locked Cargo.toml
+
+COPY ./configs/cargo-deny/deny.toml .
+RUN \
+  /usr/libexec/tools/cargo-deny \
+    --all-features check --disable-fetch licenses bans sources
+
+WORKDIR /home/builder/license-tool
+COPY license-tool/clarify.toml .
+RUN \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/bottlerocket-license-tool/vendor \
+    cargo --locked Cargo.toml
+
+COPY license-tool/deny.toml .
+RUN \
+  /usr/libexec/tools/cargo-deny \
+    --all-features check --disable-fetch licenses bans sources
+
+WORKDIR /home/builder/license-scan
+COPY license-scan/clarify.toml .
+RUN \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/bottlerocket-license-scan/vendor \
+    cargo --locked Cargo.toml
+
+COPY license-scan/deny.toml .
+RUN \
+  /usr/libexec/tools/cargo-deny \
+    --all-features check --disable-fetch licenses bans sources
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -631,7 +698,7 @@ RUN \
   tar --strip-components=1 -xf govmomi-${GOVMOMIVER}.tar.gz && \
   rm govmomi-${GOVMOMIVER}.tar.gz
 
-COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
 RUN \
   cp -p LICENSE.txt /usr/share/licenses/govmomi && \
   go mod vendor && \
@@ -728,18 +795,11 @@ COPY --chown=0:0 --from=sdk-go \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go/
 
-# "sdk-license-scan" has our attribution generation tool.
-COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
-# quine - include the licenses for the license scan tool itself
-COPY --chown=0:0 --from=sdk-license-scan /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
-
-# "sdk-license-tool" has our license fetching tool.
-COPY --chown=0:0 --from=sdk-license-tool /usr/libexec/tools/ /usr/libexec/tools/
-COPY --chown=0:0 --from=sdk-license-tool /usr/share/licenses/bottlerocket-license-tool/ /usr/share/licenses/bottlerocket-license-tool/
-
-# "sdk-cargo-deny" has the cargo deny command and licenses.
-COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/
-COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
+# "sdk-rust-tools" has our attribution generation and license scan tools.
+COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-tool/ /usr/share/licenses/bottlerocket-license-tool/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 
 # "sdk-govc" has the VMware govc tool and licenses.
 COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/ /usr/libexec/tools/
