@@ -127,21 +127,21 @@ ARG KVER="5.4.125"
 
 WORKDIR /
 
-COPY --from=toolchain-gnu \
+COPY --chown=0:0 --from=toolchain-gnu \
   /home/builder/buildroot/output/${ARCH}-gnu/toolchain/ /
-COPY --from=toolchain-gnu \
+COPY --chown=0:0 --from=toolchain-gnu \
   /home/builder/buildroot/output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include/ \
   /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/include/
-COPY --from=toolchain-gnu \
+COPY --chown=0:0 --from=toolchain-gnu \
   /home/builder/buildroot/output/${ARCH}-gnu/build/licenses/ \
   /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
 
-COPY --from=toolchain-musl \
+COPY --chown=0:0 --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/toolchain/ /
-COPY --from=toolchain-musl \
+COPY --chown=0:0 --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include/ \
   /${ARCH}-bottlerocket-linux-musl/sys-root/usr/include/
-COPY --from=toolchain-musl \
+COPY --chown=0:0 --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/build/licenses/ \
   /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses/
 
@@ -356,8 +356,8 @@ ARG GNU_SYSROOT="/${GNU_TARGET}/sys-root"
 ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
 ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
 
-COPY --from=sdk-gnu ${GNU_SYSROOT}/ ${GNU_SYSROOT}/
-COPY --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+COPY --chown=0:0 --from=sdk-gnu ${GNU_SYSROOT}/ ${GNU_SYSROOT}/
+COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
