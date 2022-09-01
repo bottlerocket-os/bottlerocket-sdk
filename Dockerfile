@@ -13,7 +13,8 @@ RUN \
     createrepo_c e2fsprogs gdisk python3-jinja2 \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
     perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
-    secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck && \
+    secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck \
+    json-c-devel libcurl-devel p11-kit-devel && \
   dnf clean all && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
@@ -718,6 +719,78 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk as sdk-cpp
+
+ARG AWS_SDK_CPP_VER="1.9.332"
+
+USER builder
+WORKDIR /home/builder/aws-sdk-cpp-src
+COPY ./hashes/aws-sdk-cpp /home/builder/aws-sdk-cpp-src/hashes
+
+RUN \
+  sdk-fetch hashes && \
+  tar --strip-components=1 -xf aws-sdk-cpp-${AWS_SDK_CPP_VER}.tar.gz && \
+  rm aws-sdk-cpp-${AWS_SDK_CPP_VER}.tar.gz && \
+  install -p -m 0644 -D -t \
+    licenses/aws-sdk-cpp-${AWS_SDK_CPP_VER} \
+    LICENSE {LICENSE,NOTICE}.txt && \
+  tar -C crt/aws-crt-cpp --strip-components=1 -xf aws-crt-cpp.tar.gz && \
+  rm aws-crt-cpp.tar.gz && \
+  install -p -m 0644 -D -t \
+    licenses/aws-sdk-cpp-${AWS_SDK_CPP_VER}/crt \
+    crt/aws-crt-cpp/{LICENSE,NOTICE}
+
+RUN \
+  for tar in *.tar.gz ; do \
+    dir="${tar%%.*}" && \
+    tar -C crt/aws-crt-cpp/crt/${dir} --strip-components=1 -xf ${tar} && \
+    licenses="$(\
+      cd crt/aws-crt-cpp && \
+      find crt/${dir} -type f \
+        \( -iname '*LICENSE*' -o -iname '*NOTICE*' \) \
+        ! -iname '*.cpp' ! -iname '*.h' ! -iname '*.json' \
+        ! -iname '*.go' ! -iname '*.yml' ! -path '*tests*' )" && \
+    for license in ${licenses} ; do \
+      licensedir="licenses/aws-sdk-cpp-${AWS_SDK_CPP_VER}/${license%/*}" && \
+      mkdir -p "${licensedir}" && \
+      install -p -m 0644 "crt/aws-crt-cpp/${license}" "${licensedir}" ; \
+    done ; \
+  done && \
+  rm *.tar.gz
+
+WORKDIR /home/builder/aws-sdk-cpp-src/build
+RUN \
+  cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_ONLY=kms \
+    -DENABLE_TESTING=OFF \
+    -DCMAKE_INSTALL_PREFIX=/home/builder/aws-sdk-cpp \
+    -DBUILD_SHARED_LIBS=OFF && \
+  make && \
+  make install
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-cpp as sdk-aws-kms-pkcs11
+
+ARG AWS_KMS_PKCS11_VER="0.0.9"
+
+USER builder
+WORKDIR /home/builder/aws-kms-pkcs11
+COPY ./hashes/aws-kms-pkcs11 ./hashes
+RUN \
+  sdk-fetch hashes && \
+  tar --strip-components=1 -xf aws-kms-pkcs11-${AWS_KMS_PKCS11_VER}.tar.gz && \
+  rm aws-kms-pkcs11-${AWS_KMS_PKCS11_VER}.tar.gz
+
+ENV AWS_SDK_PATH="/home/builder/aws-sdk-cpp"
+RUN make
+
+USER root
+RUN make install
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as sdk-plus
 
 # Install any host tools that we don't need to build the software above, but
@@ -809,6 +882,35 @@ COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/license
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
 COPY --chown=0:0 --from=sdk-bootconfig /usr/share/licenses/bootconfig /usr/share/licenses/bootconfig
 
+# "sdk-aws-kms-pkcs11" has the PKCS#11 provider for an AWS KMS backend
+COPY --chown=0:0 --from=sdk-aws-kms-pkcs11 \
+  /usr/lib64/pkcs11/aws_kms_pkcs11.so \
+  /usr/lib64/pkcs11/
+
+COPY --chown=0:0 --from=sdk-aws-kms-pkcs11 \
+  /home/builder/aws-kms-pkcs11/LICENSE \
+  /usr/share/licenses/aws-kms-pkcs11/
+
+# Also include the licenses from the AWS SDK for C++, since those are
+# statically linked into the provider.
+COPY --chown=0:0 --from=sdk-cpp \
+  /home/builder/aws-sdk-cpp-src/licenses/ \
+  /usr/share/licenses/aws-kms-pkcs11/vendor/
+
+# Configure p11-kit to use the provider.
+COPY --chown=0:0 \
+  ./configs/aws-kms-pkcs11/aws-kms-pkcs11.module \
+  /etc/pkcs11/modules/
+
+# Configure gpg to use the provider.
+COPY --chown=0:0 \
+  ./configs/gnupg/gpg-agent.conf \
+  /etc/gnupg/gpg-agent.conf
+
+COPY --chown=0:0 \
+  ./configs/gnupg/gnupg-pkcs11-scd.conf \
+  /etc/gnupg-pkcs11-scd.conf
+
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
 RUN \
@@ -851,5 +953,11 @@ RUN chown builder:builder -R /home/builder
 
 USER builder
 RUN rpmdev-setuptree
+
+# Create an empty "certdb" for signing.
+WORKDIR /home/builder
+RUN \
+  mkdir .netscape && \
+  certutil -N --empty-password
 
 CMD ["/bin/bash"]
