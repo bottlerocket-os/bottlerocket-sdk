@@ -800,7 +800,9 @@ USER root
 RUN \
   dnf -y install --setopt=install_weak_deps=False \
     java-11-openjdk-devel maven-openjdk11 maven-local \
-    maven-clean-plugin maven-shade-plugin
+    maven-clean-plugin maven-shade-plugin \
+    efitools gnutls-utils gnupg-pkcs11-scd nss-tools \
+    openssl-pkcs11 pesign python3-virt-firmware sbsigntools
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
