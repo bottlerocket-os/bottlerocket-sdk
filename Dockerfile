@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/fedora:35 as base
+FROM public.ecr.aws/docker/library/fedora:36 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -13,7 +13,8 @@ RUN \
     createrepo_c e2fsprogs gdisk python3-jinja2 \
     kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
     perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
-    secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck && \
+    secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck \
+    json-c-devel libcurl-devel p11-kit-devel && \
   dnf clean all && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
@@ -42,8 +43,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2021.02.3"
-ARG KVER="5.4.125"
+ARG BRVER="2022.05.2"
+ARG KVER="5.10.129"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -65,7 +66,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.4.125"
+ARG KVER="5.10.129"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -89,7 +90,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.4.125"
+ARG KVER="5.10.129"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -123,25 +124,25 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.4.125"
+ARG KVER="5.10.129"
 
 WORKDIR /
 
-COPY --from=toolchain-gnu \
+COPY --chown=0:0 --from=toolchain-gnu \
   /home/builder/buildroot/output/${ARCH}-gnu/toolchain/ /
-COPY --from=toolchain-gnu \
+COPY --chown=0:0 --from=toolchain-gnu \
   /home/builder/buildroot/output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include/ \
   /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/include/
-COPY --from=toolchain-gnu \
+COPY --chown=0:0 --from=toolchain-gnu \
   /home/builder/buildroot/output/${ARCH}-gnu/build/licenses/ \
   /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
 
-COPY --from=toolchain-musl \
+COPY --chown=0:0 --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/toolchain/ /
-COPY --from=toolchain-musl \
+COPY --chown=0:0 --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include/ \
   /${ARCH}-bottlerocket-linux-musl/sys-root/usr/include/
-COPY --from=toolchain-musl \
+COPY --chown=0:0 --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/build/licenses/ \
   /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses/
 
@@ -151,7 +152,7 @@ COPY --from=toolchain-musl \
 FROM sdk as sdk-gnu
 USER builder
 
-ARG GLIBCVER="2.34"
+ARG GLIBCVER="2.36"
 
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
@@ -204,7 +205,7 @@ RUN make install
 FROM sdk as sdk-musl
 USER builder
 
-ARG MUSLVER="1.2.2"
+ARG MUSLVER="1.2.3"
 
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
@@ -238,7 +239,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="12.0.1"
+ARG LLVMVER="14.0.6"
 
 USER builder
 WORKDIR /home/builder
@@ -285,16 +286,17 @@ RUN \
 FROM sdk-musl as sdk-musl-openssl
 USER builder
 
-ARG OPENSSLVER="3.0.2"
-ARG OPENSSLREV="4"
+ARG OPENSSLVER="3.0.5"
+ARG OPENSSLREV="1"
 
 WORKDIR /home/builder
 COPY ./hashes/openssl ./hashes
 RUN \
   sdk-fetch hashes && \
   rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
-  tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
+  tar xf openssl-${OPENSSLVER}-hobbled.tar.xz && \
   mv openssl-${OPENSSLVER} openssl && \
+  rm 0053-Add-SHA1-probes.patch && \
   for p in *.patch ; do \
     echo "applying ${p}" ; \
     patch -d openssl -p1 < "${p}" ; \
@@ -356,8 +358,8 @@ ARG GNU_SYSROOT="/${GNU_TARGET}/sys-root"
 ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
 ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
 
-COPY --from=sdk-gnu ${GNU_SYSROOT}/ ${GNU_SYSROOT}/
-COPY --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+COPY --chown=0:0 --from=sdk-gnu ${GNU_SYSROOT}/ ${GNU_SYSROOT}/
+COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -371,7 +373,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.61.0"
+ARG RUSTVER="1.64.0"
 
 USER builder
 WORKDIR /home/builder
@@ -447,9 +449,7 @@ FROM sdk-libc as sdk-bootconfig
 
 USER root
 
-# TODO Use the kernel sources from buildroot once they're new enough and we
-# deprecate the 5.4 variants
-ARG KERNELVER="5.10.109"
+ARG KVER="5.10.129"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
@@ -460,9 +460,9 @@ WORKDIR /home/builder
 COPY ./hashes/kernel /home/builder/hashes
 RUN \
   sdk-fetch /home/builder/hashes && \
-  tar -xf linux-${KERNELVER}.tar.xz && rm linux-${KERNELVER}.tar.xz
+  tar -xf linux-${KVER}.tar.xz && rm linux-${KVER}.tar.xz
 
-WORKDIR /home/builder/linux-${KERNELVER}
+WORKDIR /home/builder/linux-${KVER}
 RUN \
   cp -p COPYING LICENSES/preferred/GPL-2.0 /usr/share/licenses/bootconfig
 RUN \
@@ -475,7 +475,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.18.2"
+ARG GOVER="1.19.1"
 
 USER root
 RUN dnf -y install golang
@@ -527,14 +527,29 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-rust as sdk-license-scan
+FROM sdk-rust as sdk-cargo
+USER builder
+
+# Cache crates.io index here to avoid repeated downloads if a build fails.
+RUN cargo install lazy_static ||:
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-rust as rust-sources
+
+# Copy the sources without clarify.toml or deny.toml, so that validation failures
+# don't require a full rebuild from source every time those files are modified.
+COPY license-scan /license-scan
+COPY license-tool /license-tool
 
 USER root
-RUN \
-  mkdir -p /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan && \
-  chown -R builder:builder /usr/libexec/tools /home/builder/license-scan /usr/share/licenses/bottlerocket-license-scan
+RUN rm /license-{scan,tool}/{clarify,deny}.toml
 
-ARG SPDXVER="3.14"
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-cargo as sdk-license-scan
+
+ARG SPDXVER="3.18"
 
 USER builder
 WORKDIR /home/builder/license-scan
@@ -544,51 +559,24 @@ RUN \
   tar xf license-list-data-${SPDXVER}.tar.gz license-list-data-${SPDXVER}/json/details && \
   rm license-list-data-${SPDXVER}.tar.gz && \
   mv license-list-data-${SPDXVER} license-list-data
-COPY license-scan /home/builder/license-scan
+
+COPY --from=rust-sources /license-scan /home/builder/license-scan
 RUN cargo build --release --locked
-RUN install -p -m 0755 target/release/bottlerocket-license-scan /usr/libexec/tools/
-RUN cp -r license-list-data/json/details /usr/libexec/tools/spdx-data
-COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-scan/
-# quine - scan the license tool itself for licenses
-RUN \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --clarify clarify.toml \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/bottlerocket-license-scan/vendor \
-    cargo --locked Cargo.toml
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-license-scan as sdk-license-tool
-
-USER root
-RUN \
-  mkdir -p /usr/libexec/tools /home/builder/license-tool /usr/share/licenses/bottlerocket-license-tool && \
-  chown -R builder:builder /usr/libexec/tools /home/builder/license-tool /usr/share/licenses/bottlerocket-license-tool
+FROM sdk-cargo as sdk-license-tool
 
 USER builder
 WORKDIR /home/builder/license-tool
-COPY license-tool /home/builder/license-tool
-COPY COPYRIGHT LICENSE-APACHE LICENSE-MIT /usr/share/licenses/bottlerocket-license-tool/
-RUN \
-  cargo build --release --locked && \
-  install -p -m 0755 target/release/bottlerocket-license-tool /usr/libexec/tools/ && \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --clarify clarify.toml \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/bottlerocket-license-tool/vendor \
-    cargo --locked Cargo.toml
+COPY --from=rust-sources license-tool .
+RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-license-scan as sdk-cargo-deny
+FROM sdk-cargo as sdk-cargo-deny
 
-USER root
-RUN \
-  mkdir -p /usr/share/licenses/cargo-deny && \
-  chown -R builder:builder /usr/share/licenses/cargo-deny
-
-ARG DENYVER="0.9.1"
+ARG DENYVER="0.12.2"
 
 USER builder
 WORKDIR /home/builder
@@ -600,16 +588,95 @@ RUN \
   mv cargo-deny-${DENYVER} cargo-deny
 
 WORKDIR /home/builder/cargo-deny
-COPY LICENSE-APACHE LICENSE-MIT /usr/share/licenses/cargo-deny/
+RUN cargo build --release --locked
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-cargo as sdk-rust-tools
+
+# Bring it all back together and run license-scan and cargo-deny on everything.
+
+COPY --from=sdk-cargo-deny \
+  /home/builder/cargo-deny \
+  /home/builder/cargo-deny
+
+COPY --from=sdk-license-tool \
+  /home/builder/license-tool \
+  /home/builder/license-tool
+
+COPY --from=sdk-license-scan \
+  /home/builder/license-scan \
+  /home/builder/license-scan
+
+COPY --chown=0:0 --from=sdk-cargo-deny \
+  /home/builder/cargo-deny/target/release/cargo-deny \
+  /usr/libexec/tools/
+
+COPY --chown=0:0 --from=sdk-license-tool \
+  /home/builder/license-tool/target/release/bottlerocket-license-tool \
+  /usr/libexec/tools/
+
+COPY --chown=0:0 --from=sdk-license-scan \
+  /home/builder/license-scan/target/release/bottlerocket-license-scan \
+  /usr/libexec/tools/
+
+COPY --chown=0:0 --from=sdk-license-scan \
+  /home/builder/license-scan/license-list-data/json/details \
+  /usr/libexec/tools/spdx-data
+
+COPY --chown=1000:1000 \
+  LICENSE-APACHE LICENSE-MIT \
+  /usr/share/licenses/cargo-deny/
+
+COPY --chown=1000:1000 \
+  COPYRIGHT LICENSE-APACHE LICENSE-MIT \
+  /usr/share/licenses/bottlerocket-license-tool/
+
+COPY --chown=1000:1000 \
+  COPYRIGHT LICENSE-APACHE LICENSE-MIT \
+  /usr/share/licenses/bottlerocket-license-scan/
+
+WORKDIR /home/builder/cargo-deny
 COPY ./configs/cargo-deny/clarify.toml .
 RUN \
-  cargo build --release --locked && \
-  install -p -m 0755 target/release/cargo-deny /usr/libexec/tools/ && \
   /usr/libexec/tools/bottlerocket-license-scan \
     --clarify clarify.toml \
     --spdx-data /usr/libexec/tools/spdx-data \
     --out-dir /usr/share/licenses/cargo-deny/vendor \
     cargo --locked Cargo.toml
+
+COPY ./configs/cargo-deny/deny.toml .
+RUN \
+  /usr/libexec/tools/cargo-deny \
+    --all-features check --disable-fetch licenses bans sources
+
+WORKDIR /home/builder/license-tool
+COPY license-tool/clarify.toml .
+RUN \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/bottlerocket-license-tool/vendor \
+    cargo --locked Cargo.toml
+
+COPY license-tool/deny.toml .
+RUN \
+  /usr/libexec/tools/cargo-deny \
+    --all-features check --disable-fetch licenses bans sources
+
+WORKDIR /home/builder/license-scan
+COPY license-scan/clarify.toml .
+RUN \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/bottlerocket-license-scan/vendor \
+    cargo --locked Cargo.toml
+
+COPY license-scan/deny.toml .
+RUN \
+  /usr/libexec/tools/cargo-deny \
+    --all-features check --disable-fetch licenses bans sources
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -620,9 +687,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ARG GOVMOMIVER="0.28.0"
-ARG GOVMOMISHORTCOMMIT="ac1eba30"
-ARG GOVMOMIDATE="2022-04-27T15:48:05Z"
+ARG GOVMOMIVER="0.29.0"
+ARG GOVMOMISHORTCOMMIT="69ac849"
+ARG GOVMOMIDATE="2022-07-06T16:00:32Z"
 
 USER builder
 WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
@@ -632,7 +699,7 @@ RUN \
   tar --strip-components=1 -xf govmomi-${GOVMOMIVER}.tar.gz && \
   rm govmomi-${GOVMOMIVER}.tar.gz
 
-COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
 RUN \
   cp -p LICENSE.txt /usr/share/licenses/govmomi && \
   go mod vendor && \
@@ -652,6 +719,92 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk as sdk-cpp
+
+ARG AWS_SDK_CPP_VER="1.9.332"
+
+USER builder
+WORKDIR /home/builder/aws-sdk-cpp-src
+COPY ./hashes/aws-sdk-cpp /home/builder/aws-sdk-cpp-src/hashes
+
+RUN \
+  sdk-fetch hashes && \
+  tar --strip-components=1 -xf aws-sdk-cpp-${AWS_SDK_CPP_VER}.tar.gz && \
+  rm aws-sdk-cpp-${AWS_SDK_CPP_VER}.tar.gz && \
+  install -p -m 0644 -D -t \
+    licenses/aws-sdk-cpp-${AWS_SDK_CPP_VER} \
+    LICENSE {LICENSE,NOTICE}.txt && \
+  tar -C crt/aws-crt-cpp --strip-components=1 -xf aws-crt-cpp.tar.gz && \
+  rm aws-crt-cpp.tar.gz && \
+  install -p -m 0644 -D -t \
+    licenses/aws-sdk-cpp-${AWS_SDK_CPP_VER}/crt \
+    crt/aws-crt-cpp/{LICENSE,NOTICE}
+
+RUN \
+  for tar in *.tar.gz ; do \
+    dir="${tar%%.*}" && \
+    tar -C crt/aws-crt-cpp/crt/${dir} --strip-components=1 -xf ${tar} && \
+    licenses="$(\
+      cd crt/aws-crt-cpp && \
+      find crt/${dir} -type f \
+        \( -iname '*LICENSE*' -o -iname '*NOTICE*' \) \
+        ! -iname '*.cpp' ! -iname '*.h' ! -iname '*.json' \
+        ! -iname '*.go' ! -iname '*.yml' ! -path '*tests*' )" && \
+    for license in ${licenses} ; do \
+      licensedir="licenses/aws-sdk-cpp-${AWS_SDK_CPP_VER}/${license%/*}" && \
+      mkdir -p "${licensedir}" && \
+      install -p -m 0644 "crt/aws-crt-cpp/${license}" "${licensedir}" ; \
+    done ; \
+  done && \
+  rm *.tar.gz
+
+WORKDIR /home/builder/aws-sdk-cpp-src/build
+RUN \
+  cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_ONLY=kms \
+    -DENABLE_TESTING=OFF \
+    -DCMAKE_INSTALL_PREFIX=/home/builder/aws-sdk-cpp \
+    -DBUILD_SHARED_LIBS=OFF && \
+  make && \
+  make install
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-cpp as sdk-aws-kms-pkcs11
+
+ARG AWS_KMS_PKCS11_VER="0.0.9"
+
+USER builder
+WORKDIR /home/builder/aws-kms-pkcs11
+COPY ./hashes/aws-kms-pkcs11 ./hashes
+RUN \
+  sdk-fetch hashes && \
+  tar --strip-components=1 -xf aws-kms-pkcs11-${AWS_KMS_PKCS11_VER}.tar.gz && \
+  rm aws-kms-pkcs11-${AWS_KMS_PKCS11_VER}.tar.gz
+
+ENV AWS_SDK_PATH="/home/builder/aws-sdk-cpp"
+RUN make
+
+USER root
+RUN make install
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk as sdk-e2fsprogs
+
+ARG E2FSPROGS_VER="1.46.5"
+
+USER builder
+WORKDIR /home/builder
+COPY ./hashes/e2fsprogs /home/builder/hashes
+RUN \
+  sdk-fetch hashes && \
+  tar --strip-components=1 -xf e2fsprogs-${E2FSPROGS_VER}.tar.xz && \
+  rm e2fsprogs-${E2FSPROGS_VER}.tar.xz
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as sdk-plus
 
 # Install any host tools that we don't need to build the software above, but
@@ -661,7 +814,9 @@ USER root
 RUN \
   dnf -y install --setopt=install_weak_deps=False \
     java-11-openjdk-devel maven-openjdk11 maven-local \
-    maven-clean-plugin maven-shade-plugin
+    maven-clean-plugin maven-shade-plugin \
+    efitools gnutls-utils gnupg-pkcs11-scd nss-tools \
+    openssl-pkcs11 pesign python3-virt-firmware sbsigntools
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -729,18 +884,11 @@ COPY --chown=0:0 --from=sdk-go \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go/
 
-# "sdk-license-scan" has our attribution generation tool.
-COPY --chown=0:0 --from=sdk-license-scan /usr/libexec/tools/ /usr/libexec/tools/
-# quine - include the licenses for the license scan tool itself
-COPY --chown=0:0 --from=sdk-license-scan /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
-
-# "sdk-license-tool" has our license fetching tool.
-COPY --chown=0:0 --from=sdk-license-tool /usr/libexec/tools/ /usr/libexec/tools/
-COPY --chown=0:0 --from=sdk-license-tool /usr/share/licenses/bottlerocket-license-tool/ /usr/share/licenses/bottlerocket-license-tool/
-
-# "sdk-cargo-deny" has the cargo deny command and licenses.
-COPY --chown=0:0 --from=sdk-cargo-deny /usr/libexec/tools/ /usr/libexec/tools/
-COPY --chown=0:0 --from=sdk-cargo-deny /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
+# "sdk-rust-tools" has our attribution generation and license scan tools.
+COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-tool/ /usr/share/licenses/bottlerocket-license-tool/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 
 # "sdk-govc" has the VMware govc tool and licenses.
 COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/ /usr/libexec/tools/
@@ -749,6 +897,44 @@ COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/license
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
 COPY --chown=0:0 --from=sdk-bootconfig /usr/share/licenses/bootconfig /usr/share/licenses/bootconfig
+
+# "sdk-aws-kms-pkcs11" has the PKCS#11 provider for an AWS KMS backend
+COPY --chown=0:0 --from=sdk-aws-kms-pkcs11 \
+  /usr/lib64/pkcs11/aws_kms_pkcs11.so \
+  /usr/lib64/pkcs11/
+
+COPY --chown=0:0 --from=sdk-aws-kms-pkcs11 \
+  /home/builder/aws-kms-pkcs11/LICENSE \
+  /usr/share/licenses/aws-kms-pkcs11/
+
+# Also include the licenses from the AWS SDK for C++, since those are
+# statically linked into the provider.
+COPY --chown=0:0 --from=sdk-cpp \
+  /home/builder/aws-sdk-cpp-src/licenses/ \
+  /usr/share/licenses/aws-kms-pkcs11/vendor/
+
+# Configure p11-kit to use the provider.
+COPY --chown=0:0 \
+  ./configs/aws-kms-pkcs11/aws-kms-pkcs11.module \
+  /etc/pkcs11/modules/
+
+# Configure gpg to use the provider.
+COPY --chown=0:0 \
+  ./configs/gnupg/gpg-agent.conf \
+  /etc/gnupg/gpg-agent.conf
+
+COPY --chown=0:0 \
+  ./configs/gnupg/gnupg-pkcs11-scd.conf \
+  /etc/gnupg-pkcs11-scd.conf
+
+# "sdk-e2fsprogs" has the dir2fs tool
+COPY --chown=0:0 --from=sdk-e2fsprogs \
+  /home/builder/contrib/dir2fs \
+  /usr/local/bin/dir2fs
+
+COPY --chown=0:0 --from=sdk-e2fsprogs \
+  /home/builder/NOTICE \
+  /usr/share/licenses/dir2fs/
 
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
@@ -792,5 +978,11 @@ RUN chown builder:builder -R /home/builder
 
 USER builder
 RUN rpmdev-setuptree
+
+# Create an empty "certdb" for signing.
+WORKDIR /home/builder
+RUN \
+  mkdir .netscape && \
+  certutil -N --empty-password
 
 CMD ["/bin/bash"]

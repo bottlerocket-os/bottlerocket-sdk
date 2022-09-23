@@ -1,0 +1,2 @@
+module: /usr/lib64/pkcs11/aws_kms_pkcs11.so
+critical: no

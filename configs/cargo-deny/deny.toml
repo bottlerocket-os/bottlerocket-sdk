@@ -11,6 +11,7 @@ confidence-threshold = 0.93
 
 allow = [
     "Apache-2.0",
+    "BSD-3-Clause",
     "BSL-1.0",
     "MIT",
     "Unlicense",
@@ -18,6 +19,11 @@ allow = [
 ]
 
 exceptions = [
+    { name = "bitmaps", allow = ["MPL-2.0"], version = "*" },
+    { name = "im-rc", allow = ["MPL-2.0"], version = "*" },
+    { name = "sized-chunks", allow = ["MPL-2.0"], version = "*" },
+    { name = "smartstring", allow = ["MPL-2.0"], version = "*" },
+    { name = "target-lexicon", allow = ["Apache-2.0 WITH LLVM-exception"] },
     { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-DFS-2016"] },
 ]
 
@@ -25,6 +31,12 @@ exceptions = [
 # Deny multiple versions or wildcard dependencies.
 multiple-versions = "deny"
 wildcards = "deny"
+
+skip = [
+    # newer version used by cargo
+    # older version used by crypto-hash
+    { name = "hex", version = "0.3.2" },
+]
 
 [sources]
 # Deny crates from unknown registries or git repositories.

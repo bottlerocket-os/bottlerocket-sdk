@@ -15,6 +15,15 @@ license-files = [
     { path = "src/libbacktrace/LICENSE", hash = 0x0ce09262 },
 ]
 
+[clarify.bstr]
+expression = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
+license-files = [
+    { path = "COPYING", hash = 0x28398560 },
+    { path = "LICENSE-APACHE", hash = 0x24b54f4b },
+    { path = "LICENSE-MIT", hash = 0x462dee44 },
+    { path = "src/unicode/data/LICENSE-UNICODE", hash = 0x70f7339 },
+]
+
 [clarify.cargo-deny]
 expression = "(MIT OR Apache-2.0)"
 license-files = [
@@ -28,19 +37,25 @@ skip-files = [
 ]
 
 [clarify.crossbeam-channel]
-expression = "(MIT OR Apache-2.0) AND BSD-2-Clause AND CC-BY-3.0"
+expression = "MIT OR Apache-2.0"
 license-files = [
     { path = "LICENSE-APACHE", hash = 0x24b54f4b },
     { path = "LICENSE-MIT", hash = 0xbc436f08 },
-    { path = "LICENSE-THIRD-PARTY", hash = 0xc6242648 },
+    { path = "LICENSE-THIRD-PARTY", hash = 0x847bf39 },
 ]
 
 [clarify.crossbeam-queue]
-expression = "(MIT OR Apache-2.0) AND BSD-2-Clause-FreeBSD"
+expression = "MIT OR Apache-2.0"
 license-files = [
     { path = "LICENSE-APACHE", hash = 0x24b54f4b },
     { path = "LICENSE-MIT", hash = 0xbc436f08 },
-    { path = "LICENSE-THIRD-PARTY", hash = 0x7e40bc60 },
+]
+
+[clarify.curl-sys]
+expression = "MIT AND curl"
+license-files = [
+    { path = "LICENSE", hash = 0x67cbb970 },
+    { path = "curl/COPYING", hash = 0xc7288f20 },
 ]
 
 [clarify.libgit2-sys]
@@ -48,7 +63,7 @@ expression = "(MIT OR Apache-2.0) AND Zlib"
 license-files = [
     { path = "LICENSE-APACHE", hash = 0x24b54f4b },
     { path = "LICENSE-MIT", hash = 0x9374b940 },
-    { path = "libgit2/COPYING", hash = 0x6ad47cc8},
+    { path = "libgit2/COPYING", hash = 0x5ea84cb7 },
     { path = "libgit2/deps/http-parser/COPYING", hash = 0x81cd6118 },
     { path = "libgit2/deps/pcre/COPYING", hash = 0x30b9f959 },
     { path = "libgit2/deps/pcre/LICENCE", hash = 0xe7b944da },
@@ -62,10 +77,28 @@ skip-files = [
     "libgit2/examples/COPYING",
 ]
 
+[clarify.libnghttp2-sys]
+expression = "MIT OR Apache-2.0"
+license-files = [
+    { path = "LICENSE-APACHE", hash = 0x24b54f4b },
+    { path = "LICENSE-MIT", hash = 0x9374b940 },
+    { path = "nghttp2/COPYING", hash = 0xd456dbc2 },
+    { path = "nghttp2/third-party/llhttp/LICENSE-MIT", hash = 0x42c2e51c },
+    { path = "nghttp2/third-party/mruby/LICENSE", hash = 0xfbb3f1af },
+    { path = "nghttp2/third-party/neverbleed/LICENSE", hash = 0x85e8645b },
+    { path = "nghttp2/third-party/url-parser/LICENSE-MIT", hash = 0x257c7497 },
+]
+skip-files = [
+    # ignore placeholder file that just says "See COPYING"
+    "nghttp2/LICENSE",
+    # we aren't distributing the documentation
+    "nghttp2/doc/_exts/rubydomain/LICENSE.rubydomain",
+]
+
 [clarify.libssh2-sys]
 expression = "(MIT OR Apache-2.0) AND BSD-3-Clause"
 license-files = [
-    { path = "libssh2/COPYING", hash = 0xd8679249 },
+    { path = "libssh2/COPYING", hash = 0x557b1c71 },
 ]
 
 [clarify.libz-sys]
@@ -88,6 +121,14 @@ skip-files = [
     "openssl/external/perl/Text-Template-1.46/COPYING"
 ]
 
+[clarify.opener]
+expression = "MIT OR Apache-2.0"
+license-files = [
+    { path = "LICENSE-APACHE", hash = 0xe11aded0 },
+    { path = "LICENSE-MIT", hash = 0x6427cfb9 },
+    { path = "LICENSE-THIRD-PARTY", hash = 0xcf4d856 },
+]
+
 [clarify.regex]
 expression = "MIT OR Apache-2.0"
 license-files = [
@@ -98,6 +139,18 @@ skip-files = [
     "src/testdata/LICENSE", # we aren't using the test data
 ]
 
+[clarify.regex-automata]
+expression = "Unlicense OR MIT"
+license-files = [
+    { path = "COPYING", hash = 0x969f37d8 },
+    { path = "LICENSE-MIT", hash = 0x616d8a83 },
+    { path = "UNLICENSE", hash = 0x87b84020 },
+]
+skip-files = [
+    "data/fowler-tests/LICENSE", # we aren't using the test data
+    "data/tests/fowler/LICENSE",
+]
+
 [clarify.regex-syntax]
 expression = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
 license-files = [
@@ -106,12 +159,193 @@ license-files = [
     { path = "src/unicode_tables/LICENSE-UNICODE", hash = 0xa7f28b93 },
 ]
 
+[clarify.spdx]
+expression = "MIT OR Apache-2.0"
+license-files = [
+    { path = "LICENSE-APACHE", hash = 0x4fccb6b7 },
+    { path = "LICENSE-MIT", hash = 0xa502ee8a },
+]
+# skip files that contain the text of licenses
+skip-files = [
+    "src/text/exceptions/GPL-3.0-linking-exception",
+    "src/text/exceptions/GPL-3.0-linking-source-exception",
+    "src/text/exceptions/GPL-CC-1.0",
+    "src/text/exceptions/LGPL-3.0-linking-exception",
+    "src/text/licenses/AGPL-1.0",
+    "src/text/licenses/AGPL-1.0-only",
+    "src/text/licenses/AGPL-1.0-or-later",
+    "src/text/licenses/AGPL-3.0",
+    "src/text/licenses/AGPL-3.0-only",
+    "src/text/licenses/AGPL-3.0-or-later",
+    "src/text/licenses/BSD-1-Clause",
+    "src/text/licenses/BSD-2-Clause",
+    "src/text/licenses/BSD-2-Clause-FreeBSD",
+    "src/text/licenses/BSD-2-Clause-NetBSD",
+    "src/text/licenses/BSD-2-Clause-Patent",
+    "src/text/licenses/BSD-2-Clause-Views",
+    "src/text/licenses/BSD-3-Clause",
+    "src/text/licenses/BSD-3-Clause-Attribution",
+    "src/text/licenses/BSD-3-Clause-Clear",
+    "src/text/licenses/BSD-3-Clause-LBNL",
+    "src/text/licenses/BSD-3-Clause-Modification",
+    "src/text/licenses/BSD-3-Clause-No-Military-License",
+    "src/text/licenses/BSD-3-Clause-No-Nuclear-License",
+    "src/text/licenses/BSD-3-Clause-No-Nuclear-License-2014",
+    "src/text/licenses/BSD-3-Clause-No-Nuclear-Warranty",
+    "src/text/licenses/BSD-3-Clause-Open-MPI",
+    "src/text/licenses/BSD-4-Clause",
+    "src/text/licenses/BSD-4-Clause-Shortened",
+    "src/text/licenses/BSD-4-Clause-UC",
+    "src/text/licenses/CC-BY-1.0",
+    "src/text/licenses/CC-BY-2.0",
+    "src/text/licenses/CC-BY-2.5",
+    "src/text/licenses/CC-BY-2.5-AU",
+    "src/text/licenses/CC-BY-3.0",
+    "src/text/licenses/CC-BY-3.0-AT",
+    "src/text/licenses/CC-BY-3.0-DE",
+    "src/text/licenses/CC-BY-3.0-NL",
+    "src/text/licenses/CC-BY-3.0-US",
+    "src/text/licenses/CC-BY-4.0",
+    "src/text/licenses/CC-BY-NC-1.0",
+    "src/text/licenses/CC-BY-NC-2.0",
+    "src/text/licenses/CC-BY-NC-2.5",
+    "src/text/licenses/CC-BY-NC-3.0",
+    "src/text/licenses/CC-BY-NC-3.0-DE",
+    "src/text/licenses/CC-BY-NC-4.0",
+    "src/text/licenses/CC-BY-NC-ND-1.0",
+    "src/text/licenses/CC-BY-NC-ND-2.0",
+    "src/text/licenses/CC-BY-NC-ND-2.5",
+    "src/text/licenses/CC-BY-NC-ND-3.0",
+    "src/text/licenses/CC-BY-NC-ND-3.0-DE",
+    "src/text/licenses/CC-BY-NC-ND-3.0-IGO",
+    "src/text/licenses/CC-BY-NC-ND-4.0",
+    "src/text/licenses/CC-BY-NC-SA-1.0",
+    "src/text/licenses/CC-BY-NC-SA-2.0",
+    "src/text/licenses/CC-BY-NC-SA-2.0-FR",
+    "src/text/licenses/CC-BY-NC-SA-2.0-UK",
+    "src/text/licenses/CC-BY-NC-SA-2.5",
+    "src/text/licenses/CC-BY-NC-SA-3.0",
+    "src/text/licenses/CC-BY-NC-SA-3.0-DE",
+    "src/text/licenses/CC-BY-NC-SA-3.0-IGO",
+    "src/text/licenses/CC-BY-NC-SA-4.0",
+    "src/text/licenses/CC-BY-ND-1.0",
+    "src/text/licenses/CC-BY-ND-2.0",
+    "src/text/licenses/CC-BY-ND-2.5",
+    "src/text/licenses/CC-BY-ND-3.0",
+    "src/text/licenses/CC-BY-ND-3.0-DE",
+    "src/text/licenses/CC-BY-ND-4.0",
+    "src/text/licenses/CC-BY-SA-1.0",
+    "src/text/licenses/CC-BY-SA-2.0",
+    "src/text/licenses/CC-BY-SA-2.0-UK",
+    "src/text/licenses/CC-BY-SA-2.1-JP",
+    "src/text/licenses/CC-BY-SA-2.5",
+    "src/text/licenses/CC-BY-SA-3.0",
+    "src/text/licenses/CC-BY-SA-3.0-AT",
+    "src/text/licenses/CC-BY-SA-3.0-DE",
+    "src/text/licenses/CC-BY-SA-4.0",
+    "src/text/licenses/GFDL-1.1",
+    "src/text/licenses/GFDL-1.1-invariants-only",
+    "src/text/licenses/GFDL-1.1-invariants-or-later",
+    "src/text/licenses/GFDL-1.1-no-invariants-only",
+    "src/text/licenses/GFDL-1.1-no-invariants-or-later",
+    "src/text/licenses/GFDL-1.1-only",
+    "src/text/licenses/GFDL-1.1-or-later",
+    "src/text/licenses/GFDL-1.2",
+    "src/text/licenses/GFDL-1.2-invariants-only",
+    "src/text/licenses/GFDL-1.2-invariants-or-later",
+    "src/text/licenses/GFDL-1.2-no-invariants-only",
+    "src/text/licenses/GFDL-1.2-no-invariants-or-later",
+    "src/text/licenses/GFDL-1.2-only",
+    "src/text/licenses/GFDL-1.2-or-later",
+    "src/text/licenses/GFDL-1.3",
+    "src/text/licenses/GFDL-1.3-invariants-only",
+    "src/text/licenses/GFDL-1.3-invariants-or-later",
+    "src/text/licenses/GFDL-1.3-no-invariants-only",
+    "src/text/licenses/GFDL-1.3-no-invariants-or-later",
+    "src/text/licenses/GFDL-1.3-only",
+    "src/text/licenses/GFDL-1.3-or-later",
+    "src/text/licenses/GPL-1.0",
+    "src/text/licenses/GPL-1.0+",
+    "src/text/licenses/GPL-1.0-only",
+    "src/text/licenses/GPL-1.0-or-later",
+    "src/text/licenses/GPL-2.0",
+    "src/text/licenses/GPL-2.0+",
+    "src/text/licenses/GPL-2.0-only",
+    "src/text/licenses/GPL-2.0-or-later",
+    "src/text/licenses/GPL-2.0-with-GCC-exception",
+    "src/text/licenses/GPL-2.0-with-autoconf-exception",
+    "src/text/licenses/GPL-2.0-with-bison-exception",
+    "src/text/licenses/GPL-2.0-with-classpath-exception",
+    "src/text/licenses/GPL-2.0-with-font-exception",
+    "src/text/licenses/GPL-3.0",
+    "src/text/licenses/GPL-3.0+",
+    "src/text/licenses/GPL-3.0-only",
+    "src/text/licenses/GPL-3.0-or-later",
+    "src/text/licenses/GPL-3.0-with-GCC-exception",
+    "src/text/licenses/GPL-3.0-with-autoconf-exception",
+    "src/text/licenses/LGPL-2.0",
+    "src/text/licenses/LGPL-2.0+",
+    "src/text/licenses/LGPL-2.0-only",
+    "src/text/licenses/LGPL-2.0-or-later",
+    "src/text/licenses/LGPL-2.1",
+    "src/text/licenses/LGPL-2.1+",
+    "src/text/licenses/LGPL-2.1-only",
+    "src/text/licenses/LGPL-2.1-or-later",
+    "src/text/licenses/LGPL-3.0",
+    "src/text/licenses/LGPL-3.0+",
+    "src/text/licenses/LGPL-3.0-only",
+    "src/text/licenses/LGPL-3.0-or-later",
+    "src/text/licenses/MIT-0",
+    "src/text/licenses/MPL-1.0",
+    "src/text/licenses/MPL-1.1",
+    "src/text/licenses/MPL-2.0",
+    "src/text/licenses/MPL-2.0-no-copyleft-exception",
+    "src/text/licenses/OFL-1.0",
+    "src/text/licenses/OFL-1.0-RFN",
+    "src/text/licenses/OFL-1.0-no-RFN",
+    "src/text/licenses/OFL-1.1",
+    "src/text/licenses/OFL-1.1-RFN",
+    "src/text/licenses/OFL-1.1-no-RFN",
+]
+
+[clarify.typenum]
+expression = "MIT OR Apache-2.0"
+license-files = [
+    { path = "LICENSE", hash = 0xa4618a29 },
+    { path = "LICENSE-MIT", hash = 0xb9f15462 },
+    { path = "LICENSE-APACHE", hash = 0x91d5a0a7 },
+]
+
+[clarify.unicode-ident]
+expression = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
+license-files = [
+    { path = "LICENSE-APACHE", hash = 0x24b54f4b },
+    { path = "LICENSE-MIT", hash = 0x386ca1bc },
+    { path = "LICENSE-UNICODE", hash = 0x9698cbbe },
+]
+
+[clarify.zstd-safe]
+# zstd-safe is MIT OR Apache-2.0
+expression = "MIT OR Apache-2.0"
+license-files = [
+    { path = "LICENSE", hash = 0x742401ae },
+    { path = "LICENSE.Apache-2.0", hash = 0x7b466be4 },
+    { path = "LICENSE.Mit", hash = 0xa237d234 },
+]
+skip-files = [
+    "zstd/COPYING", # copy of the GPLv2 we are not choosing from libzstd's dual license
+    "zstd/build/LICENSE", # empty file
+    "zstd/contrib/linux-kernel/COPYING", # kernel source and patches for adding zstd (?!), not used
+]
+
 [clarify.zstd-sys]
 # zstd-sys is MIT OR Apache-2.0
 # libzstd is GPL-2.0-only OR BSD-3-Clause (selecting BSD-3-Clause)
 expression = "(MIT OR Apache-2.0) AND BSD-3-Clause"
 license-files = [
-    { path = "LICENSE", hash = 0xa237d234 },
+    { path = "LICENSE", hash = 0x742401ae },
+    { path = "LICENSE.Apache-2.0", hash = 0x7b466be4 },
+    { path = "LICENSE.Mit", hash = 0xa237d234 },
     { path = "zstd/LICENSE", hash = 0x79cda15 },
 ]
 skip-files = [
