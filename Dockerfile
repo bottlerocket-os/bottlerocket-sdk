@@ -816,7 +816,8 @@ RUN \
     java-11-openjdk-devel maven-openjdk11 maven-local \
     maven-clean-plugin maven-shade-plugin \
     efitools gnutls-utils gnupg-pkcs11-scd nss-tools \
-    openssl-pkcs11 pesign python3-virt-firmware sbsigntools && \
+    openssl-pkcs11 pesign python3-virt-firmware sbsigntools \
+    awscli && \
   dnf clean all
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
