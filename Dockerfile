@@ -5,7 +5,7 @@ RUN \
   dnf makecache && \
   dnf -y update && \
   dnf -y groupinstall "C Development Tools and Libraries" && \
-  dnf -y install \
+  dnf -y install --setopt=install_weak_deps=False \
     rpmdevtools dnf-plugins-core createrepo_c \
     cmake git meson perl-ExtUtils-MakeMaker python which \
     bc hostname intltool gperf kmod rsync wget openssl \
@@ -816,7 +816,9 @@ RUN \
     java-11-openjdk-devel maven-openjdk11 maven-local \
     maven-clean-plugin maven-shade-plugin \
     efitools gnutls-utils gnupg-pkcs11-scd nss-tools \
-    openssl-pkcs11 pesign python3-virt-firmware sbsigntools
+    openssl-pkcs11 pesign python3-virt-firmware sbsigntools \
+    awscli && \
+  dnf clean all
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
