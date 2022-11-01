@@ -1,2 +1,2 @@
-# https://dl.fedoraproject.org/pub/fedora/linux/updates/36/Everything/source/tree/Packages/o/openssl-3.0.5-1.fc36.src.rpm
-SHA512 (openssl-3.0.5-1.fc36.src.rpm) = 35e60322cbab07166e5fe54c1718b827f675060454186b08ad2ffb04f6831a393185f48135548ff51728d1dbb828ce1787b2c2e88540121450a63d756a95f140
+# https://cdn.amazonlinux.com/al2022/blobstore/3f2cf98f4ed173dc3b3aa6771a4f585588c64872321acfe445a8e824143d5b9c/openssl-3.0.5-1.amzn2022.0.3.src.rpm
+SHA512 (openssl-3.0.5-1.amzn2022.0.3.src.rpm) = 76fb734f2b60c1ba10715824d1cd27819683434dedb8508037df113d6694519b2d89d43fbd5811bad827fe01531f2406959a4f2be627abbd145bfdeebc932737
