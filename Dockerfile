@@ -241,7 +241,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="14.0.6"
+ARG LLVMVER="15.0.6"
 
 USER builder
 WORKDIR /home/builder
@@ -250,6 +250,9 @@ WORKDIR /home/builder
 COPY ./hashes/libunwind ./hashes
 RUN \
   sdk-fetch hashes && \
+  tar xf cmake-${LLVMVER}.src.tar.xz && \
+  rm cmake-${LLVMVER}.src.tar.xz && \
+  mv cmake-${LLVMVER}.src cmake && \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
   rm llvm-${LLVMVER}.src.tar.xz && \
   mv llvm-${LLVMVER}.src llvm && \
