@@ -581,7 +581,7 @@ RUN cargo build --release --locked
 
 FROM sdk-cargo as sdk-cargo-deny
 
-ARG DENYVER="0.12.2"
+ARG DENYVER="0.13.5"
 
 USER builder
 WORKDIR /home/builder

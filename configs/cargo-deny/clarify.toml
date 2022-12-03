@@ -203,6 +203,7 @@ skip-files = [
     "src/text/licenses/CC-BY-3.0",
     "src/text/licenses/CC-BY-3.0-AT",
     "src/text/licenses/CC-BY-3.0-DE",
+    "src/text/licenses/CC-BY-3.0-IGO",
     "src/text/licenses/CC-BY-3.0-NL",
     "src/text/licenses/CC-BY-3.0-US",
     "src/text/licenses/CC-BY-4.0",
