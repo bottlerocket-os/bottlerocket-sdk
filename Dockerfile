@@ -475,7 +475,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.19.3"
+ARG GOVER="1.19.4"
 
 USER root
 RUN dnf -y install golang
