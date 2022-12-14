@@ -4,20 +4,45 @@ FROM public.ecr.aws/docker/library/fedora:37 as base
 RUN \
   dnf makecache && \
   dnf -y update && \
-  dnf -y groupinstall "C Development Tools and Libraries" && \
   dnf -y install --setopt=install_weak_deps=False \
-    rpmdevtools dnf-plugins-core createrepo_c \
-    cmake git meson perl-ExtUtils-MakeMaker python which \
-    bc hostname intltool gperf kmod rsync wget openssl \
-    dwarves elfutils-devel libcap-devel openssl-devel \
-    createrepo_c e2fsprogs gdisk python3-jinja2 \
-    kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
-    perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
-    secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck \
-    json-c-devel libcurl-devel p11-kit-devel && \
+    bc \
+    bison \
+    cmake \
+    cpio \
+    curl \
+    dnf-plugins-core \
+    dwarves \
+    elfutils-devel \
+    flex \
+    g++ \
+    gcc \
+    git \
+    gperf \
+    hostname \
+    intltool \
+    jq \
+    json-c-devel \
+    kmod \
+    libcurl-devel \
+    libtool \
+    meson \
+    openssl \
+    openssl-devel \
+    p11-kit-devel \
+    perl-ExtUtils-MakeMaker \
+    perl-FindBin \
+    perl-IPC-Cmd \
+    perl-open \
+    python \
+    rsync \
+    wget \
+    which \
+  && \
   dnf config-manager --set-disabled \
-    fedora-modular updates-modular fedora-cisco-openh264 && \
-  dnf clean all && \
+    fedora-modular \
+    updates-modular \
+    fedora-cisco-openh264 \
+  && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
 
@@ -30,8 +55,22 @@ RUN \
   apt-get update && \
   apt-get -y dist-upgrade && \
   apt-get -y install \
-    autoconf automake bc build-essential cpio curl file git \
-    libexpat1-dev libtool libz-dev pkgconf python3 unzip wget && \
+    autoconf \
+    automake \
+    bc \
+    build-essential \
+    cpio \
+    curl \
+    file \
+    git \
+    libexpat1-dev \
+    libtool \
+    libz-dev \
+    pkgconf \
+    python3 \
+    unzip \
+    wget \
+  && \
   useradd -m -u 1000 builder
 COPY ./sdk-fetch /usr/local/bin
 
@@ -818,11 +857,41 @@ FROM sdk as sdk-plus
 USER root
 RUN \
   dnf -y install --setopt=install_weak_deps=False \
-    java-11-openjdk-devel maven-openjdk11 maven-local \
-    maven-clean-plugin maven-shade-plugin \
-    efitools gnutls-utils gnupg-pkcs11-scd nss-tools \
-    openssl-pkcs11 pesign python3-virt-firmware sbsigntools \
-    awscli && \
+    awscli \
+    ccache \
+    createrepo_c \
+    dosfstools \
+    e2fsprogs \
+    efitools \
+    erofs-utils \
+    gdisk \
+    glib2-devel \
+    gnupg-pkcs11-scd \
+    gnutls-utils \
+    java-11-openjdk-devel \
+    kpartx \
+    libcap-devel \
+    lz4 \
+    maven-clean-plugin \
+    maven-local \
+    maven-openjdk11 \
+    maven-shade-plugin \
+    mtools \
+    nss-tools \
+    openssl-pkcs11 \
+    pesign \
+    policycoreutils \
+    python3-jinja2 \
+    python3-virt-firmware \
+    qemu-img \
+    rpcgen \
+    rpmdevtools \
+    sbsigntools \
+    secilc \
+    ShellCheck \
+    squashfs-tools \
+    veritysetup \
+  && \
   dnf clean all
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
