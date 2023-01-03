@@ -1,4 +1,4 @@
-From dc72132b09daa401e9631c9af6463d93f035682d Mon Sep 17 00:00:00 2001
+From 9e6d1c176a007d6751e3acd02f96becee48ef361 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:15:02 +0000
 Subject: [PATCH] disable shared for host builds of gmp, isl, mpc, mpfr
@@ -17,10 +17,10 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  5 files changed, 17 insertions(+), 1 deletion(-)
 
 diff --git a/package/Makefile.in b/package/Makefile.in
-index 580e9d14ca..0021a07922 100644
+index 43d214bcbe..3e9036b96f 100644
 --- a/package/Makefile.in
 +++ b/package/Makefile.in
-@@ -252,7 +252,7 @@ HOST_CPPFLAGS  = -I$(HOST_DIR)/include
+@@ -243,7 +243,7 @@ HOST_CPPFLAGS  = -I$(HOST_DIR)/include
  HOST_CFLAGS   ?= -O2
  HOST_CFLAGS   += $(HOST_CPPFLAGS)
  HOST_CXXFLAGS += $(HOST_CFLAGS)
@@ -45,7 +45,7 @@ index 9b402767fd..fe7cf05d8e 100644
  GMP_IGNORE_CVES += CVE-2021-43618
  
 diff --git a/package/isl/isl.mk b/package/isl/isl.mk
-index df57c83f55..1607ed9c6d 100644
+index ce9aaecebc..883bf3a830 100644
 --- a/package/isl/isl.mk
 +++ b/package/isl/isl.mk
 @@ -11,4 +11,8 @@ ISL_LICENSE = MIT
@@ -86,5 +86,5 @@ index cd558dae0e..74080ec884 100644
  $(eval $(autotools-package))
  $(eval $(host-autotools-package))
 -- 
-2.36.1
+2.37.2
 

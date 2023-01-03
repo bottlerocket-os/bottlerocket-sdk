@@ -1,4 +1,4 @@
-From 27cfb1671cf32ad1c8bdc430aa0ad41aea3bb0e3 Mon Sep 17 00:00:00 2001
+From 1fb43df9f191688a043758e6af44b9c188a40f12 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:40:50 +0000
 Subject: [PATCH] build binutils with TOOLS_DIR and SYSROOT_DIR
@@ -16,10 +16,10 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  1 file changed, 20 insertions(+), 3 deletions(-)
 
 diff --git a/package/binutils/binutils.mk b/package/binutils/binutils.mk
-index c94ebe0995..4682c90b37 100644
+index 1ef7ee57d2..5fbaef88bb 100644
 --- a/package/binutils/binutils.mk
 +++ b/package/binutils/binutils.mk
-@@ -64,9 +64,10 @@ endif
+@@ -65,9 +65,10 @@ endif
  BINUTILS_CONF_ENV += MAKEINFO=true
  BINUTILS_MAKE_OPTS += MAKEINFO=true
  BINUTILS_INSTALL_TARGET_OPTS = DESTDIR=$(TARGET_DIR) MAKEINFO=true install
@@ -31,7 +31,7 @@ index c94ebe0995..4682c90b37 100644
  
  # Workaround a build issue with -Os for ARM Cortex-M cpus.
  # (Binutils 2.25.1 and 2.26.1)
-@@ -83,12 +84,16 @@ HOST_BINUTILS_CONF_OPTS = \
+@@ -84,8 +85,7 @@ HOST_BINUTILS_CONF_OPTS = \
  	--target=$(GNU_TARGET_NAME) \
  	--disable-shared \
  	--enable-static \
@@ -39,8 +39,11 @@ index c94ebe0995..4682c90b37 100644
 -	--enable-poison-system-directories \
 +	--with-sysroot=$(SYSROOT_DIR) \
  	--without-debuginfod \
- 	$(BINUTILS_DISABLE_GDB_CONF_OPTS) \
- 	$(BINUTILS_EXTRA_CONFIG_OPTIONS)
+ 	--enable-plugins \
+ 	--enable-lto \
+@@ -99,6 +99,11 @@ else
+ HOST_BINUTILS_CONF_OPTS += --disable-gprofng
+ endif
  
 +HOST_BINUTILS_CONF_OPTS += \
 +	--prefix="/usr" \
@@ -50,7 +53,7 @@ index c94ebe0995..4682c90b37 100644
  # binutils run configure script of subdirs at make time, so ensure
  # our TARGET_CONFIGURE_ARGS are taken into consideration for those
  BINUTILS_MAKE_ENV = $(TARGET_CONFIGURE_ARGS)
-@@ -137,5 +142,17 @@ define HOST_BINUTILS_FIXUP_HARDLINKS
+@@ -143,5 +148,17 @@ define HOST_BINUTILS_FIXUP_HARDLINKS
  endef
  HOST_BINUTILS_POST_INSTALL_HOOKS += HOST_BINUTILS_FIXUP_HARDLINKS
  
@@ -69,5 +72,5 @@ index c94ebe0995..4682c90b37 100644
  $(eval $(autotools-package))
  $(eval $(host-autotools-package))
 -- 
-2.36.1
+2.37.2
 

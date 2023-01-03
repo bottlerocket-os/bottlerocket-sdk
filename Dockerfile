@@ -45,8 +45,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2022.05.2"
-ARG KVER="5.10.129"
+ARG BRVER="2022.11"
+ARG KVER="5.10.155"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -68,7 +68,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -92,7 +92,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -126,7 +126,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 
 WORKDIR /
 
@@ -172,7 +172,7 @@ ARG SYSROOT="/${TARGET}/sys-root"
 ARG CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
 ARG CXXFLAGS="${CFLAGS}"
 ARG CPPFLAGS=""
-ARG KVER="5.4"
+ARG KVER="5.10.155"
 
 WORKDIR /home/builder/glibc/build
 RUN \
@@ -451,7 +451,7 @@ FROM sdk-libc as sdk-bootconfig
 
 USER root
 
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
