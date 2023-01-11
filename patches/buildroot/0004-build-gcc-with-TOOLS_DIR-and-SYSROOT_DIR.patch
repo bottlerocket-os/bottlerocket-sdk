@@ -1,4 +1,4 @@
-From ed6f8ff7bc4d686d6cdd0df4725a820086c67f27 Mon Sep 17 00:00:00 2001
+From 37b4493d05be97ecec83d814e65e77a2d11631d2 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:58:27 +0000
 Subject: [PATCH] build gcc with TOOLS_DIR and SYSROOT_DIR
@@ -166,7 +166,7 @@ index aa883beb7b..0f61ff0df1 100644
 +
  $(eval $(host-autotools-package))
 diff --git a/package/gcc/gcc-initial/gcc-initial.mk b/package/gcc/gcc-initial/gcc-initial.mk
-index f5bc6c5b77..9f34effd10 100644
+index ebd8e8f017..ec9fcd13c1 100644
 --- a/package/gcc/gcc-initial/gcc-initial.mk
 +++ b/package/gcc/gcc-initial/gcc-initial.mk
 @@ -34,6 +34,7 @@ HOST_GCC_INITIAL_CONF_OPTS = \
@@ -177,7 +177,7 @@ index f5bc6c5b77..9f34effd10 100644
  	--without-headers \
  	--disable-threads \
  	--with-newlib \
-@@ -46,9 +47,11 @@ HOST_GCC_INITIAL_CONF_ENV = \
+@@ -53,9 +54,11 @@ endif
  HOST_GCC_INITIAL_MAKE_OPTS = $(HOST_GCC_COMMON_MAKE_OPTS) all-gcc all-target-libgcc
  HOST_GCC_INITIAL_INSTALL_OPTS = install-gcc install-target-libgcc
  
@@ -190,10 +190,10 @@ index f5bc6c5b77..9f34effd10 100644
  
  $(eval $(host-autotools-package))
 diff --git a/package/gcc/gcc.mk b/package/gcc/gcc.mk
-index 128cf8421d..5066ed55c5 100644
+index ec6f3b550a..6d4f6e0b20 100644
 --- a/package/gcc/gcc.mk
 +++ b/package/gcc/gcc.mk
-@@ -69,12 +69,12 @@ HOST_GCC_COMMON_DEPENDENCIES = \
+@@ -69,7 +69,6 @@ HOST_GCC_COMMON_DEPENDENCIES = \
  
  HOST_GCC_COMMON_CONF_OPTS = \
  	--target=$(GNU_TARGET_NAME) \
@@ -201,12 +201,14 @@ index 128cf8421d..5066ed55c5 100644
  	--enable-__cxa_atexit \
  	--with-gnu-ld \
  	--disable-libssp \
- 	--disable-multilib \
+@@ -77,6 +76,7 @@ HOST_GCC_COMMON_CONF_OPTS = \
  	--disable-decimal-float \
+ 	--enable-plugins \
+ 	--enable-lto \
 +	--enable-linker-build-id \
  	--with-gmp=$(HOST_DIR) \
  	--with-mpc=$(HOST_DIR) \
  	--with-mpfr=$(HOST_DIR) \
 -- 
-2.36.1
+2.37.2
 

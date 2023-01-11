@@ -1,21 +1,48 @@
-FROM public.ecr.aws/docker/library/fedora:36 as base
+FROM public.ecr.aws/docker/library/fedora:37 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
   dnf makecache && \
   dnf -y update && \
-  dnf -y groupinstall "C Development Tools and Libraries" && \
   dnf -y install --setopt=install_weak_deps=False \
-    rpmdevtools dnf-plugins-core createrepo_c \
-    cmake git meson perl-ExtUtils-MakeMaker python which \
-    bc hostname intltool gperf kmod rsync wget openssl \
-    dwarves elfutils-devel libcap-devel openssl-devel \
-    createrepo_c e2fsprogs gdisk python3-jinja2 \
-    kpartx lz4 veritysetup dosfstools mtools squashfs-tools \
-    perl-FindBin perl-IPC-Cmd perl-open policycoreutils \
-    secilc qemu-img glib2-devel rpcgen erofs-utils jq ShellCheck \
-    json-c-devel libcurl-devel p11-kit-devel && \
-  dnf clean all && \
+    bc \
+    bison \
+    cmake \
+    cpio \
+    curl \
+    dnf-plugins-core \
+    dwarves \
+    elfutils-devel \
+    flex \
+    g++ \
+    gcc \
+    git \
+    gperf \
+    hostname \
+    intltool \
+    jq \
+    json-c-devel \
+    kmod \
+    libcurl-devel \
+    libtool \
+    meson \
+    openssl \
+    openssl-devel \
+    p11-kit-devel \
+    perl-ExtUtils-MakeMaker \
+    perl-FindBin \
+    perl-IPC-Cmd \
+    perl-open \
+    python \
+    rsync \
+    wget \
+    which \
+  && \
+  dnf config-manager --set-disabled \
+    fedora-modular \
+    updates-modular \
+    fedora-cisco-openh264 \
+  && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
 
@@ -28,8 +55,22 @@ RUN \
   apt-get update && \
   apt-get -y dist-upgrade && \
   apt-get -y install \
-    autoconf automake bc build-essential cpio curl file git \
-    libexpat1-dev libtool libz-dev pkgconf python3 unzip wget && \
+    autoconf \
+    automake \
+    bc \
+    build-essential \
+    cpio \
+    curl \
+    file \
+    git \
+    libexpat1-dev \
+    libtool \
+    libz-dev \
+    pkgconf \
+    python3 \
+    unzip \
+    wget \
+  && \
   useradd -m -u 1000 builder
 COPY ./sdk-fetch /usr/local/bin
 
@@ -43,8 +84,8 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2022.05.2"
-ARG KVER="5.10.129"
+ARG BRVER="2022.11"
+ARG KVER="5.10.155"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -66,7 +107,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -90,7 +131,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -124,7 +165,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 
 WORKDIR /
 
@@ -170,7 +211,7 @@ ARG SYSROOT="/${TARGET}/sys-root"
 ARG CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
 ARG CXXFLAGS="${CFLAGS}"
 ARG CPPFLAGS=""
-ARG KVER="5.4"
+ARG KVER="5.10.155"
 
 WORKDIR /home/builder/glibc/build
 RUN \
@@ -239,7 +280,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="14.0.6"
+ARG LLVMVER="15.0.6"
 
 USER builder
 WORKDIR /home/builder
@@ -248,6 +289,9 @@ WORKDIR /home/builder
 COPY ./hashes/libunwind ./hashes
 RUN \
   sdk-fetch hashes && \
+  tar xf cmake-${LLVMVER}.src.tar.xz && \
+  rm cmake-${LLVMVER}.src.tar.xz && \
+  mv cmake-${LLVMVER}.src cmake && \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
   rm llvm-${LLVMVER}.src.tar.xz && \
   mv llvm-${LLVMVER}.src llvm && \
@@ -373,7 +417,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.64.0"
+ARG RUSTVER="1.66.1"
 
 USER builder
 WORKDIR /home/builder
@@ -449,7 +493,7 @@ FROM sdk-libc as sdk-bootconfig
 
 USER root
 
-ARG KVER="5.10.129"
+ARG KVER="5.10.155"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
@@ -549,7 +593,7 @@ RUN rm /license-{scan,tool}/{clarify,deny}.toml
 
 FROM sdk-cargo as sdk-license-scan
 
-ARG SPDXVER="3.18"
+ARG SPDXVER="3.19"
 
 USER builder
 WORKDIR /home/builder/license-scan
@@ -576,7 +620,7 @@ RUN cargo build --release --locked
 
 FROM sdk-cargo as sdk-cargo-deny
 
-ARG DENYVER="0.12.2"
+ARG DENYVER="0.13.5"
 
 USER builder
 WORKDIR /home/builder
@@ -813,11 +857,41 @@ FROM sdk as sdk-plus
 USER root
 RUN \
   dnf -y install --setopt=install_weak_deps=False \
-    java-11-openjdk-devel maven-openjdk11 maven-local \
-    maven-clean-plugin maven-shade-plugin \
-    efitools gnutls-utils gnupg-pkcs11-scd nss-tools \
-    openssl-pkcs11 pesign python3-virt-firmware sbsigntools \
-    awscli && \
+    awscli \
+    ccache \
+    createrepo_c \
+    dosfstools \
+    e2fsprogs \
+    efitools \
+    erofs-utils \
+    gdisk \
+    glib2-devel \
+    gnupg-pkcs11-scd \
+    gnutls-utils \
+    java-11-openjdk-devel \
+    kpartx \
+    libcap-devel \
+    lz4 \
+    maven-clean-plugin \
+    maven-local \
+    maven-openjdk11 \
+    maven-shade-plugin \
+    mtools \
+    nss-tools \
+    openssl-pkcs11 \
+    pesign \
+    policycoreutils \
+    python3-jinja2 \
+    python3-virt-firmware \
+    qemu-img \
+    rpcgen \
+    rpmdevtools \
+    sbsigntools \
+    secilc \
+    ShellCheck \
+    squashfs-tools \
+    veritysetup \
+  && \
   dnf clean all
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=

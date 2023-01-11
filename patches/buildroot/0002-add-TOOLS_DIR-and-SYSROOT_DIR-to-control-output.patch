@@ -1,4 +1,4 @@
-From 83d5eb34a63c6a098d7bdfc11cc3be5839df60a6 Mon Sep 17 00:00:00 2001
+From c137f14fade2ae3c23ab389b2e3e99f8bb5a55ab Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:35:06 +0000
 Subject: [PATCH] add TOOLS_DIR and SYSROOT_DIR to control output
@@ -24,7 +24,7 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  2 files changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/Makefile b/Makefile
-index 412e1decd3..e85c2cd15e 100644
+index 89f3648bb7..84591e22de 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -218,6 +218,7 @@ PER_PACKAGE_DIR := $(BASE_DIR)/per-package
@@ -35,7 +35,7 @@ index 412e1decd3..e85c2cd15e 100644
  
  LEGAL_INFO_DIR = $(BASE_DIR)/legal-info
  REDIST_SOURCES_DIR_TARGET = $(LEGAL_INFO_DIR)/sources
-@@ -488,7 +489,9 @@ export BR2_CONFIG
+@@ -487,7 +488,9 @@ export BR2_CONFIG
  export BR2_REPRODUCIBLE
  export TARGET_DIR
  export STAGING_DIR
@@ -45,7 +45,7 @@ index 412e1decd3..e85c2cd15e 100644
  export BINARIES_DIR
  export BASE_DIR
  
-@@ -1037,7 +1040,7 @@ savedefconfig: $(BUILD_DIR)/buildroot-config/conf outputmakefile
+@@ -1036,7 +1039,7 @@ savedefconfig: $(BUILD_DIR)/buildroot-config/conf outputmakefile
  
  # staging and target directories do NOT list these as
  # dependencies anywhere else
@@ -54,7 +54,7 @@ index 412e1decd3..e85c2cd15e 100644
  	@mkdir -p $@
  
  # outputmakefile generates a Makefile in the output directory, if using a
-@@ -1093,7 +1096,7 @@ show-vars: check-make-version
+@@ -1099,7 +1102,7 @@ show-vars:
  clean:
  	rm -rf $(BASE_TARGET_DIR) $(BINARIES_DIR) $(HOST_DIR) $(HOST_DIR_SYMLINK) \
  		$(BUILD_DIR) $(BASE_DIR)/staging \
@@ -64,10 +64,10 @@ index 412e1decd3..e85c2cd15e 100644
  
  .PHONY: distclean
 diff --git a/package/Makefile.in b/package/Makefile.in
-index 0021a07922..2a140b66f8 100644
+index 3e9036b96f..75dd28daa4 100644
 --- a/package/Makefile.in
 +++ b/package/Makefile.in
-@@ -117,8 +117,9 @@ ifeq ($(BR2_xtensa),y)
+@@ -108,8 +108,9 @@ ifeq ($(BR2_xtensa),y)
  TARGET_ABI += -mlongcalls -mauto-litpools
  endif
  
@@ -79,5 +79,5 @@ index 0021a07922..2a140b66f8 100644
  ifeq ($(BR2_OPTIMIZE_0),y)
  TARGET_OPTIMIZATION = -O0
 -- 
-2.36.1
+2.37.2
 
