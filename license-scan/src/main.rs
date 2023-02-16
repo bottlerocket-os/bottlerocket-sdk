@@ -294,9 +294,9 @@ fn write_attribution(
     clarifications: &Clarifications,
     stated_license: Option<Expression>,
 ) -> Result<()> {
-    eprintln!("{}:", name);
+    eprintln!("{name}:");
     if let Some(stated_license) = stated_license.as_ref() {
-        eprintln!("  + {} (stated in metadata)", stated_license);
+        eprintln!("  + {stated_license} (stated in metadata)");
     }
     let mut files = HashMap::new();
     for entry in WalkBuilder::new(scan_dir).types(TYPES.clone()).build() {
@@ -316,7 +316,7 @@ fn write_attribution(
         .collect();
     let license = if let Some(clarified) = clarifications.get(name, file_hashes)? {
         let expression = clarified.expression.to_string();
-        eprintln!("  ! {} (clarified)", expression);
+        eprintln!("  ! {expression} (clarified)");
         copy_files(out_dir, &files, clarified.skip_files)?;
         expression
     } else {
@@ -394,7 +394,7 @@ fn write_attribution(
             licenses.sort_unstable();
             licenses.dedup();
             let expression = licenses.join(" AND ");
-            eprintln!("  = {}", expression);
+            eprintln!("  = {expression}");
             expression
         }
     };
@@ -402,7 +402,7 @@ fn write_attribution(
     fs::create_dir_all(out_dir)?;
     fs::write(
         out_dir.join("attribution.txt"),
-        format!("{}\nSPDX-License-Identifier: {}\n", name, license),
+        format!("{name}\nSPDX-License-Identifier: {license}\n"),
     )?;
     Ok(())
 }
@@ -421,7 +421,7 @@ fn copy_files(
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::write(path, &data)?;
+        fs::write(path, data)?;
     }
     Ok(())
 }
