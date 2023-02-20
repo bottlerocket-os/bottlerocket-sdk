@@ -1,5 +1,5 @@
-# https://buildroot.org/downloads/buildroot-2022.11.tar.gz
-SHA512 (buildroot-2022.11.tar.gz) = 467241a472b4eef484e756100f348214c469ae0bed31afa8536681816742b2ac00a0b4ca50f14829d1dfc6fdfba75a4885555f9aeab47b0cde3226d5086d5687
+# https://buildroot.org/downloads/buildroot-2022.11.1.tar.xz
+SHA512 (buildroot-2022.11.1.tar.xz) = 2c99a22c1f218e74411ca227ac033aac1cfcd175af8558ea0a35527cdcb9ebcb5b8359be50932279cd99b68bf2597451215a019e81334577310e6c99139e8aab
 # https://mirrors.kernel.org/gnu/binutils/binutils-2.38.tar.xz
 SHA512 (binutils-2.38.tar.xz) = 8bf0b0d193c9c010e0518ee2b2e5a830898af206510992483b427477ed178396cd210235e85fd7bd99a96fc6d5eedbeccbd48317a10f752b7336ada8b2bb826d
 # https://mirrors.kernel.org/gnu/bison/bison-3.8.2.tar.xz
@@ -16,8 +16,8 @@ SHA512 (gmp-6.2.1.tar.xz) = c99be0950a1d05a0297d65641dd35b75b74466f7bf03c9e8a998
 SHA512 (isl-0.25.tar.xz) = 81ac6b404a71e146bb705efe647ecf3bee19c3254f534cb44228cec13ffc7a33d7d58b980106dbb120ffdc557403d966619e219328edd0a4b3cbc4ac66acb255
 # https://musl.libc.org/releases/musl-1.2.3.tar.gz
 SHA512 (musl-1.2.3.tar.gz) = 9332f713d3eb7de4369bc0327d99252275ee52abf523ee34b894b24a387f67579787f7c72a46cf652e090cffdb0bc3719a4e7b84dca66890b6a37f12e8ad089c
-# https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.10.155.tar.xz
-SHA512 (linux-5.10.155.tar.xz) = fc763f7854ed5e8964fee2acc2f521caa215cbfa76dd7a054173fcf37f74ef543820e7b026c0ee2c01c178eb22c89ad334ec9559950772ec278d78d95b32d33c
+# https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.10.162.tar.xz
+SHA512 (linux-5.10.162.tar.xz) = 941c7ddd7c27f49b4491e1c8fbf1efedcbac50b48ed8836ec91091ead69723f820a61bfda795378dcc728a782d2206189903333e83e255b723eec01157bbb0bb
 # https://mirrors.kernel.org/gnu/m4/m4-1.4.19.tar.xz
 SHA512 (m4-1.4.19.tar.xz) = 47f595845c89709727bda0b3fc78e3188ef78ec818965b395532e7041cabe9e49677ee4aca3d042930095a7f8df81de3da1026b23b6897be471f6cf13ddd512b
 # https://mirrors.kernel.org/gnu/mpc/mpc-1.2.1.tar.gz
