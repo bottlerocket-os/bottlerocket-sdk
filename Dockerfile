@@ -837,7 +837,7 @@ RUN make install
 
 FROM sdk as sdk-e2fsprogs
 
-ARG E2FSPROGS_VER="1.46.5"
+ARG E2FSPROGS_VER="1.46.6"
 
 USER builder
 WORKDIR /home/builder
