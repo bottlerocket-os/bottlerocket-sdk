@@ -84,6 +84,7 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
+ARG UPSTREAM_SOURCE_FALLBACK
 ARG BRVER="2022.11.1"
 ARG KVER="5.10.162"
 
@@ -165,6 +166,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
+ARG UPSTREAM_SOURCE_FALLBACK
 ARG KVER="5.10.162"
 
 WORKDIR /
