@@ -84,15 +84,15 @@ RUN \
   git config --global user.name "Builder" && \
   git config --global user.email "builder@localhost"
 
-ARG BRVER="2022.11"
-ARG KVER="5.10.155"
+ARG BRVER="2022.11.1"
+ARG KVER="5.10.162"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
 RUN \
   sdk-fetch hashes && \
-  tar xf buildroot-${BRVER}.tar.gz && \
-  rm buildroot-${BRVER}.tar.gz && \
+  tar xf buildroot-${BRVER}.tar.xz && \
+  rm buildroot-${BRVER}.tar.xz && \
   mv buildroot-${BRVER} buildroot && \
   mv queue.h queue.h?rev=1.70
 
@@ -107,7 +107,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.10.155"
+ARG KVER="5.10.162"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -131,7 +131,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.10.155"
+ARG KVER="5.10.162"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -165,7 +165,7 @@ FROM base as sdk
 USER root
 
 ARG ARCH
-ARG KVER="5.10.155"
+ARG KVER="5.10.162"
 
 WORKDIR /
 
@@ -211,7 +211,7 @@ ARG SYSROOT="/${TARGET}/sys-root"
 ARG CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
 ARG CXXFLAGS="${CFLAGS}"
 ARG CPPFLAGS=""
-ARG KVER="5.10.155"
+ARG KVER="5.10.162"
 
 WORKDIR /home/builder/glibc/build
 RUN \
@@ -280,7 +280,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="15.0.6"
+ARG LLVMVER="15.0.7"
 
 USER builder
 WORKDIR /home/builder
@@ -417,7 +417,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.66.1"
+ARG RUSTVER="1.67.1"
 
 USER builder
 WORKDIR /home/builder
@@ -493,7 +493,7 @@ FROM sdk-libc as sdk-bootconfig
 
 USER root
 
-ARG KVER="5.10.155"
+ARG KVER="5.10.162"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
@@ -837,7 +837,7 @@ RUN make install
 
 FROM sdk as sdk-e2fsprogs
 
-ARG E2FSPROGS_VER="1.46.5"
+ARG E2FSPROGS_VER="1.46.6"
 
 USER builder
 WORKDIR /home/builder
