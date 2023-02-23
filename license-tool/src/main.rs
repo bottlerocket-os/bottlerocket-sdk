@@ -90,8 +90,7 @@ where
 {
     let package = package.as_ref();
     let package_license = packages_licenses.get(package).context(format!(
-        "Couldn't find configuration for package '{}'",
-        package
+        "Couldn't find configuration for package '{package}'"
     ))?;
     println!("{}", package_license.spdx_id);
     Ok(())
@@ -108,8 +107,7 @@ where
 {
     let package_name = package_name.as_ref();
     let package_license = packages_licenses.get(package_name).context(format!(
-        "Couldn't find configuration for package '{}'",
-        package_name
+        "Couldn't find configuration for package '{package_name}'"
     ))?;
     println!(
         "{}",
@@ -156,10 +154,7 @@ where
                 "http" | "https" => {
                     let content = reqwest::get(license_url.clone())
                         .await
-                        .context(format!(
-                            "Failed to download file from '{}'",
-                            license_url
-                        ))?
+                        .context(format!("Failed to download file from '{license_url}'"))?
                         .text()
                         .await?;
                     let mut dest = File::create(&path).context(format!(
@@ -205,7 +200,7 @@ where
     P: AsRef<Path>,
 {
     let licenses_file = licenses_file.as_ref();
-    Ok(toml::from_slice(&fs::read(&licenses_file).context(
+    Ok(toml::from_slice(&fs::read(licenses_file).context(
         format!("Failed to read file '{}'", licenses_file.display()),
     )?)?)
 }

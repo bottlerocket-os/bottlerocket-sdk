@@ -8,13 +8,13 @@ publish = false
 
 [dependencies]
 anyhow = "1"
-argh = "0.1.7"
-reqwest = { version = "0.11.7", default-features = false, features = ["rustls-tls"] }
+argh = "0.1"
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread"] }
 toml = "0.5"
-url = { version = "2.2.2", features = ["serde"] }
+url = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
-httptest = "0.15.4"
-tempfile = "3.2.0"
+httptest = "0.15"
+tempfile = "3"
