@@ -338,7 +338,7 @@ COPY ./hashes/openssl ./hashes
 RUN \
   sdk-fetch hashes && \
   rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
-  tar xzf openssl-${OPENSSLVER}-hobbled.tar.gz && \
+  tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
   mv openssl-${OPENSSLVER} openssl && \
   for p in *.patch ; do \
     echo "applying ${p}" ; \
