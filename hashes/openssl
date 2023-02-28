@@ -1,2 +1,2 @@
-# https://cdn.amazonlinux.com/al2022/blobstore/3f2cf98f4ed173dc3b3aa6771a4f585588c64872321acfe445a8e824143d5b9c/openssl-3.0.5-1.amzn2022.0.3.src.rpm
-SHA512 (openssl-3.0.5-1.amzn2022.0.3.src.rpm) = 76fb734f2b60c1ba10715824d1cd27819683434dedb8508037df113d6694519b2d89d43fbd5811bad827fe01531f2406959a4f2be627abbd145bfdeebc932737
+# https://cdn.amazonlinux.com/al2023/blobstore/9c0bdb3430d8b71dc38c28a4119ed135bd4adfb34ca7f9d4b0cd1b5743a7a575/openssl-3.0.8-1.amzn2023.0.1.src.rpm
+SHA512 (openssl-3.0.8-1.amzn2023.0.1.src.rpm) = 4f4a1b9c5a5bbc1dd40ab636ccb0faa06af6c5827b0f2c9b3870cdc4f17b9e801676e37b4190959382b7fa6592502dac3f6f4c289e6b529af4d37d5efd484e1d
