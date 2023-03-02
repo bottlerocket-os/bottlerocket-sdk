@@ -13,7 +13,7 @@ compiler-docs = false
 vendor = true
 submodules = false
 extended = true
-tools = ["cargo", "clippy"]
+tools = ["cargo", "clippy", "rustfmt"]
 
 [rust]
 channel = "stable"
