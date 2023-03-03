@@ -1,8 +1,6 @@
-# https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/llvm-15.0.7.src.tar.xz
-SHA512 (llvm-15.0.7.src.tar.xz) = ed8d565515b1bc6164e4ff06d3388ba92e332850305496fd65db9adf1ec87bd9dd1bfde49dd41be5d5216289efc72bfd287cd7392f2bba80b740d4c314c749e5
-# https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/libcxx-15.0.7.src.tar.xz
-SHA512 (libcxx-15.0.7.src.tar.xz) = 2c47cb93867e137a9bc8dd273335bb153e2353eb308635c2264be962fa421ddc10eb3ec8b5800204fc1f8ee51abbe0c526665300cb7e94e9f8b7e9891b5c5b64
-# https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/libunwind-15.0.7.src.tar.xz
-SHA512 (libunwind-15.0.7.src.tar.xz) = ebc73a5c68615a4462f4d05040a68a28e92b144d8c66d3fb2271cf6fff60a0adb1b913c8e520717ac2f6bd9e4b44c16d9461ef70502975975d1779e2b27a9392
-# https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/cmake-15.0.7.src.tar.xz
-SHA512 (cmake-15.0.7.src.tar.xz) = 85097a6eaee0df004567905f7e5ce8ca02e3b46c6fc66fa552fe99734642e6ee61685de4e5e6e8b505963334d7b91d98ecd9c5870e6bdd3f0018ee5b963ffa96
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/llvm-14.0.6.src.tar.xz
+SHA512 (llvm-14.0.6.src.tar.xz) = 6461bdde27aac17fa44c3e99a85ec47ffb181d0d4e5c3ef1c4286a59583e3b0c51af3c8081a300f45b99524340773a3011380059e3b3a571c3b0a8733e96fc1d
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/libcxx-14.0.6.src.tar.xz
+SHA512 (libcxx-14.0.6.src.tar.xz) = c39bb01317e8ae7e5b23a677754a866953b6c45188c194d3d76fbd276de9565df8bcbcab8cf6606584af7dd30a61f39376c0e2de6b8c32c69f7fc592587e710d
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/libunwind-14.0.6.src.tar.xz
+SHA512 (libunwind-14.0.6.src.tar.xz) = c8f3804c47ac33273238899e5682f9cb52465dcceff0e0ecf9925469620c6c9a62cc2c708a35a0e156b666e1198df52c5fff1da9d5ee3194605dfd62c296b058
