@@ -337,6 +337,7 @@ RUN \
   rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
   tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
   mv openssl-${OPENSSLVER} openssl && \
+  rm 0056-strcasecmp.patch && \
   for p in *.patch ; do \
     echo "applying ${p}" ; \
     patch -d openssl -p1 < "${p}" ; \
