@@ -916,12 +916,15 @@ RUN \
     -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
   tar xvf toolchain.tar -C /
 
-FROM scratch as toolchain-final
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+#
+# Collects all toolchain builds as single image layer
+FROM scratch as toolchain-golden
 COPY --from=toolchain-archive /toolchain /toolchain
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-# Collect all builds in a single layer.
+#
+# Collect all SDK builds
 FROM scratch as sdk-final
 USER root
 
@@ -1059,3 +1062,10 @@ RUN \
   certutil -N --empty-password
 
 CMD ["/bin/bash"]
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+# Collect all builds for the SDK and squashes them into a final, single layer
+FROM scratch as sdk-golden
+
+COPY --from=sdk-final / /
