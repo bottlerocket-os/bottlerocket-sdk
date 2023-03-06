@@ -13,16 +13,14 @@ all: sdk toolchain
 sdk:
 	@DOCKER_BUILDKIT=1 docker build . \
 		--tag $(SDK_TAG) \
-		--target sdk-final \
-		--squash \
+		--target sdk-golden \
 		--build-arg ARCH=$(ARCH) \
 		--build-arg HOST_ARCH=$(HOST_ARCH)
 
 toolchain:
 	@DOCKER_BUILDKIT=1 docker build . \
 		--tag $(TOOLCHAIN_TAG) \
-		--target toolchain-final \
-		--squash \
+		--target toolchain-golden \
 		--build-arg ARCH=$(ARCH) \
 		--build-arg HOST_ARCH=$(HOST_ARCH)
 

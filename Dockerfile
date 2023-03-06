@@ -280,7 +280,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="15.0.7"
+ARG LLVMVER="14.0.6"
 
 USER builder
 WORKDIR /home/builder
@@ -289,9 +289,6 @@ WORKDIR /home/builder
 COPY ./hashes/libunwind ./hashes
 RUN \
   sdk-fetch hashes && \
-  tar xf cmake-${LLVMVER}.src.tar.xz && \
-  rm cmake-${LLVMVER}.src.tar.xz && \
-  mv cmake-${LLVMVER}.src cmake && \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
   rm llvm-${LLVMVER}.src.tar.xz && \
   mv llvm-${LLVMVER}.src llvm && \
@@ -340,6 +337,7 @@ RUN \
   rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
   tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
   mv openssl-${OPENSSLVER} openssl && \
+  rm 0056-strcasecmp.patch && \
   for p in *.patch ; do \
     echo "applying ${p}" ; \
     patch -d openssl -p1 < "${p}" ; \
@@ -918,12 +916,15 @@ RUN \
     -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
   tar xvf toolchain.tar -C /
 
-FROM scratch as toolchain-final
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+#
+# Collects all toolchain builds as single image layer
+FROM scratch as toolchain-golden
 COPY --from=toolchain-archive /toolchain /toolchain
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-# Collect all builds in a single layer.
+#
+# Collect all SDK builds
 FROM scratch as sdk-final
 USER root
 
@@ -1061,3 +1062,10 @@ RUN \
   certutil -N --empty-password
 
 CMD ["/bin/bash"]
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+# Collect all builds for the SDK and squashes them into a final, single layer
+FROM scratch as sdk-golden
+
+COPY --from=sdk-final / /
