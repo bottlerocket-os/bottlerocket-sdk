@@ -1061,11 +1061,16 @@ RUN \
   mkdir .netscape && \
   certutil -N --empty-password
 
-CMD ["/bin/bash"]
-
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Collect all builds for the SDK and squashes them into a final, single layer
 FROM scratch as sdk-golden
 
 COPY --from=sdk-final / /
+
+# The `builder` user is setup in the "final" layer and is used in place of the
+# default `root` user
+USER builder
+WORKDIR /home/builder
+
+CMD ["/bin/bash"]
