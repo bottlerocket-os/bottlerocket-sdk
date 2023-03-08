@@ -1,8 +1,13 @@
 #!/bin/bash
 set -euxo pipefail
+UPSTREAM_SOURCE_FALLBACK="${UPSTREAM_SOURCE_FALLBACK:-'false'}"
 # shellcheck disable=SC2046
-curl --fail --remote-name-all --remote-time \
+if ! curl --fail --remote-name-all --remote-time \
     $(awk -F '[ ()]' '/^SHA512 \(/ {
         printf "https://cache.bottlerocket.aws/%s/%s/%s\n", $3, $6, $3
-    }' "$1")
+    }' "$1") \
+&& [[ "${UPSTREAM_SOURCE_FALLBACK}" == 'true' ]]; then
+    curl --fail --remote-name-all --remote-time --location \
+        $(awk '/^#\s((s)?ftp|http(s)?):\/\// {printf "%s\n", $2}' "$1")
+fi
 sha512sum --check "$1"
