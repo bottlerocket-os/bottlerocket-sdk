@@ -735,7 +735,7 @@ ARG GOVMOMISHORTCOMMIT="9078b0b"
 ARG GOVMOMIDATE="2023-02-01T04:38:23Z"
 
 USER builder
-WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
+WORKDIR /home/builder/go/src/github.com/vmware/govmomi
 COPY ./hashes/govmomi /home/builder/hashes
 RUN \
   sdk-fetch /home/builder/hashes && \
@@ -755,6 +755,7 @@ RUN \
   export CGO_ENABLED=0 ; \
   export BUILD_VERSION_PKG="github.com/vmware/govmomi/govc/flags" ; \
   go build -mod=vendor -o /usr/libexec/tools/govc -ldflags " \
+    -s -w \
     -X ${BUILD_VERSION_PKG}.BuildVersion=${GOVMOMIVER} \
     -X ${BUILD_VERSION_PKG}.BuildCommit=${GOVMOMISHORTCOMMIT} \
     -X ${BUILD_VERSION_PKG}.BuildDate=${GOVMOMIDATE} \
@@ -969,7 +970,7 @@ COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 
 # "sdk-govc" has the VMware govc tool and licenses.
-COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/licenses/govmomi/
 
 # "sdk-bootconfig" has the bootconfig tool
