@@ -668,7 +668,7 @@ ARG GOVMOMISHORTCOMMIT="9078b0b"
 ARG GOVMOMIDATE="2023-02-01T04:38:23Z"
 
 USER builder
-WORKDIR ${GOPATH}/src/github.com/vmware/govmomi
+WORKDIR /home/builder/go/src/github.com/vmware/govmomi
 COPY ./hashes/govmomi /home/builder/hashes
 RUN \
   sdk-fetch /home/builder/hashes && \
@@ -688,10 +688,53 @@ RUN \
   export CGO_ENABLED=0 ; \
   export BUILD_VERSION_PKG="github.com/vmware/govmomi/govc/flags" ; \
   go build -mod=vendor -o /usr/libexec/tools/govc -ldflags " \
+    -s -w \
     -X ${BUILD_VERSION_PKG}.BuildVersion=${GOVMOMIVER} \
     -X ${BUILD_VERSION_PKG}.BuildCommit=${GOVMOMISHORTCOMMIT} \
     -X ${BUILD_VERSION_PKG}.BuildDate=${GOVMOMIDATE} \
     " github.com/vmware/govmomi/govc
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go as sdk-docker
+
+USER root
+RUN \
+  mkdir -p /usr/libexec/tools /usr/share/licenses/docker && \
+  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/docker
+
+ARG DOCKERVER="20.10.21"
+ARG DOCKERCOMMIT="baeda1f82a10204ec5708d5fbba130ad76cfee49"
+ARG DOCKERIMPORT="github.com/docker/cli"
+ARG MOBYBIRTHDAY="2017-04-18T14:29:00.000000000+00:00"
+
+USER builder
+WORKDIR /home/builder/go/src/${DOCKERIMPORT}
+COPY ./hashes/docker /home/builder/hashes
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  tar --strip-components=1 -xf cli-${DOCKERVER}.tar.gz && \
+  rm cli-${DOCKERVER}.tar.gz
+
+COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
+COPY ./configs/docker/clarify.toml .
+RUN \
+  cp -p LICENSE NOTICE /usr/share/licenses/docker && \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/docker/vendor \
+    go-vendor ./vendor
+
+RUN \
+  export CGO_ENABLED=0 ; \
+  go build -o /usr/libexec/tools/docker -ldflags " \
+    -s -w \
+    -X github.com/docker/cli/cli/version.Version=${DOCKERVER} \
+    -X github.com/docker/cli/cli/version.GitCommit=${DOCKERCOMMIT} \
+    -X github.com/docker/cli/cli/version.BuildTime=${MOBYBIRTHDAY} \
+    -X \"github.com/docker/cli/cli/version.PlatformName=Docker Engine - Community\" \
+    " ${DOCKERIMPORT}/cmd/docker
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -902,8 +945,12 @@ COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 
 # "sdk-govc" has the VMware govc tool and licenses.
-COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/ /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/licenses/govmomi/
+
+# "sdk-docker" has the Docker CLI and licenses.
+COPY --chown=0:0 --from=sdk-docker /usr/libexec/tools/docker /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-docker /usr/share/licenses/docker/ /usr/share/licenses/docker/
 
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
@@ -983,6 +1030,11 @@ RUN \
 RUN \
   ln -sr /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu && \
   ln -sr /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl
+
+# Configure the Docker CLI.
+COPY \
+  ./configs/docker/docker-cli.json \
+  /home/builder/.docker/config.json
 
 # Reset permissions for `builder`.
 RUN chown builder:builder -R /home/builder
