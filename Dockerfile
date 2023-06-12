@@ -890,6 +890,7 @@ RUN \
     ShellCheck \
     squashfs-tools \
     veritysetup \
+    xfsprogs \
   && \
   dnf clean all
 
