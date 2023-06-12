@@ -326,73 +326,6 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-musl as sdk-musl-openssl
-USER builder
-
-ARG OPENSSLVER="3.0.8"
-ARG OPENSSLREV="1"
-
-WORKDIR /home/builder
-COPY ./hashes/openssl ./hashes
-RUN \
-  sdk-fetch hashes && \
-  rpm2cpio openssl-${OPENSSLVER}-${OPENSSLREV}.*.src.rpm | cpio -idmv && \
-  tar xf openssl-${OPENSSLVER}-hobbled.tar.gz && \
-  mv openssl-${OPENSSLVER} openssl && \
-  rm 0056-strcasecmp.patch && \
-  for p in *.patch ; do \
-    echo "applying ${p}" ; \
-    patch -d openssl -p1 < "${p}" ; \
-  done && \
-  cp ec_curve.c openssl/crypto/ec
-
-ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG SYSROOT="/${TARGET}/sys-root"
-ARG CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
-ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
-
-WORKDIR /home/builder/openssl
-RUN \
-  NO_FEATURES="" && \
-  for algorithm in \
-    aria bf blake2 camellia cast des dsa idea md4 \
-    mdc2 ocb rc2 rc4 rmd160 scrypt seed siphash siv \
-    sm2 sm3 sm4 whirlpool ; \
-  do \
-    NO_FEATURES+="no-${algorithm} " ; \
-  done && \
-  for feature in \
-    cmp cms deprecated dgram ec2m gost legacy padlockeng \
-    srp srtp ssl ssl-trace tests ts ui-console \
-    dtls dtls1{,-method} dtls1_2{,-method} \
-    tls1{,-method} tls1_1{,-method} \
-    ; \
-  do \
-    NO_FEATURES+="no-${feature} " ; \
-  done && \
-  CC="gcc" \
-  CXX="g++" \
-  CROSS_COMPILE="${TARGET}-" \
-  ./Configure \
-    --prefix="${SYSROOT}/usr" \
-    --libdir="${SYSROOT}/usr/lib" \
-    --cross-compile-prefix="${TARGET}-" \
-    '-DDEVRANDOM="\"/dev/urandom\""' \
-    ${NO_FEATURES} \
-    enable-ec_nistp_64_gcc_128 \
-    "linux-${ARCH}" && \
-   perl configdata.pm --dump && \
-   make -j$(nproc)
-
-USER root
-WORKDIR /home/builder/openssl
-RUN make install_sw
-RUN \
-  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/openssl LICENSE.txt
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
 FROM sdk as sdk-libc
 
 ARG ARCH
@@ -942,11 +875,10 @@ WORKDIR /
 # any other host programs we want available for OS builds.
 COPY --from=sdk-plus / /
 
-# "sdk-musl-openssl" includes the musl C library and OpenSSL, plus headers.
-# We omit "sdk-gnu" because we expect to build glibc again for the target OS,
-# while we will use the musl artifacts directly to generate static binaries
-# such as migrations.
-COPY --chown=0:0 --from=sdk-musl-openssl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+# "sdk-musl" has the musl C library and headers. We omit "sdk-gnu" because we
+# expect to build glibc again for the target OS, while we will use the musl
+# artifacts directly to generate static binaries such as migrations.
+COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
 
 # "sdk-rust" has our Rust toolchain with the required targets.
 COPY --chown=0:0 --from=sdk-rust /usr/libexec/rust/ /usr/libexec/rust/
