@@ -5,9 +5,10 @@ HOST_ARCH ?= $(shell uname -m)
 UPSTREAM_SOURCE_FALLBACK ?= false
 
 VERSION := $(shell cat $(TOP)VERSION)
+SHORT_SHA := $(shell git rev-parse --short=8 HEAD)
 
-SDK_TAG := bottlerocket/sdk-$(ARCH):$(VERSION)-$(HOST_ARCH)
-TOOLCHAIN_TAG := bottlerocket/toolchain-$(ARCH):$(VERSION)-$(HOST_ARCH)
+SDK_TAG := bottlerocket/sdk-$(ARCH):$(VERSION)-$(SHORT_SHA)-$(HOST_ARCH)
+TOOLCHAIN_TAG := bottlerocket/toolchain-$(ARCH):$(VERSION)-$(SHORT_SHA)-$(HOST_ARCH)
 
 all: sdk toolchain
 
@@ -30,6 +31,6 @@ toolchain:
 publish:
 	@test $${REGISTRY?not set!}
 	@test $${SDK_NAME?not set!}
-	$(TOP)publish-sdk --registry=$(REGISTRY) --sdk-name=$(SDK_NAME) --version=$(VERSION)
+	$(TOP)publish-sdk --registry=$(REGISTRY) --sdk-name=$(SDK_NAME) --version=$(VERSION) --short-sha=$(SHORT_SHA)
 
 .PHONY: all sdk toolchain publish
