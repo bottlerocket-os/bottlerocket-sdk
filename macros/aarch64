@@ -4,7 +4,7 @@
 %_cross_cpu_family arm
 %_cross_endian little
 
+%_cross_efi_arch aa64
 %_cross_grub_efi_format arm64-efi
-%_cross_grub_efi_image bootaa64.efi
 
 %_cross_go_arch arm64
