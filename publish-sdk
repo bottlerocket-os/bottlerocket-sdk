@@ -9,10 +9,11 @@ for opt in "$@"; do
       --version=*) VERSION="${optarg}" ;;
       --registry=*) REGISTRY="${optarg}" ;;
       --sdk-name=*) SDK_NAME="${optarg}" ;;
+      --short-sha=*) SHORT_SHA="${optarg,,}" ;;
    esac
 done
 
-for required_arg in VERSION REGISTRY SDK_NAME; do
+for required_arg in VERSION REGISTRY SDK_NAME SHORT_SHA; do
   [ -z "${!required_arg}" ] && echo "${required_arg} not set!" >&2 && exit 1
 done
 
@@ -46,18 +47,22 @@ update_image() {
     arm64) alt_docker_arch="amd64" ;;
   esac
 
-  if ! docker image inspect "${local_image}-${host_arch}" >/dev/null 2>&1 ; then
-    echo "did not find ${local_image}-${host_arch}, skipping it ..." >&2
+  local local_host_arch_image="${local_image}-${SHORT_SHA}-${host_arch}"
+  local remote_host_arch_image="${remote_image}-${SHORT_SHA}-${host_arch}"
+  local remote_alt_arch_image="${remote_image}-${SHORT_SHA}-${alt_arch}"
+
+  if ! docker image inspect "${local_host_arch_image}" >/dev/null 2>&1 ; then
+    echo "did not find ${local_host_arch_image}, skipping it ..." >&2
     return
   fi
 
-  if ! docker tag "${local_image}-${host_arch}" "${remote_image}-${host_arch}" ; then
-    echo "failed to tag ${remote_image}-${host_arch}" >&2 && exit 1
+  if ! docker tag "${local_host_arch_image}" "${remote_host_arch_image}" ; then
+    echo "failed to tag ${remote_host_arch_image}" >&2 && exit 1
   fi
 
   # push the image, if it exists locally
-  if ! docker push "${remote_image}-${host_arch}" ; then
-    echo "failed to push ${remote_image}-${host_arch}" >&2 && exit 1
+  if ! docker push "${remote_host_arch_image}" ; then
+    echo "failed to push ${remote_host_arch_image}" >&2 && exit 1
   fi
 
   # clean up any cached local copy of the manifest
@@ -66,8 +71,8 @@ update_image() {
   find "${manifest_dir}" -type f -delete
   find "${manifest_dir}" -mindepth 1 -type d -delete
 
-  if ! docker manifest inspect "${remote_image}-${alt_arch}" >/dev/null 2>&1 ; then
-    echo "could not find ${remote_image}-${alt_arch}, skipping manifest creation" >&2
+  if ! docker manifest inspect "${remote_alt_arch_image}" >/dev/null 2>&1 ; then
+    echo "could not find ${remote_alt_arch_image}, skipping manifest creation" >&2
     return
   fi
 
@@ -87,19 +92,18 @@ update_image() {
   fi
 
   if ! docker manifest create "${remote_image}" \
-      "${remote_image}-${host_arch}" \
-      "${remote_image}-${alt_arch}" ; then
+      "${remote_host_arch_image}" "${remote_alt_arch_image}" ; then
     echo "failed to create manifest ${remote_image}" >&2 && exit 1
   fi
 
   if ! docker manifest annotate "${remote_image}" \
-      "${remote_image}-${host_arch}" --arch "${docker_arch}" ; then
-    echo "failed to annotate manifest ${remote_image} with ${remote_image}-${host_arch}" >&2 && exit 1
+      "${remote_host_arch_image}" --arch "${docker_arch}" ; then
+    echo "failed to annotate manifest ${remote_image} with ${remote_host_arch_image}" >&2 && exit 1
   fi
 
   if ! docker manifest annotate "${remote_image}" \
-      "${remote_image}-${alt_arch}" --arch "${alt_docker_arch}" ; then
-    echo "failed to annotate manifest ${remote_image} with ${remote_image}-${alt_arch}" >&2 && exit 1
+      "${remote_alt_arch_image}" --arch "${alt_docker_arch}" ; then
+    echo "failed to annotate manifest ${remote_image} with ${remote_alt_arch_image}" >&2 && exit 1
   fi
 
   # push the manifest and remove the local cache
