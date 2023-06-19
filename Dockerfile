@@ -897,6 +897,19 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
+# Generate macros for the target.
+
+FROM sdk as sdk-macros
+ARG ARCH
+
+COPY macros/* /tmp/
+
+WORKDIR /tmp
+RUN \
+  cat ${ARCH} shared rust cargo > /etc/rpm/macros.bottlerocket
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+#
 # Collects all toolchain builds as single image layer
 FROM scratch as toolchain-golden
 COPY --from=toolchain-archive /toolchain /toolchain
@@ -993,6 +1006,11 @@ COPY --chown=0:0 --from=sdk-e2fsprogs \
 COPY --chown=0:0 --from=sdk-e2fsprogs \
   /home/builder/NOTICE \
   /usr/share/licenses/dir2fs/
+
+# "sdk-macros" has the rpm macros
+COPY --chown=0:0 --from=sdk-macros \
+  /etc/rpm/macros.bottlerocket \
+  /etc/rpm/macros.bottlerocket
 
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
