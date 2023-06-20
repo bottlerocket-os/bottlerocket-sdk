@@ -1,0 +1,77 @@
+[licenses]
+unlicensed = "deny"
+
+# Deny licenses unless they are specifically listed here
+copyleft = "deny"
+allow-osi-fsf-free = "neither"
+default = "deny"
+
+# We want really high confidence when inferring licenses from text
+confidence-threshold = 0.93
+
+allow = [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "ISC",
+    "MIT",
+    "OpenSSL",
+    "Unlicense",
+    "Zlib",
+]
+
+exceptions = [
+    { name = "attohttpc", allow = ["MPL-2.0"], version = "*" },
+    { name = "colored", allow = ["MPL-2.0"], version = "*" },
+    { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-DFS-2016"] },
+    { name = "webpki-roots", allow = ["MPL-2.0"], version = "*" },
+]
+
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 },
+]
+
+[[licenses.clarify]]
+name = "webpki"
+expression = "ISC"
+license-files = [
+    { path = "LICENSE", hash = 0x001c7e6c },
+]
+
+[[licenses.clarify]]
+name = "rustls-webpki"
+expression = "ISC"
+license-files = [
+    { path = "LICENSE", hash = 0x001c7e6c },
+]
+
+[bans]
+# Deny multiple versions or wildcard dependencies.
+multiple-versions = "deny"
+wildcards = "deny"
+
+skip = [
+    # num_cpus and atty use older versions of hermit-abi
+    { name = "hermit-abi" },
+
+    # Skip crates for unused platforms.
+    { name = "redox_syscall" },
+    { name = "wasi" },
+    { name = "windows-sys" },
+]
+
+skip-tree = [
+    # globset uses an older version of aho-corasick
+    { name = "globset", version = "0.4.10" },
+
+    # chrono uses an older version of time
+    { name = "chrono", version = "0.4.24" },
+]
+
+[sources]
+# Deny crates from unknown registries or git repositories.
+unknown-registry = "deny"
+unknown-git = "deny"

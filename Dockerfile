@@ -568,6 +568,24 @@ RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-cargo as sdk-cargo-make
+
+ARG MAKEVER="0.36.8"
+
+USER builder
+WORKDIR /home/builder
+COPY ./hashes/cargo-make ./hashes
+RUN \
+  sdk-fetch hashes && \
+  tar xf cargo-make-${MAKEVER}.tar.gz && \
+  rm cargo-make-${MAKEVER}.tar.gz && \
+  mv cargo-make-${MAKEVER} cargo-make
+
+WORKDIR /home/builder/cargo-make
+RUN cargo build --release --locked
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk-cargo as sdk-rust-tools
 
 # Bring it all back together and run license-scan and cargo-deny on everything.
@@ -575,6 +593,10 @@ FROM sdk-cargo as sdk-rust-tools
 COPY --from=sdk-cargo-deny \
   /home/builder/cargo-deny \
   /home/builder/cargo-deny
+
+COPY --from=sdk-cargo-make \
+  /home/builder/cargo-make \
+  /home/builder/cargo-make
 
 COPY --from=sdk-license-tool \
   /home/builder/license-tool \
@@ -586,6 +608,10 @@ COPY --from=sdk-license-scan \
 
 COPY --chown=0:0 --from=sdk-cargo-deny \
   /home/builder/cargo-deny/target/release/cargo-deny \
+  /usr/libexec/tools/
+
+COPY --chown=0:0 --from=sdk-cargo-make \
+  /home/builder/cargo-make/target/release/cargo-make \
   /usr/libexec/tools/
 
 COPY --chown=0:0 --from=sdk-license-tool \
@@ -600,9 +626,13 @@ COPY --chown=0:0 --from=sdk-license-scan \
   /home/builder/license-scan/license-list-data/json/details \
   /usr/libexec/tools/spdx-data
 
-COPY --chown=1000:1000 \
-  LICENSE-APACHE LICENSE-MIT \
+COPY --chown=1000:1000 --from=sdk-cargo-deny \
+  /home/builder/cargo-deny/LICENSE-* \
   /usr/share/licenses/cargo-deny/
+
+COPY --chown=1000:1000 --from=sdk-cargo-make \
+  /home/builder/cargo-make/LICENSE \
+  /usr/share/licenses/cargo-make/
 
 COPY --chown=1000:1000 \
   COPYRIGHT LICENSE-APACHE LICENSE-MIT \
@@ -622,6 +652,20 @@ RUN \
     cargo --locked Cargo.toml
 
 COPY ./configs/cargo-deny/deny.toml .
+RUN \
+  /usr/libexec/tools/cargo-deny \
+    --all-features check --disable-fetch licenses bans sources
+
+WORKDIR /home/builder/cargo-make
+COPY ./configs/cargo-make/clarify.toml .
+RUN \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/cargo-make/vendor \
+    cargo --locked Cargo.toml
+
+COPY ./configs/cargo-make/deny.toml .
 RUN \
   /usr/libexec/tools/cargo-deny \
     --all-features check --disable-fetch licenses bans sources
@@ -943,6 +987,7 @@ COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-tool/ /usr/share/licenses/bottlerocket-license-tool/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
+COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-make/ /usr/share/licenses/cargo-make/
 
 # "sdk-govc" has the VMware govc tool and licenses.
 COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/
@@ -1047,6 +1092,10 @@ WORKDIR /home/builder
 RUN \
   mkdir .netscape && \
   certutil -N --empty-password
+
+# Disable cargo make update checks for invocations within the SDK.
+RUN \
+  echo "export CARGO_MAKE_DISABLE_UPDATE_CHECK=1" >> .bashrc
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
