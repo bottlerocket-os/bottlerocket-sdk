@@ -3,6 +3,9 @@
 set -e -o pipefail
 shopt -qs failglob
 
+SKIP_MANIFEST="${SKIP_MANIFEST:-'false'}"
+ONLY_MANIFEST="${ONLY_MANIFEST:-'false'}"
+
 for opt in "$@"; do
    optarg="$(expr "${opt}" : '[^=]*=\(.*\)')"
    case "${opt}" in
@@ -10,12 +13,22 @@ for opt in "$@"; do
       --registry=*) REGISTRY="${optarg}" ;;
       --sdk-name=*) SDK_NAME="${optarg}" ;;
       --short-sha=*) SHORT_SHA="${optarg,,}" ;;
+      --skip-manifest=*) SKIP_MANIFEST="${optarg,,}" ;;
+      --only-manifest=*) ONLY_MANIFEST="${optarg,,}" ;;
    esac
 done
 
 for required_arg in VERSION REGISTRY SDK_NAME SHORT_SHA; do
   [ -z "${!required_arg}" ] && echo "${required_arg} not set!" >&2 && exit 1
 done
+
+ECR_OPERATIONS=0
+MIN_ECR_OPERATIONS=2
+if [[ "${SKIP_MANIFEST}" == "true" ]] && [[ "${ONLY_MANIFEST}" == "true" ]] ; then
+  echo "nothing to do" >&2 && exit 2
+elif [[ "${SKIP_MANIFEST}" == "true" ]] || [[ "${ONLY_MANIFEST}" == "true" ]] ; then
+  ((--MIN_ECR_OPERATIONS))
+fi
 
 update_image() {
   set -u
@@ -51,19 +64,25 @@ update_image() {
   local remote_host_arch_image="${remote_image}-${SHORT_SHA}-${host_arch}"
   local remote_alt_arch_image="${remote_image}-${SHORT_SHA}-${alt_arch}"
 
-  if ! docker image inspect "${local_host_arch_image}" >/dev/null 2>&1 ; then
-    echo "did not find ${local_host_arch_image}, skipping it ..." >&2
-    return
+  if [[ "${ONLY_MANIFEST}" != "true" ]]; then
+    if ! docker image inspect "${local_host_arch_image}" >/dev/null 2>&1 ; then
+      echo "did not find ${local_host_arch_image}, skipping it ..." >&2
+      return
+    fi
+
+    if ! docker tag "${local_host_arch_image}" "${remote_host_arch_image}" ; then
+      echo "failed to tag ${remote_host_arch_image}" >&2 && exit 1
+    fi
+
+    # push the image, if it exists locally
+    if ! docker push "${remote_host_arch_image}" ; then
+      echo "failed to push ${remote_host_arch_image}" >&2 && exit 1
+    fi
+    ((++ECR_OPERATIONS))
   fi
 
-  if ! docker tag "${local_host_arch_image}" "${remote_host_arch_image}" ; then
-    echo "failed to tag ${remote_host_arch_image}" >&2 && exit 1
-  fi
-
-  # push the image, if it exists locally
-  if ! docker push "${remote_host_arch_image}" ; then
-    echo "failed to push ${remote_host_arch_image}" >&2 && exit 1
-  fi
+  # return early to skip manifest generation steps
+  [[ "${SKIP_MANIFEST}" == "true" ]] && return
 
   # clean up any cached local copy of the manifest
   manifest_dir="${HOME}/.docker/manifests"
@@ -110,6 +129,7 @@ update_image() {
   if ! docker manifest push --purge "${remote_image}" ; then
     echo "failed to push ${remote_image}" >&2 && exit 1
   fi
+    ((++ECR_OPERATIONS))
 }
 
 for arch in x86_64 aarch64 ; do
@@ -121,3 +141,9 @@ for arch in x86_64 aarch64 ; do
   remote_toolchain="${REGISTRY}/${SDK_NAME}-toolchain-${arch}:${VERSION}"
   update_image "${local_toolchain}" "${remote_toolchain}" "${arch}"
 done
+
+if [[ ${ECR_OPERATIONS} -lt ${MIN_ECR_OPERATIONS} ]]; then
+  echo "no containers or manifests were pushed" >&2 && exit 1
+else
+  exit 0
+fi
