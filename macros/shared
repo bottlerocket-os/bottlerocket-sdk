@@ -8,13 +8,15 @@
 %_cross_cflags %{shrink: \
   -O2 -g -pipe -Wall \
   -Werror=format-security -Werror=strict-aliasing \
-  -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS \
+  -Wp,-U_FORTIFY_SOURCE -Wp,-D_FORTIFY_SOURCE=2 \
+  -Wp,-D_GLIBCXX_ASSERTIONS \
   -fexceptions -fstack-clash-protection -fno-semantic-interposition \
   %{nil}}
 %_cross_c_args %{shrink: \
   '-O2', '-g', '-pipe', '-Wall', \
   '-Werror=format-security', '-Werror=strict-aliasing', \
-  '-Wp,-D_FORTIFY_SOURCE=2', '-Wp,-D_GLIBCXX_ASSERTIONS', \
+  '-Wp,-U_FORTIFY_SOURCE', '-Wp,-D_FORTIFY_SOURCE=2', \
+  '-Wp,-D_GLIBCXX_ASSERTIONS', \
   '-fexceptions', '-fstack-clash-protection', '-fno-semantic-interposition' \
   %{nil}}
 %_cross_cxxflags %_cross_cflags
