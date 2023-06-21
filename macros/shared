@@ -1,6 +1,6 @@
 %_cross_vendor bottlerocket
 %_cross_libc gnu
-%_cross_os %{_cross_vendor}-%{_cross_arch}-
+%_cross_os %{_cross_vendor}-
 %_cross_triple %{_cross_arch}-%{_cross_vendor}-linux
 %_cross_target %{_cross_triple}-%{_cross_libc}
 %dist %{nil}
