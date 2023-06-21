@@ -22,8 +22,12 @@ for required_arg in VERSION REGISTRY SDK_NAME SHORT_SHA; do
   [ -z "${!required_arg}" ] && echo "${required_arg} not set!" >&2 && exit 1
 done
 
+ECR_OPERATIONS=0
+MIN_ECR_OPERATIONS=2
 if [[ "${SKIP_MANIFEST}" == "true" ]] && [[ "${ONLY_MANIFEST}" == "true" ]] ; then
   echo "nothing to do" >&2 && exit 2
+elif [[ "${SKIP_MANIFEST}" == "true" ]] || [[ "${ONLY_MANIFEST}" == "true" ]] ; then
+  ((--MIN_ECR_OPERATIONS))
 fi
 
 update_image() {
@@ -74,6 +78,7 @@ update_image() {
     if ! docker push "${remote_host_arch_image}" ; then
       echo "failed to push ${remote_host_arch_image}" >&2 && exit 1
     fi
+    ((++ECR_OPERATIONS))
   fi
 
   # return early to skip manifest generation steps
@@ -124,6 +129,7 @@ update_image() {
   if ! docker manifest push --purge "${remote_image}" ; then
     echo "failed to push ${remote_image}" >&2 && exit 1
   fi
+    ((++ECR_OPERATIONS))
 }
 
 for arch in x86_64 aarch64 ; do
@@ -135,3 +141,9 @@ for arch in x86_64 aarch64 ; do
   remote_toolchain="${REGISTRY}/${SDK_NAME}-toolchain-${arch}:${VERSION}"
   update_image "${local_toolchain}" "${remote_toolchain}" "${arch}"
 done
+
+if [[ ${ECR_OPERATIONS} -lt ${MIN_ECR_OPERATIONS} ]]; then
+  echo "no containers or manifests were pushed" >&2 && exit 1
+else
+  exit 0
+fi
