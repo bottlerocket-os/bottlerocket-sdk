@@ -85,5 +85,14 @@ To publish via the `publish-sdk` script, run:
 ./publish-sdk \
   --registry="aws_account_id.dkr.ecr.us-east-1.amazonaws.com" \
   --sdk-name="my-custom-bottlerocket" \
-  --version="v0.1.0"
+  --version="v0.1.0" \
+  --short-sha=0123abcd
 ```
+
+or:
+
+```shell
+make publish REGISTRY=aws_account_id.dkr.ecr.us-east-1.amazonaws.com SDK_NAME=my-custom-bottlerocket
+```
+
+to have the commit short SHA-1 hash and the SDK version derived from the state of the local Git repository.
