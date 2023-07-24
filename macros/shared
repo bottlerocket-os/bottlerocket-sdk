@@ -244,3 +244,9 @@ CROSS_COMPILATION_CONF_EOF\
   %cross_generate_attribution
 
 %source_date_epoch_from_changelog 0
+
+# Forcefully prevent libtool from embedding an explicit rpath during linking,
+# for projects where the configure script does not implement --disable-rpath.
+%force_disable_rpath \
+  sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool \
+  sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
