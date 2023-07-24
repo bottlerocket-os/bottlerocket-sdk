@@ -104,10 +104,11 @@ update_image() {
       --repository-name "${repo}" \
       --image-ids imageTag="${VERSION}" \
       --region "us-east-1"
-  elif [[ "${REGISTRY}" =~ ^[0-9]+\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com$ ]]; then
+  elif [[ "${REGISTRY}" =~ ^[0-9]+\.dkr\.ecr\.([a-z0-9-]+)\.amazonaws\.com$ ]]; then
     aws ecr batch-delete-image \
       --repository-name "${repo}" \
-      --image-ids imageTag="${VERSION}"
+      --image-ids imageTag="${VERSION}" \
+      --region "${BASH_REMATCH[1]}"
   fi
 
   if ! docker manifest create "${remote_image}" \
