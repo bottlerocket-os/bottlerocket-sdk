@@ -6,6 +6,7 @@ use anyhow::{anyhow, bail, ensure, Context, Result};
 use askalono::{ScanStrategy, Store, TextData};
 use ignore::types::{Types, TypesBuilder};
 use ignore::WalkBuilder;
+use semver::VersionReq;
 use serde::{Deserialize, Deserializer};
 use spdx::Expression;
 use std::cmp::Ordering;
@@ -81,6 +82,7 @@ fn main() -> Result<()> {
                             repo.to_string_lossy()
                         )
                     })?,
+                    None,
                     &vendor_dir.join(&repo),
                     &opt.out_dir.join(&repo),
                     &scanner,
@@ -116,6 +118,7 @@ fn main() -> Result<()> {
                 }
                 write_attribution(
                     &package.name,
+                    Some(&package.version.to_string().parse()?),
                     package
                         .manifest_path
                         .parent()
@@ -158,8 +161,29 @@ struct Clarifications {
 /// list in the clarification (or missing files must be in `skip_files`), or it will return an
 /// error to ensure changes to license information for a package is inspected.
 #[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum Clarification {
+    SingleClarification(Box<InnerClarification>),
+    ClarificationList(Vec<InnerClarification>),
+}
+
+impl Clarification {
+    fn matches(&self, query_version: Option<&semver::Version>) -> Option<&InnerClarification> {
+        match self {
+            Self::SingleClarification(c) => c.matches_version(query_version).then_some(c),
+            Self::ClarificationList(cl) => cl
+                .iter()
+                .find(|clarification| clarification.matches_version(query_version)),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct Clarification {
+struct InnerClarification {
+    /// The optional version constraint. Defaults to any version.
+    version: Option<VersionReq>,
+
     /// The SPDX license expression for the entire package.
     #[serde(deserialize_with = "expression_from_str")]
     expression: Expression,
@@ -172,13 +196,27 @@ struct Clarification {
     skip_files: Vec<PathBuf>,
 }
 
+impl InnerClarification {
+    /// Checks whether this clarification matches an input version.
+    ///
+    /// If the clarification has no version, it matches any input version.
+    /// If the clarification has a version, but the query version is empty, it does not match.
+    fn matches_version(&self, query_version: Option<&semver::Version>) -> bool {
+        match (&self.version, query_version) {
+            (Some(version), Some(query_version)) => version.matches(query_version),
+            (Some(_), None) => false,
+            (None, _) => true,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct LicenseFile {
     path: String,
     hash: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Clarified<'a> {
     expression: &'a Expression,
     skip_files: &'a Vec<PathBuf>,
@@ -192,8 +230,17 @@ impl Clarifications {
     /// If a clarification is present and the file list matches, `Ok(Some(Clarified))` is returned.
     ///
     /// If a clarification is present and the file list does not match, `Err(_)` is returned.
-    fn get(&self, name: &str, mut files: BTreeMap<&Path, u32>) -> Result<Option<Clarified<'_>>> {
-        if let Some(clarification) = self.clarify.get(name) {
+    fn get(
+        &self,
+        name: &str,
+        version: Option<&semver::Version>,
+        mut files: BTreeMap<&Path, u32>,
+    ) -> Result<Option<Clarified<'_>>> {
+        if let Some(clarification) = self
+            .clarify
+            .get(name)
+            .and_then(|clarification| clarification.matches(version))
+        {
             // first remove files to skip
             for file in &clarification.skip_files {
                 files.remove(file.as_path());
@@ -288,6 +335,7 @@ fn hash(data: &[u8]) -> u32 {
 #[allow(clippy::too_many_lines)] // maybe someday...
 fn write_attribution(
     name: &str,
+    version: Option<&semver::Version>,
     scan_dir: &Path,
     out_dir: &Path,
     scanner: &ScanStrategy<'_>,
@@ -314,7 +362,7 @@ fn write_attribution(
         .iter()
         .map(|(file, (_, hash))| (file.as_path(), *hash))
         .collect();
-    let license = if let Some(clarified) = clarifications.get(name, file_hashes)? {
+    let license = if let Some(clarified) = clarifications.get(name, version, file_hashes)? {
         let expression = clarified.expression.to_string();
         eprintln!("  ! {expression} (clarified)");
         copy_files(out_dir, &files, clarified.skip_files)?;
@@ -470,4 +518,209 @@ fn scan_go_vendor_repos(vendor_dir: &Path) -> Result<Vec<PathBuf>> {
         }
     }
     Ok(repositories)
+}
+
+#[cfg(test)]
+mod test {
+    // See `testdata/clarifications_sample.toml` in the crate root to see the test data.
+
+    // Clippy doesn't like our checksums.
+    #![allow(clippy::unreadable_literal)]
+
+    use super::*;
+    use maplit::btreemap;
+
+    fn load_clarifications() -> Clarifications {
+        toml::from_str(include_str!("../testdata/clarifications_sample.toml"))
+            .expect("Failed to parse testdata")
+    }
+
+    #[test]
+    fn test_match_unversioned_clarification() {
+        // Given a clarification with no version specified
+        let clarifications = load_clarifications();
+
+        // When we match with no version,
+        // Then a clarification is returned.
+        assert_eq!(
+            clarifications
+                .get(
+                    "singlepackage",
+                    None,
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000000,
+                        Path::new("NOTICE") => 0x00000000,
+                    },
+                )
+                .unwrap(),
+            Some(Clarified {
+                expression: &spdx::Expression::parse("Apache-2.0").unwrap(),
+                skip_files: &vec![],
+            })
+        );
+
+        // When we match with some version,
+        // Then a clarification is returned.
+        assert_eq!(
+            clarifications
+                .get(
+                    "singlepackage",
+                    Some(&"5.0.0".parse().unwrap()),
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000000,
+                        Path::new("NOTICE") => 0x00000000,
+                    },
+                )
+                .unwrap(),
+            Some(Clarified {
+                expression: &spdx::Expression::parse("Apache-2.0").unwrap(),
+                skip_files: &vec![],
+            })
+        );
+    }
+
+    #[test]
+    fn test_match_versioned_package_versioned_clarification() {
+        // Given a package and version specifier
+        let clarifications = load_clarifications();
+
+        // When the package and version match the requirements,
+        // Then a clarification is returned.
+        assert_eq!(
+            clarifications
+                .get(
+                    "singleversioned",
+                    Some(&"1.6.0".parse().unwrap()),
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000000,
+                        Path::new("NOTICE") => 0x00000000,
+                    },
+                )
+                .unwrap(),
+            Some(Clarified {
+                expression: &spdx::Expression::parse("MIT").unwrap(),
+                skip_files: &vec![],
+            })
+        );
+
+        // When the package and version do not match the requirements,
+        // Then no clarification is returned.
+        assert_eq!(
+            clarifications
+                .get(
+                    "singleversioned",
+                    Some(&"2.0.0".parse().unwrap()),
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000000,
+                        Path::new("NOTICE") => 0x00000000,
+                    },
+                )
+                .unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn test_match_unversioned_package_versioned_clarification() {
+        // Given a package with no version specifier
+        // When the clarified package has a version specified
+        // Then no clarification is returned.
+        let clarifications = load_clarifications();
+
+        assert_eq!(
+            clarifications
+                .get(
+                    "singleversioned",
+                    None,
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000000,
+                        Path::new("NOTICE") => 0x00000000,
+                    },
+                )
+                .unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn test_multimatch() {
+        // Given a package with a version specifier
+        // When there are multiple packages with the same name
+        // Then only the one with the matching version is returned.
+        let clarifications = load_clarifications();
+
+        assert_eq!(
+            clarifications
+                .get(
+                    "multipackage",
+                    Some(&"2.5.3".parse().unwrap()),
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000002,
+                        Path::new("NOTICE") => 0x00000002,
+                    },
+                )
+                .unwrap(),
+            Some(Clarified {
+                expression: &spdx::Expression::parse("Apache-2.0 OR BSD-3-Clause").unwrap(),
+                skip_files: &vec![],
+            })
+        );
+        assert_eq!(
+            clarifications
+                .get(
+                    "multipackage",
+                    Some(&"1.4.3".parse().unwrap()),
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000001,
+                        Path::new("NOTICE") => 0x00000001,
+                    },
+                )
+                .unwrap(),
+            Some(Clarified {
+                expression: &spdx::Expression::parse("Apache-2.0 OR MIT").unwrap(),
+                skip_files: &vec![],
+            })
+        );
+    }
+
+    #[test]
+    fn test_first_match() {
+        // Given a package with a version specifier
+        // When there are multiple packages with the same name and overlapping version specifiers
+        // Then the first matching clarification is returned.
+        let clarifications = load_clarifications();
+
+        assert_eq!(
+            clarifications
+                .get(
+                    "overlapping",
+                    Some(&"1.3.1".parse().unwrap()),
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000000,
+                        Path::new("NOTICE") => 0x00000000,
+                    },
+                )
+                .unwrap(),
+            Some(Clarified {
+                expression: &spdx::Expression::parse("BSD-3-Clause").unwrap(),
+                skip_files: &vec![],
+            })
+        );
+        assert_eq!(
+            clarifications
+                .get(
+                    "overlapping",
+                    Some(&"1.1.2".parse().unwrap()),
+                    btreemap! {
+                        Path::new("LICENSE") => 0x00000000,
+                        Path::new("NOTICE") => 0x00000000,
+                    },
+                )
+                .unwrap(),
+            Some(Clarified {
+                expression: &spdx::Expression::parse("BSD-3-Clause AND Apache-2.0").unwrap(),
+                skip_files: &vec![],
+            })
+        );
+    }
 }
