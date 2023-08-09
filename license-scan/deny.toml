@@ -26,6 +26,10 @@ exceptions = [
 multiple-versions = "deny"
 wildcards = "deny"
 
+skip = [
+    { name = "semver", version = "0.10.0" },
+]
+
 [sources]
 # Deny crates from unknown registries or git repositories.
 unknown-registry = "deny"
