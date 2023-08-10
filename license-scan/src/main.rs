@@ -121,6 +121,7 @@ fn main() -> Result<()> {
                     Some(&package.version.to_string().parse()?),
                     package
                         .manifest_path
+                        .into_std_path_buf()
                         .parent()
                         .expect("expected a path to Cargo.toml to have a parent"),
                     &opt.out_dir
