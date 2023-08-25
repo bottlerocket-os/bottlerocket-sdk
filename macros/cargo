@@ -20,6 +20,7 @@
 %__cargo_cross_pkg_config PKG_CONFIG_PATH="%{_cross_pkgconfigdir}" PKG_CONFIG_ALLOW_CROSS=1
 %__cargo_cross_env %{__cargo_env} %{__cargo_cross_pkg_config} TARGET_CC="%{_cross_triple}-gnu-gcc"
 %__cargo_cross_env_static %{__cargo_env_static} %{__cargo_cross_pkg_config} TARGET_CC="%{_cross_triple}-musl-gcc"
+%__cargo_incremental false
 
 %cargo_prep (\
 %{__mkdir} -p %{_builddir}/.cargo \
@@ -27,6 +28,7 @@ cat > %{_builddir}/.cargo/config << EOF \
 [build]\
 rustc = "%{__rustc}"\
 rustdoc = "%{__rustdoc}"\
+incremental = %{__cargo_incremental}\
 \
 [target.%{_cross_triple}-gnu]\
 linker = "%{_bindir}/%{_cross_triple}-gnu-gcc"\
