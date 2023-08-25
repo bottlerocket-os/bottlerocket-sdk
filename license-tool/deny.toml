@@ -44,8 +44,8 @@ license-files = [
 multiple-versions = "deny"
 wildcards = "deny"
 skip = [
-    # older version used by reqwest 0.11.13
-    { name = "base64", version = "0.13.1" },
+    # redox_syscall uses an older version of bitflags
+    { name = "bitflags", version = "=1.3" },
 ]
 
 [sources]
