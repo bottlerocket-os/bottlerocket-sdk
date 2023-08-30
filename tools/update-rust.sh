@@ -36,8 +36,8 @@ function add_package {
     PKG_PATH=$(get_package_url "${package}" "${arch}")
     PKG_FILE=$(echo "${PKG_PATH}" | cut -d '/' -f 3)
     echo "Checking ${PACKAGE_ROOT}/${PKG_PATH}"
-    curl -s -O "${PACKAGE_ROOT}/${PKG_PATH}"
-    curl -s -O "${PACKAGE_ROOT}/${PKG_PATH}.asc"
+    curl -s -O -C - "${PACKAGE_ROOT}/${PKG_PATH}"
+    curl -s -O -C - "${PACKAGE_ROOT}/${PKG_PATH}.asc"
 
     # Verify file integrity
     gpg --verify "${PKG_FILE}.asc" "${PKG_FILE}"
@@ -46,14 +46,12 @@ function add_package {
     PKG_SHA=$(sha512sum "${PKG_FILE}" | cut -d ' ' -f 1)
 
     # Clean up
-    rm "${PKG_FILE}" "${PKG_FILE}.asc"
+    rm "${PKG_FILE}.asc"
 
     # Write out details to the hash file
     echo "# ${PACKAGE_ROOT}/${PKG_PATH}" >> "${OUTPUT}"
     echo "SHA512 (${PKG_FILE}) = ${PKG_SHA}" >> "${OUTPUT}"
 }
-
-cd /tmp
 
 # Make sure the Rust project's public key is imported
 curl -s https://keybase.io/rust/pgp_keys.asc | gpg --import
@@ -62,12 +60,12 @@ curl -s https://keybase.io/rust/pgp_keys.asc | gpg --import
 RUSTC_PACKAGE="rustc-${VERSION}-src.tar.xz"
 RUSTC_URL="${PACKAGE_ROOT}/dist/${RUSTC_PACKAGE}"
 
-curl -s -O "${RUSTC_URL}"
-curl -s -O "${RUSTC_URL}.asc"
+curl -s -O -C - "${RUSTC_URL}"
+curl -s -O -C - "${RUSTC_URL}.asc"
 gpg --verify "${RUSTC_PACKAGE}.asc" "${RUSTC_PACKAGE}"
 
 RUSTC_SHA=$(sha512sum "${RUSTC_PACKAGE}" | cut -d ' ' -f 1)
-rm "${RUSTC_PACKAGE}" "${RUSTC_PACKAGE}.asc"
+rm "${RUSTC_PACKAGE}.asc"
 
 ARTIFACT_URL="https://raw.githubusercontent.com/rust-lang/rust/${VERSION}/src/stage0.json"
 curl -s -o "${METADATA_FILE}" "${ARTIFACT_URL}"
