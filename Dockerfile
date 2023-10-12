@@ -349,7 +349,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.71.1"
+ARG RUSTVER="1.73.0"
 
 USER builder
 WORKDIR /home/builder
