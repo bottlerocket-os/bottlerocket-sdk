@@ -84,8 +84,9 @@ done
 
 rm "${METADATA_FILE}"
 
+DOCKERFILE="${ROOTDIR}/Dockerfile"
+sed -i -e "s,^ARG RUSTVER=.*,ARG RUSTVER=\"${VERSION}\",g" "${DOCKERFILE}"
+
 echo "================================================"
 echo "Rust toolchain updated to ${VERSION}"
-echo
-echo "Make sure to bump RUSTVER in Dockerfile to match"
 echo "================================================"
