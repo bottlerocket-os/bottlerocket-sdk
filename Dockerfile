@@ -900,6 +900,8 @@ RUN \
     openssl-pkcs11 \
     pesign \
     policycoreutils \
+    protobuf-compiler \
+    protobuf-devel \
     python3-jinja2 \
     python3-virt-firmware \
     qemu-img \
