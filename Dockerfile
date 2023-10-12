@@ -887,14 +887,9 @@ RUN \
     glib2-devel \
     gnupg-pkcs11-scd \
     gnutls-utils \
-    java-11-openjdk-devel \
     kpartx \
     libcap-devel \
     lz4 \
-    maven-clean-plugin \
-    maven-local \
-    maven-openjdk11 \
-    maven-shade-plugin \
     mtools \
     nss-tools \
     openssl-pkcs11 \
