@@ -1,2 +1,2 @@
-# https://go.dev/dl/go1.20.10.src.tar.gz
-SHA512 (go1.20.10.src.tar.gz) = 1c6304abb8a7847cedb634380d43fcbf2b206f0e6af99e915b4735b4c5f9dfc08a01db6d41edaed91a2a8140fcd886343d39465bd6fb53bd37be0a7f41dc6525
+# https://go.dev/dl/go1.21.3.src.tar.gz
+SHA512 (go1.21.3.src.tar.gz) = c98d31b9c477c0ac4b6f6933adefb40fdce5cdbb171e5236e3b694fec9e5b04695487af734259eab304dd42e86341240621a781f54b60c719627fd7b5efe4742
