@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/fedora:37 as base
+FROM public.ecr.aws/docker/library/fedora:39 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -39,8 +39,6 @@ RUN \
     which \
   && \
   dnf config-manager --set-disabled \
-    fedora-modular \
-    updates-modular \
     fedora-cisco-openh264 \
   && \
   useradd builder
