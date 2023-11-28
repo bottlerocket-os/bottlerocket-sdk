@@ -501,6 +501,96 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-libc as sdk-go-fips
+
+ARG ARCH
+ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
+ARG SYSROOT="/${TARGET}/sys-root"
+ARG GOVER="1.21.4"
+ARG AWS_LC_FIPS_VER="2.0.2"
+
+USER root
+RUN dnf install -y golang clang
+
+USER builder
+WORKDIR /home/builder/sdk-go-fips
+COPY ./hashes/go /home/builder/hashes
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  tar --strip-components=1 -xf go${GOVER}.src.tar.gz && \
+      rm go${GOVER}.src.tar.gz
+
+WORKDIR /home/builder/sdk-go-fips
+COPY patches/go-fips/* ./
+RUN git init && git apply --whitespace=nowarn *.patch
+
+# Build aws-lc crypto modules
+WORKDIR /home/builder/boring/boringssl
+COPY ./hashes/aws-lc /home/builder/hashes
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  tar --strip-components=1 -xf AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz && \
+    rm AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz
+
+# Build BoringCrypto.
+WORKDIR /home/builder/boring/
+ARG LANG=C
+ARG CFLAGS="-O2 -g -pipe -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions"
+ARG CXXFLAGS=${CFLAGS}
+ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+ARG GOARCH_aarch64="arm64"
+ARG GOARCH_x86_64="amd64"
+ARG GOARCH_ARCH="GOARCH_${ARCH}"
+ENV PATH="/home/builder/bin:${PATH}"
+RUN cp /home/builder/sdk-go-fips/src/crypto/internal/boring/build-boring.sh /home/builder/boring/build-boring.sh && \
+    GCC_VER=$(${TARGET}-gcc -dumpversion); \
+    sed -i "s|-DGOBORING -fPIC \"\$@\"|--gcc-install-dir=/usr/lib/gcc/'$TARGET'/'$GCC_VER'/   -DGOBORING -fPIC --target='$TARGET' --sysroot='$SYSROOT' -v \"\$@\"|g" /home/builder/boring/build-boring.sh && \
+    sed -i "s|cd /boring|cd /home/builder/boring|g" /home/builder/boring/build-boring.sh && \
+    mkdir -p /home/builder/bin && sed -i "s|/usr/local/bin/|/home/builder/bin/|g" /home/builder/boring/build-boring.sh && \
+    export ClangV=$(clang -dumpversion | awk -F. '{ print $1 }'); \
+      /home/builder/boring/build-boring.sh && \
+# Build Go BoringCrypto syso.
+    cp /home/builder/sdk-go-fips/src/crypto/internal/boring/build-goboring.sh /home/builder/boring/build-goboring.sh && \
+    sed -i "s|cd /boring/godriver|cd /home/builder/boring/godriver|g" /home/builder/boring/build-goboring.sh && \
+    mkdir -p /home/builder/boring/godriver/ && \
+    cp /home/builder/sdk-go-fips/src/crypto/internal/boring/goboringcrypto.h /home/builder/boring/godriver/goboringcrypto.h && \
+      /home/builder/boring/build-goboring.sh
+
+# go-fips toolchain build with Boringcryto/AWS-LC
+WORKDIR /home/builder/sdk-go-fips/src
+ARG GOROOT_FINAL="/usr/libexec/go-fips"
+ARG GOOS="linux"
+ARG CGO_ENABLED=1
+ARG CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ARG CXXFLAGS="${CFLAGS}"
+ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+ARG CGO_CFLAGS="${CFLAGS}"
+ARG CGO_CXXFLAGS="${CXXFLAGS}"
+ARG CGO_LDFLAGS="${LDFLAGS}"
+ENV GOEXPERIMENT=boringcrypto
+RUN cp /home/builder/boring/godriver/goboringcrypto_linux_${!GOARCH_ARCH}.syso /home/builder/sdk-go-fips/src/crypto/internal/boring/syso/ && \
+      ./all.bash
+
+# Build the standard library with and without PIE. Target binaries
+# should use PIE, but any host binaries generated during the build
+# might not.
+WORKDIR /home/builder/sdk-go-fips
+ENV PATH="/home/builder/sdk-go-fips/bin:${PATH}" \
+  GO111MODULE="auto"
+RUN \
+  export GOARCH="${!GOARCH_ARCH}" ; \
+  export CC="${TARGET}-gcc" ; \
+  export CC_FOR_TARGET="${TARGET}-gcc" ; \
+  export CC_FOR_${GOOS}_${GOARCH}="${TARGET}-gcc" ; \
+  export CXX="${TARGET}-g++" ; \
+  export CXX_FOR_TARGET="${TARGET}-g++" ; \
+  export CXX_FOR_${GOOS}_${GOARCH}="${TARGET}-g++" ; \
+  export GOFLAGS="-mod=vendor" ; \
+  go install std cmd && \
+  go install -buildmode=pie std cmd
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk-rust as sdk-cargo
 USER builder
 
@@ -991,6 +1081,15 @@ COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/src /usr/libexec/go/src/
 COPY --chown=0:0 --from=sdk-go \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go/
+
+# "sdk-go-fips" has the Go FIPS toolchain and standard library builds.
+COPY --chown=0:0 --from=sdk-go-fips /home/builder/sdk-go-fips/bin /usr/libexec/go-fips/bin/
+COPY --chown=0:0 --from=sdk-go-fips /home/builder/sdk-go-fips/lib /usr/libexec/go-fips/lib/
+COPY --chown=0:0 --from=sdk-go-fips /home/builder/sdk-go-fips/pkg /usr/libexec/go-fips/pkg/
+COPY --chown=0:0 --from=sdk-go-fips /home/builder/sdk-go-fips/src /usr/libexec/go-fips/src/
+COPY --chown=0:0 --from=sdk-go-fips \
+  /home/builder/boring/boringssl/LICENSE \
+  /usr/share/licenses/aws-lc/LICENSE
 
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
