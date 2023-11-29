@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/fedora:37 as base
+FROM public.ecr.aws/docker/library/fedora:39 as base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -39,8 +39,6 @@ RUN \
     which \
   && \
   dnf config-manager --set-disabled \
-    fedora-modular \
-    updates-modular \
     fedora-cisco-openh264 \
   && \
   useradd builder
@@ -784,14 +782,16 @@ RUN \
 
 FROM sdk as sdk-cpp
 
-ARG AWS_SDK_CPP_VER="1.9.332"
+ARG AWS_SDK_CPP_VER="1.11.207"
 
 USER builder
 WORKDIR /home/builder/aws-sdk-cpp-src
 COPY ./hashes/aws-sdk-cpp /home/builder/aws-sdk-cpp-src/hashes
 
+# Upstream source fallback is explicitly disabled here as the SHA512 hash
+# verification fails due to a difference in the upstream names and the SDK's.
 RUN \
-  sdk-fetch hashes && \
+  UPSTREAM_SOURCE_FALLBACK=false sdk-fetch hashes && \
   tar --strip-components=1 -xf aws-sdk-cpp-${AWS_SDK_CPP_VER}.tar.gz && \
   rm aws-sdk-cpp-${AWS_SDK_CPP_VER}.tar.gz && \
   install -p -m 0644 -D -t \
