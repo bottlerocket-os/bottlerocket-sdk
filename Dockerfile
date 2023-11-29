@@ -451,7 +451,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.20.10"
+ARG GOVER="1.21.4"
 
 USER root
 RUN dnf -y install golang
@@ -470,7 +470,7 @@ ARG CGO_ENABLED=1
 ARG GOARCH_aarch64="arm64"
 ARG GOARCH_x86_64="amd64"
 ARG GOARCH_ARCH="GOARCH_${ARCH}"
-ARG CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ARG CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
 ARG CXXFLAGS="${CFLAGS}"
 ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
 ARG CGO_CFLAGS="${CFLAGS}"
@@ -478,7 +478,7 @@ ARG CGO_CXXFLAGS="${CXXFLAGS}"
 ARG CGO_LDFLAGS="${LDFLAGS}"
 
 WORKDIR /home/builder/sdk-go/src
-RUN ./make.bash
+RUN ./all.bash
 
 # Build the standard library with and without PIE. Target binaries
 # should use PIE, but any host binaries generated during the build
