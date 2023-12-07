@@ -876,7 +876,6 @@ FROM sdk as sdk-plus
 USER root
 RUN \
   dnf -y install --setopt=install_weak_deps=False \
-    awscli \
     ccache \
     createrepo_c \
     dosfstools \
@@ -884,10 +883,13 @@ RUN \
     efitools \
     erofs-utils \
     gdisk \
+    glibc \
     glib2-devel \
     gnupg-pkcs11-scd \
     gnutls-utils \
+    groff \
     kpartx \
+    less \
     libcap-devel \
     lz4 \
     mtools \
@@ -906,10 +908,32 @@ RUN \
     secilc \
     ShellCheck \
     squashfs-tools \
+    unzip \
     veritysetup \
     xfsprogs \
   && \
+  dnf -y remove awscli && \
   dnf clean all
+
+ARG HOST_ARCH
+ARG AWSCLI_VER="2.14.6"
+
+USER builder
+WORKDIR /home/builder/awscli
+COPY ./hashes/awscli /home/builder/awscli/hashes
+RUN \
+  sdk-fetch hashes && \
+  unzip awscli-exe-linux-${HOST_ARCH}-${AWSCLI_VER}.zip && \
+  rm awscli-exe-linux-*-${AWSCLI_VER}.zip
+
+USER root
+
+RUN \
+  ./aws/install && \
+  install -p -m 0644 -D -t \
+    /usr/share/licenses/awscli-${AWSCLI_VER} \
+    aws/THIRD_PARTY_LICENSES && \
+  rm -rf /home/builder
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 

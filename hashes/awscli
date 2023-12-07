@@ -1,0 +1,5 @@
+# https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.14.6.zip
+SHA512 (awscli-exe-linux-aarch64-2.14.6.zip) = e1212ab815925bf4c8ab1dfd857ee4aa04c281df3566b1ecd88e5873f81e6c7a1d6c9aac09c520a1c2a945041175912efb83a53f18a675c6f53474489891441b
+
+# https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.14.6.zip
+SHA512 (awscli-exe-linux-x86_64-2.14.6.zip) = f28c52f951bd32c1aa3e6ab8e6871f1453e7954a3d872ec932b531eef701bd4a4679d0840e6ba2eea75675344edc0b8545d9433af7e45bbe6d06440b6775a2dc
