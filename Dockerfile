@@ -347,7 +347,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.74.0"
+ARG RUSTVER="1.75.0"
 
 USER builder
 WORKDIR /home/builder
@@ -392,17 +392,17 @@ RUN \
 
 RUN \
   for libc in gnu musl ; do \
-    cp compiler/rustc_target/src/spec/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
-    sed -i -e '/let mut base = super::linux_'${libc}'_base::opts();/a base.vendor = "'${VENDOR}'".into();' \
-      compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
-    sed -i -e '/ \.\.super::linux_'${libc}'_base::opts()/i vendor: "'${VENDOR}'".into(),' \
-      compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
+    cp compiler/rustc_target/src/spec/targets/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
+    sed -i -e '/let mut base = base::linux_'${libc}'::opts();/a base.vendor = "'${VENDOR}'".into();' \
+      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
+    sed -i -e '/ \.\.base::linux_'${libc}'::opts()/i vendor: "'${VENDOR}'".into(),' \
+      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
     sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
       compiler/rustc_target/src/spec/mod.rs ; \
   done && \
   grep -Fq ${VENDOR} compiler/rustc_target/src/spec/mod.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_gnu.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_musl.rs
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_musl.rs
 
 # In addition to our vendor-specific targets, we also need to build for the host
 # platform, since that is no longer done implicitly.
