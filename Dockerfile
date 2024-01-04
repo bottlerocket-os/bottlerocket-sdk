@@ -441,9 +441,10 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libc as sdk-go
+FROM sdk-libc as sdk-go-prep
 
 ENV GOVER="1.22.1"
+ENV AWS_LC_FIPS_VER="2.0.9"
 
 USER root
 RUN dnf -y install golang
@@ -456,7 +457,31 @@ RUN \
   tar --strip-components=1 -xf go${GOVER}.src.tar.gz && \
   rm go${GOVER}.src.tar.gz
 
-ENV GOROOT_FINAL="/usr/libexec/go"
+# Patch Go sources so that they work with AWS-LC as the crypto implementation.
+# Note that this will break use of `GOEXPERIMENT=boringcrypto` when using the
+# default syso files that ship with Go, since the functions and data structures
+# will no longer match. We build the replacement AWS-LC syso files below.
+COPY patches/go/* ./
+RUN \
+  git init && \
+  git apply --whitespace=nowarn *.patch
+
+# We need to build AWS-LC before we can build Go.
+WORKDIR /home/builder/aws-lc
+COPY ./hashes/aws-lc /home/builder/hashes
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  tar --strip-components=1 -xf AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz && \
+  rm AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz
+
+# Patch AWS-LC sources to avoid weak symbols for memory management functions
+# when GOBORING is defined.
+COPY patches/aws-lc/* ./
+RUN \
+  git init && \
+  git apply --whitespace=nowarn *.patch
+
+# Set up the environment for building.
 ENV GOOS="linux"
 ENV CGO_ENABLED=1
 ENV CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
@@ -466,6 +491,36 @@ ENV CGO_CFLAGS="${CFLAGS}"
 ENV CGO_CXXFLAGS="${CXXFLAGS}"
 ENV CGO_LDFLAGS="${LDFLAGS}"
 
+WORKDIR /home/builder/aws-lc/build
+COPY ./configs/aws-lc/* .
+COPY ./helpers/aws-lc/* .
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-prep as sdk-go-aws-lc-x86_64
+ENV ARCH="x86_64"
+RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-prep as sdk-go-aws-lc-aarch64
+ENV ARCH="aarch64"
+RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-prep as sdk-go
+
+COPY --from=sdk-go-aws-lc-x86_64 \
+  /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
+  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_amd64.syso
+
+COPY --from=sdk-go-aws-lc-aarch64 \
+  /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
+  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_arm64.syso
+
+# Build Go - finally!
+ENV GOROOT_FINAL="/usr/libexec/go"
 WORKDIR /home/builder/sdk-go/src
 RUN ./all.bash
 
@@ -1022,6 +1077,9 @@ COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/go.env /usr/libexec/go/go.en
 COPY --chown=0:0 --from=sdk-go \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go/
+COPY --chown=0:0 --from=sdk-go \
+  /home/builder/aws-lc/LICENSE \
+  /usr/share/licenses/aws-lc/LICENSE
 
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
