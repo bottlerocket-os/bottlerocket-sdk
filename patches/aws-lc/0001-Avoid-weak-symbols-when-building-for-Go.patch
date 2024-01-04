@@ -1,0 +1,34 @@
+From 0fb9b17aa5d0d63d17e6914f7c34358db69e5647 Mon Sep 17 00:00:00 2001
+From: Ben Cressey <bcressey@amazon.com>
+Date: Thu, 4 Jan 2024 18:07:33 +0000
+Subject: [PATCH] Avoid weak symbols when building for Go.
+
+Avoids runtime errors like this when Go and the native toolchain do
+not handle weak symbols correctly:
+ symbol lookup error: undefined symbol: OPENSSL_memory_free
+
+This is functionally equivalent to logic in the upstream Go project's
+script to build BoringSSL:
+  https://github.com/golang/go/blob/master/src/crypto/internal/boring/build-boring.sh
+
+Signed-off-by: Ben Cressey <bcressey@amazon.com>
+---
+ crypto/mem.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/crypto/mem.c b/crypto/mem.c
+index a580bbf46..a476dfc4f 100644
+--- a/crypto/mem.c
++++ b/crypto/mem.c
+@@ -86,7 +86,7 @@ static void __asan_unpoison_memory_region(const void *addr, size_t size) {}
+ // Windows doesn't really support weak symbols as of May 2019, and Clang on
+ // Windows will emit strong symbols instead. See
+ // https://bugs.llvm.org/show_bug.cgi?id=37598
+-#if defined(__ELF__) && defined(__GNUC__)
++#if defined(__ELF__) && defined(__GNUC__) && !defined(GOBORING)
+ #define WEAK_SYMBOL_FUNC(rettype, name, args) \
+   rettype name args __attribute__((weak));
+ #else
+-- 
+2.43.0
+
