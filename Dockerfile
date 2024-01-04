@@ -347,7 +347,7 @@ RUN \
 ARG ARCH
 ARG HOST_ARCH
 ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.74.0"
+ARG RUSTVER="1.75.0"
 
 USER builder
 WORKDIR /home/builder
@@ -392,17 +392,17 @@ RUN \
 
 RUN \
   for libc in gnu musl ; do \
-    cp compiler/rustc_target/src/spec/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
-    sed -i -e '/let mut base = super::linux_'${libc}'_base::opts();/a base.vendor = "'${VENDOR}'".into();' \
-      compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
-    sed -i -e '/ \.\.super::linux_'${libc}'_base::opts()/i vendor: "'${VENDOR}'".into(),' \
-      compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_${libc}.rs && \
+    cp compiler/rustc_target/src/spec/targets/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
+    sed -i -e '/let mut base = base::linux_'${libc}'::opts();/a base.vendor = "'${VENDOR}'".into();' \
+      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
+    sed -i -e '/ \.\.base::linux_'${libc}'::opts()/i vendor: "'${VENDOR}'".into(),' \
+      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
     sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
       compiler/rustc_target/src/spec/mod.rs ; \
   done && \
   grep -Fq ${VENDOR} compiler/rustc_target/src/spec/mod.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_gnu.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/${ARCH}_${VENDOR}_linux_musl.rs
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_musl.rs
 
 # In addition to our vendor-specific targets, we also need to build for the host
 # platform, since that is no longer done implicitly.
@@ -449,7 +449,7 @@ FROM sdk-libc as sdk-go
 
 ARG ARCH
 ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.20.12"
+ARG GOVER="1.21.5"
 
 USER root
 RUN dnf -y install golang
@@ -468,7 +468,7 @@ ARG CGO_ENABLED=1
 ARG GOARCH_aarch64="arm64"
 ARG GOARCH_x86_64="amd64"
 ARG GOARCH_ARCH="GOARCH_${ARCH}"
-ARG CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ARG CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
 ARG CXXFLAGS="${CFLAGS}"
 ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
 ARG CGO_CFLAGS="${CFLAGS}"
@@ -476,7 +476,7 @@ ARG CGO_CXXFLAGS="${CXXFLAGS}"
 ARG CGO_LDFLAGS="${LDFLAGS}"
 
 WORKDIR /home/builder/sdk-go/src
-RUN ./make.bash
+RUN ./all.bash
 
 # Build the standard library with and without PIE. Target binaries
 # should use PIE, but any host binaries generated during the build
