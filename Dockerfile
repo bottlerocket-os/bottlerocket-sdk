@@ -1012,6 +1012,7 @@ COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/bin /usr/libexec/go/bin/
 COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/lib /usr/libexec/go/lib/
 COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/pkg /usr/libexec/go/pkg/
 COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/src /usr/libexec/go/src/
+COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/go.env /usr/libexec/go/go.env
 COPY --chown=0:0 --from=sdk-go \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go/
