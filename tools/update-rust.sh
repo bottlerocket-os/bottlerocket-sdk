@@ -85,7 +85,7 @@ done
 rm "${METADATA_FILE}"
 
 DOCKERFILE="${ROOTDIR}/Dockerfile"
-sed -i -e "s,^ARG RUSTVER=.*,ARG RUSTVER=\"${VERSION}\",g" "${DOCKERFILE}"
+sed -i -e "s,^ENV RUSTVER=.*,ENV RUSTVER=\"${VERSION}\",g" "${DOCKERFILE}"
 
 echo "================================================"
 echo "Rust toolchain updated to ${VERSION}"

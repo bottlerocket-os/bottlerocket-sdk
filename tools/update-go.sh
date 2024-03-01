@@ -46,7 +46,7 @@ echo "# ${GO_SRC_URL}" > "${OUTPUT}"
 echo "SHA512 (${GO_SRC_PACKAGE}) = ${GO_512_SHA}" >> "${OUTPUT}"
 
 DOCKERFILE="${ROOTDIR}/Dockerfile"
-sed -i -e "s,^ARG GOVER=.*,ARG GOVER=\"${VERSION}\",g" "${DOCKERFILE}"
+sed -i -e "s,^ENV GOVER=.*,ENV GOVER=\"${VERSION}\",g" "${DOCKERFILE}"
 
 echo "================================================"
 echo "go toolchain updated to ${VERSION}"

@@ -83,8 +83,8 @@ RUN \
   git config --global user.email "builder@localhost"
 
 ARG UPSTREAM_SOURCE_FALLBACK
-ARG BRVER="2022.11.1"
-ARG KVER="5.10.162"
+ENV BRVER="2022.11.1"
+ENV KVER="5.10.162"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -106,7 +106,7 @@ RUN \
 
 FROM toolchain as toolchain-gnu
 ARG ARCH
-ARG KVER="5.10.162"
+ENV KVER="5.10.162"
 RUN \
   make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
   make O=output/${ARCH}-gnu toolchain && \
@@ -130,7 +130,7 @@ RUN \
 
 FROM toolchain as toolchain-musl
 ARG ARCH
-ARG KVER="5.10.162"
+ENV KVER="5.10.162"
 RUN \
   make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
   make O=output/${ARCH}-musl toolchain && \
@@ -165,7 +165,7 @@ USER root
 
 ARG ARCH
 ARG UPSTREAM_SOURCE_FALLBACK
-ARG KVER="5.10.162"
+ENV KVER="5.10.162"
 
 WORKDIR /
 
@@ -193,7 +193,7 @@ COPY --chown=0:0 --from=toolchain-musl \
 FROM sdk as sdk-gnu
 USER builder
 
-ARG GLIBCVER="2.37"
+ENV GLIBCVER="2.37"
 
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
@@ -206,12 +206,12 @@ RUN \
   mkdir build
 
 ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG SYSROOT="/${TARGET}/sys-root"
-ARG CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
-ARG CXXFLAGS="${CFLAGS}"
-ARG CPPFLAGS=""
-ARG KVER="5.10.162"
+ENV TARGET="${ARCH}-bottlerocket-linux-gnu"
+ENV SYSROOT="/${TARGET}/sys-root"
+ENV CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
+ENV CXXFLAGS="${CFLAGS}"
+ENV CPPFLAGS=""
+ENV KVER="5.10.162"
 
 WORKDIR /home/builder/glibc/build
 RUN \
@@ -246,7 +246,7 @@ RUN make install
 FROM sdk as sdk-musl
 USER builder
 
-ARG MUSLVER="1.2.3"
+ENV MUSLVER="1.2.3"
 
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
@@ -257,10 +257,10 @@ RUN \
   mv musl-${MUSLVER} musl
 
 ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG SYSROOT="/${TARGET}/sys-root"
-ARG CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
-ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+ENV TARGET="${ARCH}-bottlerocket-linux-musl"
+ENV SYSROOT="/${TARGET}/sys-root"
+ENV CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ENV LDFLAGS="-Wl,-z,relro -Wl,-z,now"
 
 WORKDIR /home/builder/musl
 RUN \
@@ -280,7 +280,7 @@ RUN make install
 RUN \
   install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
 
-ARG LLVMVER="14.0.6"
+ENV LLVMVER="14.0.6"
 
 USER builder
 WORKDIR /home/builder
@@ -327,10 +327,10 @@ RUN \
 FROM sdk as sdk-libc
 
 ARG ARCH
-ARG GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GNU_SYSROOT="/${GNU_TARGET}/sys-root"
-ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
+ENV GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
+ENV GNU_SYSROOT="/${GNU_TARGET}/sys-root"
+ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+ENV MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
 
 COPY --chown=0:0 --from=sdk-gnu ${GNU_SYSROOT}/ ${GNU_SYSROOT}/
 COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
@@ -346,8 +346,8 @@ RUN \
 
 ARG ARCH
 ARG HOST_ARCH
-ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.76.0"
+ENV VENDOR="bottlerocket"
+ENV RUSTVER="1.76.0"
 
 USER builder
 WORKDIR /home/builder
@@ -423,7 +423,7 @@ FROM sdk-libc as sdk-bootconfig
 
 USER root
 
-ARG KVER="5.10.162"
+ENV KVER="5.10.162"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
@@ -448,8 +448,8 @@ RUN \
 FROM sdk-libc as sdk-go
 
 ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.21.8"
+ENV TARGET="${ARCH}-bottlerocket-linux-gnu"
+ENV GOVER="1.21.8"
 
 USER root
 RUN dnf -y install golang
@@ -462,18 +462,18 @@ RUN \
   tar --strip-components=1 -xf go${GOVER}.src.tar.gz && \
   rm go${GOVER}.src.tar.gz
 
-ARG GOROOT_FINAL="/usr/libexec/go"
-ARG GOOS="linux"
-ARG CGO_ENABLED=1
-ARG GOARCH_aarch64="arm64"
-ARG GOARCH_x86_64="amd64"
-ARG GOARCH_ARCH="GOARCH_${ARCH}"
-ARG CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
-ARG CXXFLAGS="${CFLAGS}"
-ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
-ARG CGO_CFLAGS="${CFLAGS}"
-ARG CGO_CXXFLAGS="${CXXFLAGS}"
-ARG CGO_LDFLAGS="${LDFLAGS}"
+ENV GOROOT_FINAL="/usr/libexec/go"
+ENV GOOS="linux"
+ENV CGO_ENABLED=1
+ENV GOARCH_aarch64="arm64"
+ENV GOARCH_x86_64="amd64"
+ENV GOARCH_ARCH="GOARCH_${ARCH}"
+ENV CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ENV CXXFLAGS="${CFLAGS}"
+ENV LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+ENV CGO_CFLAGS="${CFLAGS}"
+ENV CGO_CXXFLAGS="${CXXFLAGS}"
+ENV CGO_LDFLAGS="${LDFLAGS}"
 
 WORKDIR /home/builder/sdk-go/src
 RUN ./all.bash
@@ -523,7 +523,7 @@ RUN rm /license-{scan,tool}/{clarify,deny}.toml
 
 FROM sdk-cargo as sdk-license-scan
 
-ARG SPDXVER="3.19"
+ENV SPDXVER="3.19"
 
 USER builder
 WORKDIR /home/builder/license-scan
@@ -550,7 +550,7 @@ RUN cargo build --release --locked
 
 FROM sdk-cargo as sdk-cargo-deny
 
-ARG DENYVER="0.13.5"
+ENV DENYVER="0.13.5"
 
 USER builder
 WORKDIR /home/builder
@@ -568,7 +568,7 @@ RUN cargo build --release --locked
 
 FROM sdk-cargo as sdk-cargo-make
 
-ARG MAKEVER="0.36.8"
+ENV MAKEVER="0.36.8"
 
 USER builder
 WORKDIR /home/builder
@@ -705,9 +705,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ARG GOVMOMIVER="0.30.2"
-ARG GOVMOMISHORTCOMMIT="9078b0b"
-ARG GOVMOMIDATE="2023-02-01T04:38:23Z"
+ENV GOVMOMIVER="0.30.2"
+ENV GOVMOMISHORTCOMMIT="9078b0b"
+ENV GOVMOMIDATE="2023-02-01T04:38:23Z"
 
 USER builder
 WORKDIR /home/builder/go/src/github.com/vmware/govmomi
@@ -745,10 +745,10 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/docker && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/docker
 
-ARG DOCKERVER="20.10.21"
-ARG DOCKERCOMMIT="baeda1f82a10204ec5708d5fbba130ad76cfee49"
-ARG DOCKERIMPORT="github.com/docker/cli"
-ARG MOBYBIRTHDAY="2017-04-18T14:29:00.000000000+00:00"
+ENV DOCKERVER="20.10.21"
+ENV DOCKERCOMMIT="baeda1f82a10204ec5708d5fbba130ad76cfee49"
+ENV DOCKERIMPORT="github.com/docker/cli"
+ENV MOBYBIRTHDAY="2017-04-18T14:29:00.000000000+00:00"
 
 USER builder
 WORKDIR /home/builder/go/src/${DOCKERIMPORT}
@@ -782,7 +782,7 @@ RUN \
 
 FROM sdk as sdk-cpp
 
-ARG AWS_SDK_CPP_VER="1.11.207"
+ENV AWS_SDK_CPP_VER="1.11.207"
 
 USER builder
 WORKDIR /home/builder/aws-sdk-cpp-src
@@ -836,7 +836,7 @@ RUN \
 
 FROM sdk-cpp as sdk-aws-kms-pkcs11
 
-ARG AWS_KMS_PKCS11_VER="0.0.9"
+ENV AWS_KMS_PKCS11_VER="0.0.9"
 
 USER builder
 WORKDIR /home/builder/aws-kms-pkcs11
@@ -856,7 +856,7 @@ RUN make install
 
 FROM sdk as sdk-e2fsprogs
 
-ARG E2FSPROGS_VER="1.46.6"
+ENV E2FSPROGS_VER="1.46.6"
 
 USER builder
 WORKDIR /home/builder
@@ -916,7 +916,7 @@ RUN \
   dnf clean all
 
 ARG HOST_ARCH
-ARG AWSCLI_VER="2.14.6"
+ENV AWSCLI_VER="2.14.6"
 
 USER builder
 WORKDIR /home/builder/awscli
@@ -940,8 +940,8 @@ RUN \
 FROM sdk as toolchain-archive
 
 ARG ARCH
-ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
+ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+ENV MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
 
 COPY --from=toolchain-musl \
   /home/builder/buildroot/output/${ARCH}-musl/build/toolchain.txt \
@@ -986,10 +986,10 @@ FROM scratch as sdk-final
 USER root
 
 ARG ARCH
-ARG GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GNU_SYSROOT="/${GNU_TARGET}/sys-root"
-ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
+ENV GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
+ENV GNU_SYSROOT="/${GNU_TARGET}/sys-root"
+ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+ENV MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
 
 WORKDIR /
 # "sdk-plus" has our C/C++ toolchain and kernel headers for both targets, and
