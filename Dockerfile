@@ -443,8 +443,6 @@ RUN \
 
 FROM sdk-libc as sdk-go
 
-ARG ARCH
-ENV TARGET="${ARCH}-bottlerocket-linux-gnu"
 ENV GOVER="1.21.8"
 
 USER root
@@ -461,9 +459,6 @@ RUN \
 ENV GOROOT_FINAL="/usr/libexec/go"
 ENV GOOS="linux"
 ENV CGO_ENABLED=1
-ENV GOARCH_aarch64="arm64"
-ENV GOARCH_x86_64="amd64"
-ENV GOARCH_ARCH="GOARCH_${ARCH}"
 ENV CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
 ENV CXXFLAGS="${CFLAGS}"
 ENV LDFLAGS="-Wl,-z,relro -Wl,-z,now"
@@ -474,25 +469,11 @@ ENV CGO_LDFLAGS="${LDFLAGS}"
 WORKDIR /home/builder/sdk-go/src
 RUN ./all.bash
 
-# Build the standard library with and without PIE. Target binaries
-# should use PIE, but any host binaries generated during the build
-# might not.
+# Install the Go standard library and toolchain.
 WORKDIR /home/builder/sdk-go
-ENV PATH="/home/builder/sdk-go/bin:${PATH}" \
-  GO111MODULE="auto"
+ENV PATH="/home/builder/sdk-go/bin:${PATH}" GO111MODULE="auto"
 RUN \
-  export GOARCH="${!GOARCH_ARCH}" ; \
-  export CC="${TARGET}-gcc" ; \
-  export CC_FOR_TARGET="${TARGET}-gcc" ; \
-  export CC_FOR_${GOOS}_${GOARCH}="${TARGET}-gcc" ; \
-  export CXX="${TARGET}-g++" ; \
-  export CXX_FOR_TARGET="${TARGET}-g++" ; \
-  export CXX_FOR_${GOOS}_${GOARCH}="${TARGET}-g++" ; \
-  export GOFLAGS="-mod=vendor" ; \
-  go install std cmd && \
-  go install -buildmode=pie std cmd
-
-RUN \
+  go install -buildmode=pie std cmd && \
   install -p -m 0644 -Dt licenses LICENSE PATENTS
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
