@@ -98,64 +98,34 @@ RUN \
 WORKDIR /home/builder/buildroot
 COPY ./patches/buildroot/* ./
 COPY ./configs/buildroot/* ./configs/
+COPY ./helpers/buildroot/* ./
 RUN \
   git init . && \
   git apply --whitespace=nowarn *.patch
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-gnu
-ARG ARCH
-ENV KVER="5.10.162"
-RUN \
-  make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
-  make O=output/${ARCH}-gnu toolchain && \
-  find output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include -name '.*' -delete
-
-WORKDIR /home/builder/buildroot/output/${ARCH}-gnu/build
-SHELL ["/bin/bash", "-c"]
-RUN \
-  install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
-  install -p -m 0644 -Dt licenses/bison host-bison-*/COPYING && \
-  install -p -m 0644 -Dt licenses/gawk host-gawk-*/COPYING && \
-  install -p -m 0644 -Dt licenses/gcc host-gcc-final-*/{COPYING,COPYING.LIB,COPYING.RUNTIME,COPYING3,COPYING3.LIB} && \
-  install -p -m 0644 -Dt licenses/gmp host-gmp-*/COPYING{,v2,v3,.LESSERv3} && \
-  install -p -m 0644 -Dt licenses/isl host-isl-*/LICENSE && \
-  install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
-  install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
-  install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
-  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER}
+FROM toolchain as toolchain-gnu-x86_64
+ENV ARCH="x86_64"
+RUN ./build-gnu-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-musl
-ARG ARCH
-ENV KVER="5.10.162"
-RUN \
-  make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
-  make O=output/${ARCH}-musl toolchain && \
-  find output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include -name '.*' -delete
+FROM toolchain as toolchain-gnu-aarch64
+ENV ARCH="aarch64"
+RUN ./build-gnu-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
-WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
-SHELL ["/bin/bash", "-c"]
-RUN \
-  install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
-  install -p -m 0644 -Dt licenses/gcc host-gcc-final-*/{COPYING,COPYING.LIB,COPYING.RUNTIME,COPYING3,COPYING3.LIB} && \
-  install -p -m 0644 -Dt licenses/gmp host-gmp-*/COPYING{,v2,v3,.LESSERv3} && \
-  install -p -m 0644 -Dt licenses/isl host-isl-*/LICENSE && \
-  install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
-  install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
-  install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
-  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER}
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-# For kernel module development, we only need one toolchain, and it doesn't
-# matter which one we pick since the kernel doesn't use the C library. Record
-# the files we need so they can be archived later.
-WORKDIR /home/builder/buildroot/output/${ARCH}-musl/toolchain
-RUN find . -type f -printf '%P\n' > ../build/toolchain.txt
+FROM toolchain as toolchain-musl-x86_64
+ENV ARCH="x86_64"
+RUN ./build-musl-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
-WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
-RUN find licenses -type f -printf '%P\n' > toolchain-licenses.txt
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM toolchain as toolchain-musl-aarch64
+ENV ARCH="aarch64"
+RUN ./build-musl-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -163,29 +133,46 @@ RUN find licenses -type f -printf '%P\n' > toolchain-licenses.txt
 FROM base as sdk
 USER root
 
-ARG ARCH
 ARG UPSTREAM_SOURCE_FALLBACK
 ENV KVER="5.10.162"
 
 WORKDIR /
 
-COPY --chown=0:0 --from=toolchain-gnu \
-  /home/builder/buildroot/output/${ARCH}-gnu/toolchain/ /
-COPY --chown=0:0 --from=toolchain-gnu \
-  /home/builder/buildroot/output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include/ \
-  /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/include/
-COPY --chown=0:0 --from=toolchain-gnu \
-  /home/builder/buildroot/output/${ARCH}-gnu/build/licenses/ \
-  /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
+COPY --chown=0:0 --from=toolchain-gnu-x86_64 \
+  /home/builder/buildroot/output/x86_64-gnu/toolchain/ /
+COPY --chown=0:0 --from=toolchain-gnu-x86_64 \
+  /home/builder/buildroot/output/x86_64-gnu/build/linux-headers-${KVER}/usr/include/ \
+  /x86_64-bottlerocket-linux-gnu/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-gnu-x86_64 \
+  /home/builder/buildroot/output/x86_64-gnu/build/licenses/ \
+  /x86_64-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
 
-COPY --chown=0:0 --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/toolchain/ /
-COPY --chown=0:0 --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include/ \
-  /${ARCH}-bottlerocket-linux-musl/sys-root/usr/include/
-COPY --chown=0:0 --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/licenses/ \
-  /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses/
+COPY --chown=0:0 --from=toolchain-gnu-aarch64 \
+  /home/builder/buildroot/output/aarch64-gnu/toolchain/ /
+COPY --chown=0:0 --from=toolchain-gnu-aarch64 \
+  /home/builder/buildroot/output/aarch64-gnu/build/linux-headers-${KVER}/usr/include/ \
+  /aarch64-bottlerocket-linux-gnu/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-gnu-aarch64 \
+  /home/builder/buildroot/output/aarch64-gnu/build/licenses/ \
+  /aarch64-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
+
+COPY --chown=0:0 --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/toolchain/ /
+COPY --chown=0:0 --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/linux-headers-${KVER}/usr/include/ \
+  /x86_64-bottlerocket-linux-musl/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/licenses/ \
+  /x86_64-bottlerocket-linux-musl/sys-root/usr/share/licenses/
+
+COPY --chown=0:0 --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/toolchain/ /
+COPY --chown=0:0 --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/linux-headers-${KVER}/usr/include/ \
+  /aarch64-bottlerocket-linux-musl/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/licenses/ \
+  /aarch64-bottlerocket-linux-musl/sys-root/usr/share/licenses/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -939,25 +926,44 @@ RUN \
 
 FROM sdk as toolchain-archive
 
-ARG ARCH
-ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ENV MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
+ENV MUSL_TARGET_x86_64="x86_64-bottlerocket-linux-musl"
+ENV MUSL_TARGET_aarch64="aarch64-bottlerocket-linux-musl"
 
-COPY --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain.txt \
-  /tmp/toolchain.txt
+COPY --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/toolchain-x86_64.txt \
+  /tmp/toolchain-x86_64.txt
 
-COPY --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain-licenses.txt \
-  /tmp/toolchain-licenses.txt
+COPY --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/toolchain-licenses-x86_64.txt \
+  /tmp/toolchain-licenses-x86_64.txt
+
+COPY --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/toolchain-aarch64.txt \
+  /tmp/toolchain-aarch64.txt
+
+COPY --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/toolchain-licenses-aarch64.txt \
+  /tmp/toolchain-licenses-aarch64.txt
 
 WORKDIR /tmp
 
 RUN \
-  tar cvf toolchain.tar --transform "s,^,toolchain/," \
-    -C / -T toolchain.txt && \
-  tar rvf toolchain.tar --transform "s,^,toolchain/licenses/," \
-    -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
+  tar cvf toolchain.tar \
+    --transform "s,^,toolchain/," \
+    -C / \
+    -T toolchain-x86_64.txt && \
+  tar rvf toolchain.tar \
+    --transform "s,^,toolchain/licenses/," \
+    -C "/${MUSL_TARGET_x86_64}/sys-root/usr/share/licenses" \
+    -T toolchain-licenses-x86_64.txt && \
+  tar rvf toolchain.tar \
+    --transform "s,^,toolchain/," \
+    -C / \
+    -T toolchain-aarch64.txt && \
+  tar rvf toolchain.tar \
+    --transform "s,^,toolchain/licenses/," \
+    -C "/${MUSL_TARGET_aarch64}/sys-root/usr/share/licenses" \
+    -T toolchain-licenses-aarch64.txt && \
   tar xvf toolchain.tar -C /
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
@@ -975,12 +981,6 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
-# Collects all toolchain builds as single image layer
-FROM scratch as toolchain-golden
-COPY --from=toolchain-archive /toolchain /toolchain
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-#
 # Collect all SDK builds
 FROM scratch as sdk-final
 USER root
@@ -995,6 +995,10 @@ WORKDIR /
 # "sdk-plus" has our C/C++ toolchain and kernel headers for both targets, and
 # any other host programs we want available for OS builds.
 COPY --from=sdk-plus / /
+
+# "toolchain-archive" has the toolchains for both targets bundled together in
+# a format that's convenient for extracting later.
+COPY --from=toolchain-archive /toolchain /toolchain
 
 # "sdk-musl" has the musl C library and headers. We omit "sdk-gnu" because we
 # expect to build glibc again for the target OS, while we will use the musl
