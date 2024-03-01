@@ -961,13 +961,16 @@ RUN \
 # Generate macros for the target.
 
 FROM sdk as sdk-macros
-ARG ARCH
 
 COPY macros/* /tmp/
 
 WORKDIR /tmp
 RUN \
-  cat ${ARCH} shared rust cargo > /etc/rpm/macros.bottlerocket
+  for arch in x86_64 aarch64 ; do \
+    platform_dir="/usr/lib/rpm/platform/${arch}-bottlerocket" ; \
+    mkdir -p "${platform_dir}" ; \
+    cat ${arch} shared rust cargo > "${platform_dir}/macros" ; \
+  done
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
@@ -1079,8 +1082,12 @@ COPY --chown=0:0 --from=sdk-e2fsprogs \
 
 # "sdk-macros" has the rpm macros
 COPY --chown=0:0 --from=sdk-macros \
-  /etc/rpm/macros.bottlerocket \
-  /etc/rpm/macros.bottlerocket
+  /usr/lib/rpm/platform/x86_64-bottlerocket/ \
+  /usr/lib/rpm/platform/x86_64-bottlerocket/
+
+COPY --chown=0:0 --from=sdk-macros \
+  /usr/lib/rpm/platform/aarch64-bottlerocket/ \
+  /usr/lib/rpm/platform/aarch64-bottlerocket/
 
 COPY --chown=0:0 --from=sdk-find-debuginfo-symlinks \
   /usr/x86_64-bottlerocket-linux-gnu/debuginfo/bin/ \
