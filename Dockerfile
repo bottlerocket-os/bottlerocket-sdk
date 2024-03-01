@@ -337,7 +337,6 @@ RUN \
   mkdir -p /usr/libexec/rust && \
   chown -R builder:builder /usr/libexec/rust
 
-ARG ARCH
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
 ENV RUSTVER="1.76.0"
@@ -384,24 +383,28 @@ RUN \
 # module so `rustc` knows they exist.
 
 RUN \
-  for libc in gnu musl ; do \
-    cp compiler/rustc_target/src/spec/targets/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
-    sed -i -e '/let mut base = base::linux_'${libc}'::opts();/a base.vendor = "'${VENDOR}'".into();' \
-      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
-    sed -i -e '/ \.\.base::linux_'${libc}'::opts()/i vendor: "'${VENDOR}'".into(),' \
-      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
-    sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
-      compiler/rustc_target/src/spec/mod.rs ; \
+  for arch in x86_64 aarch64 ; do \
+    for libc in gnu musl ; do \
+      cp compiler/rustc_target/src/spec/targets/${arch}_{unknown,${VENDOR}}_linux_${libc}.rs && \
+      sed -i -e '/let mut base = base::linux_'${libc}'::opts();/a base.vendor = "'${VENDOR}'".into();' \
+        compiler/rustc_target/src/spec/targets/${arch}_${VENDOR}_linux_${libc}.rs && \
+      sed -i -e '/ \.\.base::linux_'${libc}'::opts()/i vendor: "'${VENDOR}'".into(),' \
+        compiler/rustc_target/src/spec/targets/${arch}_${VENDOR}_linux_${libc}.rs && \
+      sed -i -e '/("'${arch}-unknown-linux-${libc}'", .*),/a("'${arch}-${VENDOR}-linux-${libc}'", '${arch}_${VENDOR}_linux_${libc}'),' \
+        compiler/rustc_target/src/spec/mod.rs ; \
+    done ; \
   done && \
   grep -Fq ${VENDOR} compiler/rustc_target/src/spec/mod.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_gnu.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_musl.rs
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/x86_64_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/x86_64_${VENDOR}_linux_musl.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/aarch64_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/aarch64_${VENDOR}_linux_musl.rs
 
 # In addition to our vendor-specific targets, we also need to build for the host
 # platform, since that is no longer done implicitly.
 COPY ./configs/rust/* ./
 RUN \
-  sed -e "s,@HOST_TRIPLE@,${HOST_ARCH}-unknown-linux-gnu,g" config-${ARCH}.toml.in > config.toml && \
+  sed -e "s,@HOST_TRIPLE@,${HOST_ARCH}-unknown-linux-gnu,g" config.toml.in > config.toml && \
   RUSTUP_DIST_SERVER=example:// python3 ./x.py install
 
 RUN \
