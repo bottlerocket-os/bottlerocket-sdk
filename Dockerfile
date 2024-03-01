@@ -180,10 +180,12 @@ COPY --chown=0:0 --from=toolchain-musl-aarch64 \
 FROM sdk as sdk-gnu
 USER builder
 
-ENV GLIBCVER="2.37"
-
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
+COPY ./helpers/glibc/* ./
+
+ENV GLIBCVER="2.37"
+ENV KVER="5.10.162"
 RUN \
   sdk-fetch hashes && \
   tar xf glibc-${GLIBCVER}.tar.xz && \
@@ -192,88 +194,57 @@ RUN \
   cd glibc && \
   mkdir build
 
-ARG ARCH
-ENV TARGET="${ARCH}-bottlerocket-linux-gnu"
-ENV SYSROOT="/${TARGET}/sys-root"
-ENV CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
-ENV CXXFLAGS="${CFLAGS}"
-ENV CPPFLAGS=""
-ENV KVER="5.10.162"
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-WORKDIR /home/builder/glibc/build
-RUN \
-  ../configure \
-    --prefix="${SYSROOT}/usr" \
-    --sysconfdir="/etc" \
-    --localstatedir="/var" \
-    --target="${TARGET}" \
-    --host="${TARGET}" \
-    --with-headers="/${SYSROOT}/usr/include" \
-    --enable-bind-now \
-    --enable-kernel="${KVER}" \
-    --enable-shared \
-    --enable-stack-protector=strong \
-    --disable-crypt \
-    --disable-multi-arch \
-    --disable-profile \
-    --disable-systemtap \
-    --disable-timezone-tools \
-    --disable-tunables \
-    --without-cvs \
-    --without-gd \
-    --without-selinux && \
-  make -j$(nproc) -O -r
+FROM sdk-gnu as sdk-gnu-x86_64
+ENV ARCH="x86_64"
+RUN ./build-glibc.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
-USER root
-WORKDIR /home/builder/glibc/build
-RUN make install
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-gnu as sdk-gnu-aarch64
+ENV ARCH="aarch64"
+RUN ./build-glibc.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk as sdk-musl
 USER builder
 
-ENV MUSLVER="1.2.3"
-
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
+COPY ./helpers/musl/* ./
+
+ENV MUSLVER="1.2.3"
 RUN \
   sdk-fetch hashes && \
   tar xf musl-${MUSLVER}.tar.gz && \
   rm musl-${MUSLVER}.tar.gz && \
   mv musl-${MUSLVER} musl
 
-ARG ARCH
-ENV TARGET="${ARCH}-bottlerocket-linux-musl"
-ENV SYSROOT="/${TARGET}/sys-root"
-ENV CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
-ENV LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-WORKDIR /home/builder/musl
-RUN \
-  ./configure \
-    CFLAGS="${CFLAGS}" \
-    LDFLAGS="${LDFLAGS}" \
-    --target="${TARGET}" \
-    --disable-gcc-wrapper \
-    --enable-static \
-    --prefix="${SYSROOT}/usr" \
-    --libdir="${SYSROOT}/usr/lib" && \
-   make -j$(nproc)
+FROM sdk-musl as sdk-musl-x86_64
+ENV ARCH="x86_64"
+RUN ./build-musl.sh --arch="${ARCH}"
 
-USER root
-WORKDIR /home/builder/musl
-RUN make install
-RUN \
-  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-ENV LLVMVER="14.0.6"
+FROM sdk-musl as sdk-musl-aarch64
+ENV ARCH="aarch64"
+RUN ./build-musl.sh --arch="${ARCH}"
 
-USER builder
-WORKDIR /home/builder
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Rust's musl targets depend on libunwind.
+FROM sdk as sdk-libunwind
+USER builder
+
+WORKDIR /home/builder
 COPY ./hashes/libunwind ./hashes
+COPY ./helpers/libunwind/* ./
+
+ENV LLVMVER="14.0.6"
 RUN \
   sdk-fetch hashes && \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
@@ -287,40 +258,75 @@ RUN \
   mv libunwind-${LLVMVER}.src libunwind && \
   mkdir libunwind/build
 
-WORKDIR /home/builder/libunwind/build
-RUN \
-  cmake \
-    -DLLVM_PATH=../../llvm \
-    -DLIBUNWIND_ENABLE_SHARED=1 \
-    -DLIBUNWIND_ENABLE_STATIC=1 \
-    -DCMAKE_INSTALL_PREFIX="/usr" \
-    -DCMAKE_C_COMPILER="${TARGET}-gcc" \
-    -DCMAKE_C_COMPILER_TARGET="${TARGET}" \
-    -DCMAKE_CXX_COMPILER="${TARGET}-g++" \
-    -DCMAKE_CXX_COMPILER_TARGET="${TARGET}" \
-    -DCMAKE_AR="/usr/bin/${TARGET}-ar" \
-    -DCMAKE_RANLIB="/usr/bin/${TARGET}-ranlib" \
-    .. && \
-  make unwind
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-USER root
-WORKDIR /home/builder/libunwind/build
-RUN make install-unwind DESTDIR="${SYSROOT}"
-RUN \
-  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/libunwind ../LICENSE.TXT
+FROM sdk-libunwind as sdk-libunwind-x86_64
+
+ENV ARCH="x86_64"
+ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+
+COPY --chown=0:0 --from=sdk-musl-x86_64 \
+  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
+  /${MUSL_TARGET}/sys-root/
+
+RUN ./build-libunwind.sh --arch="${ARCH}"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-libunwind as sdk-libunwind-aarch64
+
+ENV ARCH="aarch64"
+ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+
+COPY --chown=0:0 --from=sdk-musl-aarch64 \
+  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
+  /${MUSL_TARGET}/sys-root/
+
+RUN ./build-libunwind.sh --arch="${ARCH}"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM scratch as sdk-libc-gnu
+
+ENV GNU_TARGET_x86_64="x86_64-bottlerocket-linux-gnu"
+ENV GNU_TARGET_aarch64="aarch64-bottlerocket-linux-gnu"
+
+COPY --chown=0:0 --from=sdk-gnu-x86_64 \
+  /home/builder/glibc/output/${GNU_TARGET_x86_64}/sys-root/ \
+  /${GNU_TARGET_x86_64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-gnu-aarch64 \
+  /home/builder/glibc/output/${GNU_TARGET_aarch64}/sys-root/ \
+  /${GNU_TARGET_aarch64}/sys-root/
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM scratch as sdk-libc-musl
+ENV MUSL_TARGET_x86_64="x86_64-bottlerocket-linux-musl"
+ENV MUSL_TARGET_aarch64="aarch64-bottlerocket-linux-musl"
+
+COPY --chown=0:0 --from=sdk-musl-x86_64 \
+  /home/builder/musl/output/${MUSL_TARGET_x86_64}/sys-root/ \
+  /${MUSL_TARGET_x86_64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-libunwind-x86_64 \
+  /home/builder/libunwind/output/${MUSL_TARGET_x86_64}/sys-root/ \
+  /${MUSL_TARGET_x86_64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-musl-aarch64 \
+  /home/builder/musl/output/${MUSL_TARGET_aarch64}/sys-root/ \
+  /${MUSL_TARGET_aarch64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-libunwind-aarch64 \
+  /home/builder/libunwind/output/${MUSL_TARGET_aarch64}/sys-root/ \
+  /${MUSL_TARGET_aarch64}/sys-root/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk as sdk-libc
 
-ARG ARCH
-ENV GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
-ENV GNU_SYSROOT="/${GNU_TARGET}/sys-root"
-ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ENV MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
-
-COPY --chown=0:0 --from=sdk-gnu ${GNU_SYSROOT}/ ${GNU_SYSROOT}/
-COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+COPY --from=sdk-libc-gnu / /
+COPY --from=sdk-libc-musl / /
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -406,7 +412,7 @@ ENV PATH="/usr/libexec/rust/bin:$PATH" LD_LIBRARY_PATH="/usr/libexec/rust/lib"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libc as sdk-bootconfig
+FROM sdk as sdk-bootconfig
 
 USER root
 
@@ -985,12 +991,6 @@ RUN \
 FROM scratch as sdk-final
 USER root
 
-ARG ARCH
-ENV GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
-ENV GNU_SYSROOT="/${GNU_TARGET}/sys-root"
-ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ENV MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
-
 WORKDIR /
 # "sdk-plus" has our C/C++ toolchain and kernel headers for both targets, and
 # any other host programs we want available for OS builds.
@@ -1000,10 +1000,10 @@ COPY --from=sdk-plus / /
 # a format that's convenient for extracting later.
 COPY --from=toolchain-archive /toolchain /toolchain
 
-# "sdk-musl" has the musl C library and headers. We omit "sdk-gnu" because we
-# expect to build glibc again for the target OS, while we will use the musl
-# artifacts directly to generate static binaries such as migrations.
-COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+# "sdk-libc-musl" has the musl C library and headers. We omit "sdk-libc-gnu"
+# because we expect to build glibc again for the target OS, while we will use
+# the musl artifacts directly to generate static binaries such as migrations.
+COPY --from=sdk-libc-musl / /
 
 # "sdk-rust" has our Rust toolchain with the required targets.
 COPY --chown=0:0 --from=sdk-rust /usr/libexec/rust/ /usr/libexec/rust/
@@ -1117,8 +1117,10 @@ RUN \
 
 # Make the licenses in the sys-roots easier to find.
 RUN \
-  ln -sr /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu && \
-  ln -sr /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl
+  ln -sr /x86_64-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu-x86_64 && \
+  ln -sr /x86_64-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl-x86_64 && \
+  ln -sr /aarch64-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu-aarch64 && \
+  ln -sr /aarch64-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl-aarch64
 
 # Configure the Docker CLI.
 COPY \
