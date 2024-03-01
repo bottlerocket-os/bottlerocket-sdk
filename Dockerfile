@@ -987,6 +987,21 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
+# Create symlinks that can be added to $PATH to override programs invoked by
+# find-debuginfo.sh, which does not expect to add a prefix.
+FROM sdk as sdk-find-debuginfo-symlinks
+RUN \
+  for arch in x86_64 aarch64 ; do \
+    triple="${arch}-bottlerocket-linux-gnu" ; \
+    debuginfo_bindir="/usr/${triple}/debuginfo/bin" ; \
+    mkdir -p "${debuginfo_bindir}" ; \
+    for b in nm objcopy objdump strip ; do \
+      ln -sr "/usr/bin/${triple}-${b}" "${debuginfo_bindir}/${b}" ; \
+    done ; \
+  done
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+#
 # Collect all SDK builds
 FROM scratch as sdk-final
 USER root
@@ -1083,6 +1098,14 @@ COPY --chown=0:0 --from=sdk-macros \
   /etc/rpm/macros.bottlerocket \
   /etc/rpm/macros.bottlerocket
 
+COPY --chown=0:0 --from=sdk-find-debuginfo-symlinks \
+  /usr/x86_64-bottlerocket-linux-gnu/debuginfo/bin/ \
+  /usr/x86_64-bottlerocket-linux-gnu/debuginfo/bin/
+
+COPY --chown=0:0 --from=sdk-find-debuginfo-symlinks \
+  /usr/aarch64-bottlerocket-linux-gnu/debuginfo/bin/ \
+  /usr/aarch64-bottlerocket-linux-gnu/debuginfo/bin/
+
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
 RUN \
@@ -1100,13 +1123,6 @@ RUN \
   ln -s ../libexec/go/bin/go /usr/bin/go && \
   ln -s ../libexec/go/bin/gofmt /usr/bin/gofmt && \
   find /usr/libexec/go -type f -exec touch -r /usr/libexec/go/bin/go {} \+
-
-# Add target binutils to $PATH to override programs used to extract debuginfo.
-RUN \
-  ln -s ../../${GNU_TARGET}/bin/nm /usr/local/bin/nm && \
-  ln -s ../../${GNU_TARGET}/bin/objcopy /usr/local/bin/objcopy && \
-  ln -s ../../${GNU_TARGET}/bin/objdump /usr/local/bin/objdump && \
-  ln -s ../../${GNU_TARGET}/bin/strip /usr/local/bin/strip
 
 # Strip and add tools to the path.
 RUN \
