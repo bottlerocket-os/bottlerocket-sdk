@@ -9,7 +9,10 @@
 %__rustdoc %{_bindir}/rustdoc
 
 # Enable some optimization, debuginfo, and link hardening.
-%__global_rustflags_base -Copt-level=3 -Cdebuginfo=2 -Cforce-frame-pointers=yes -Clink-arg=-Wl,-z,relro,-z,now
+%__global_rustflags_base %{shrink: \
+  -Copt-level=3 -Cdebuginfo=2 -Cforce-frame-pointers=yes \
+  -Clink-arg=-Wl,-z,pack-relative-relocs \
+  %{nil}}
 
 # Optimize generated code by using one codegen unit
 %__global_rustflags -Ccodegen-units=1 %__global_rustflags_base

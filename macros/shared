@@ -20,8 +20,8 @@
   '-fexceptions', '-fstack-clash-protection', '-fno-semantic-interposition', '-fno-omit-frame-pointer' \
   %{nil}}
 %_cross_cxxflags %_cross_cflags
-%_cross_ldflags -Wl,-z,relro -Wl,-z,now -Wl,-Bsymbolic-functions
-%_cross_c_link_args '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-Bsymbolic-functions'
+%_cross_ldflags -Wl,-z,relro -Wl,-z,now -Wl,-Bsymbolic-functions -Wl,-z,pack-relative-relocs
+%_cross_c_link_args '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-Bsymbolic-functions', '-Wl,-z,pack-relative-relocs'
 
 %_cross_buildsrcdir %{_topdir}/BUILD/sources
 %_cross_bootdir /boot
