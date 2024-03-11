@@ -31,8 +31,10 @@
 %_cross_exec_prefix %{_cross_rootdir}%{_exec_prefix}
 %_cross_bindir %{_cross_rootdir}%{_bindir}
 %_cross_sbindir %{_cross_rootdir}%{_sbindir}
+%_cross_fips_bindir %{_cross_rootdir}%{_prefix}/fips/bin
 %_cross_libdir %{_cross_prefix}/%{_cross_lib}
 %_cross_libexecdir %{_cross_rootdir}%{_libexecdir}
+%_cross_fips_libexecdir %{_cross_rootdir}%{_prefix}/fips/libexec
 %_cross_includedir %{_cross_rootdir}%{_includedir}
 %_cross_sysconfdir %{_sysconfdir}
 %_cross_tmpfilesdir %{_cross_rootdir}%{_tmpfilesdir}
@@ -241,8 +243,21 @@ CROSS_COMPILATION_CONF_EOF\
 %_source_payload w1.zstdio
 %_binary_payload w1.zstdio
 
+# Invocation for the check-fips buildroot policy script.
+%__cross_check_fips_cmd %{shrink: \
+  /usr/lib/rpm/bottlerocket/check-fips \
+    --target="%{_cross_target}" \
+    --bindir="%{_cross_bindir}" \
+    --fips-bindir="%{_cross_fips_bindir}" \
+    --libexecdir="%{_cross_libexecdir}" \
+    --fips-libexecdir="%{_cross_fips_libexecdir}" \
+    %{nil}}
+
+# Generate license attribution and check for FIPS-enabled binaries.
+# (The FIPS check is disabled by default, pending tree-wide packaging changes.)
 %__arch_install_post \
   /usr/lib/rpm/check-buildroot \
+  %{?cross_check_fips:%{__cross_check_fips_cmd}} \
   %cross_generate_attribution
 
 %source_date_epoch_from_changelog 0

@@ -1025,7 +1025,10 @@ RUN \
     platform_dir="/usr/lib/rpm/platform/${arch}-bottlerocket" ; \
     mkdir -p "${platform_dir}" ; \
     cat ${arch} shared rust cargo > "${platform_dir}/macros" ; \
-  done
+  done && \
+  vendor_dir="/usr/lib/rpm/bottlerocket" && \
+  mkdir -p "${vendor_dir}" && \
+  cp -a check-fips "${vendor_dir}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
@@ -1146,6 +1149,10 @@ COPY --chown=0:0 --from=sdk-macros \
 COPY --chown=0:0 --from=sdk-macros \
   /usr/lib/rpm/platform/aarch64-bottlerocket/ \
   /usr/lib/rpm/platform/aarch64-bottlerocket/
+
+COPY --chown=0:0 --from=sdk-macros \
+  /usr/lib/rpm/bottlerocket/check-fips \
+  /usr/lib/rpm/bottlerocket/check-fips
 
 COPY --chown=0:0 --from=sdk-find-debuginfo-symlinks \
   /usr/x86_64-bottlerocket-linux-gnu/debuginfo/bin/ \
