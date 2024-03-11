@@ -1178,6 +1178,10 @@ RUN \
 RUN \
   ln -s ../libexec/go/bin/go /usr/bin/go && \
   ln -s ../libexec/go/bin/gofmt /usr/bin/gofmt && \
+  echo "#!/bin/bash" > /usr/bin/gofips && \
+  echo "export GOEXPERIMENT=boringcrypto" >> /usr/bin/gofips && \
+  echo 'exec /usr/libexec/go/bin/go "${@}"' >> /usr/bin/gofips && \
+  chmod +x /usr/bin/gofips && \
   find /usr/libexec/go -type f -exec touch -r /usr/libexec/go/bin/go {} \+
 
 # Strip and add tools to the path.
