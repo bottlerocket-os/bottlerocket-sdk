@@ -172,27 +172,39 @@ CROSS_COMPILATION_CONF_EOF\
 
 %_cross_go_os linux
 
-%set_cross_go_flags \
+%set_cross_go_env() \
+  CROSS_TARGET="%1" ; export CROSS_TARGET ; \
   GOPATH="${PWD}/GOPATH" ; export GOPATH ; \
   GOOS="%{_cross_go_os}" ; export GOOS ; \
   GOARCH="%{_cross_go_arch}" ; export GOARCH ; \
-  CC="%{_cross_target}-gcc" ; export CC ; \
-  CC_FOR_TARGET="%{_cross_target}-gcc" ; export CC_FOR_TARGET ; \
-  CC_FOR_%{_cross_go_os}_%{_cross_go_arch}="%{_cross_target}-gcc" ; export CC_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
-  CXX="%{_cross_target}-g++" ; export CXX ; \
-  CXX_FOR_TARGET="%{_cross_target}-g++" ; export CXX_FOR_TARGET ; \
-  CXX_FOR_%{_cross_go_os}_%{_cross_go_arch}="%{_cross_target}-g++" ; export CXX_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
+  CC="%1-gcc" ; export CC ; \
+  CC_FOR_TARGET="%1-gcc" ; export CC_FOR_TARGET ; \
+  CC_FOR_%{_cross_go_os}_%{_cross_go_arch}="%1-gcc" ; export CC_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
+  CXX="%1-g++" ; export CXX ; \
+  CXX_FOR_TARGET="%1-g++" ; export CXX_FOR_TARGET ; \
+  CXX_FOR_%{_cross_go_os}_%{_cross_go_arch}="%1-g++" ; export CXX_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
   CGO_ENABLED=1 ; export CGO_ENABLED ; \
   CGO_CFLAGS="%{_cross_cflags}" ; export CGO_CFLAGS ; \
   CGO_CXXFLAGS="%{_cross_cxxflags}" ; export CGO_CXXFLAGS ; \
   CGO_LDFLAGS="%{_cross_ldflags}" ; export CGO_LDFLAGS ; \
   PKG_CONFIG_PATH="%{_cross_pkgconfigdir}" ; export PKG_CONFIG_PATH ; \
   PKG_CONFIG_ALLOW_CROSS=1 ; export PKG_CONFIG_ALLOW_CROSS ; \
-  GOFLAGS="-mod=vendor"; export GOFLAGS ; \
-  GOLDFLAGS="-compressdwarf=false -linkmode=external" ; export GOLDFLAGS ; \
+  GOFLAGS="-mod=vendor -a -buildmode=pie"; export GOFLAGS ; \
+  GOLDFLAGS_INT="-compressdwarf=false -linkmode=external" ; export GOLDFLAGS_INT ; \
+  GOLDFLAGS_EXT="%{expand:%%%2}" ; export GOLDFLAGS_EXT ; \
+  GOLDFLAGS="${GOLDFLAGS_INT} -extldflags '${GOLDFLAGS_EXT}'" ; export GOLDFLAGS ; \
   GOPROXY="off"; export GOPROXY ; \
   GOSUMDB="off"; export GOSUMDB ; \
   GO111MODULE="auto"; export GO111MODULE ; \
+
+%_cross_go_extldflags %{_cross_ldflags}
+%_cross_go_extldflags_static %{_cross_ldflags} -static-pie
+
+%set_cross_go_flags \
+  %set_cross_go_env %{_cross_target} _cross_go_extldflags
+
+%set_cross_go_flags_static \
+  %set_cross_go_env %{_cross_triple}-musl _cross_go_extldflags_static
 
 %cross_go_setup() \
   mkdir -p GOPATH/src/%2 ; \
