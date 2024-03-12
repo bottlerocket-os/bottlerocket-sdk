@@ -9,21 +9,21 @@ ONLY_MANIFEST="${ONLY_MANIFEST:-'false'}"
 for opt in "$@"; do
    optarg="$(expr "${opt}" : '[^=]*=\(.*\)')"
    case "${opt}" in
-      --version=*) VERSION="${optarg}" ;;
+      --tag=*) TAG="${optarg}" ;;
       --registry=*) REGISTRY="${optarg}" ;;
-      --sdk-name=*) SDK_NAME="${optarg}" ;;
+      --repository=*) REPOSITORY="${optarg}" ;;
       --short-sha=*) SHORT_SHA="${optarg,,}" ;;
       --skip-manifest=*) SKIP_MANIFEST="${optarg,,}" ;;
       --only-manifest=*) ONLY_MANIFEST="${optarg,,}" ;;
    esac
 done
 
-for required_arg in VERSION REGISTRY SDK_NAME SHORT_SHA; do
+for required_arg in TAG REGISTRY REPOSITORY SHORT_SHA; do
   [ -z "${!required_arg}" ] && echo "${required_arg} not set!" >&2 && exit 1
 done
 
 ECR_OPERATIONS=0
-MIN_ECR_OPERATIONS=2
+MIN_ECR_OPERATIONS=1
 if [[ "${SKIP_MANIFEST}" == "true" ]] && [[ "${ONLY_MANIFEST}" == "true" ]] ; then
   echo "nothing to do" >&2 && exit 2
 elif [[ "${SKIP_MANIFEST}" == "true" ]] || [[ "${ONLY_MANIFEST}" == "true" ]] ; then
@@ -35,7 +35,6 @@ update_image() {
 
   local local_image="${1:?}"
   local remote_image="${2:?}"
-  local arch="${3:?}"
 
   local host_arch
   host_arch="$(uname -m)"
@@ -102,12 +101,12 @@ update_image() {
   if [[ "${REGISTRY}" =~ ^public\.ecr\.aws\/ ]]; then
     aws ecr-public batch-delete-image \
       --repository-name "${repo}" \
-      --image-ids imageTag="${VERSION}" \
+      --image-ids imageTag="${TAG}" \
       --region "us-east-1"
   elif [[ "${REGISTRY}" =~ ^[0-9]+\.dkr\.ecr\.([a-z0-9-]+)\.amazonaws\.com$ ]]; then
     aws ecr batch-delete-image \
       --repository-name "${repo}" \
-      --image-ids imageTag="${VERSION}" \
+      --image-ids imageTag="${TAG}" \
       --region "${BASH_REMATCH[1]}"
   fi
 
@@ -133,15 +132,9 @@ update_image() {
     ((++ECR_OPERATIONS))
 }
 
-for arch in x86_64 aarch64 ; do
-  local_sdk="bottlerocket/sdk-${arch}:${VERSION}"
-  remote_sdk="${REGISTRY}/${SDK_NAME}-sdk-${arch}:${VERSION}"
-  update_image "${local_sdk}" "${remote_sdk}" "${arch}"
-
-  local_toolchain="bottlerocket/toolchain-${arch}:${VERSION}"
-  remote_toolchain="${REGISTRY}/${SDK_NAME}-toolchain-${arch}:${VERSION}"
-  update_image "${local_toolchain}" "${remote_toolchain}" "${arch}"
-done
+local_sdk="bottlerocket/sdk:${TAG}"
+remote_sdk="${REGISTRY}/${REPOSITORY}:${TAG}"
+update_image "${local_sdk}" "${remote_sdk}"
 
 if [[ ${ECR_OPERATIONS} -lt ${MIN_ECR_OPERATIONS} ]]; then
   echo "no containers or manifests were pushed" >&2 && exit 1

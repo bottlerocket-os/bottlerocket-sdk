@@ -83,8 +83,8 @@ RUN \
   git config --global user.email "builder@localhost"
 
 ARG UPSTREAM_SOURCE_FALLBACK
-ARG BRVER="2022.11.1"
-ARG KVER="5.10.162"
+ENV BRVER="2022.11.1"
+ENV KVER="5.10.162"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -98,64 +98,34 @@ RUN \
 WORKDIR /home/builder/buildroot
 COPY ./patches/buildroot/* ./
 COPY ./configs/buildroot/* ./configs/
+COPY ./helpers/buildroot/* ./
 RUN \
   git init . && \
   git apply --whitespace=nowarn *.patch
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-gnu
-ARG ARCH
-ARG KVER="5.10.162"
-RUN \
-  make O=output/${ARCH}-gnu defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_gnu_defconfig && \
-  make O=output/${ARCH}-gnu toolchain && \
-  find output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include -name '.*' -delete
-
-WORKDIR /home/builder/buildroot/output/${ARCH}-gnu/build
-SHELL ["/bin/bash", "-c"]
-RUN \
-  install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
-  install -p -m 0644 -Dt licenses/bison host-bison-*/COPYING && \
-  install -p -m 0644 -Dt licenses/gawk host-gawk-*/COPYING && \
-  install -p -m 0644 -Dt licenses/gcc host-gcc-final-*/{COPYING,COPYING.LIB,COPYING.RUNTIME,COPYING3,COPYING3.LIB} && \
-  install -p -m 0644 -Dt licenses/gmp host-gmp-*/COPYING{,v2,v3,.LESSERv3} && \
-  install -p -m 0644 -Dt licenses/isl host-isl-*/LICENSE && \
-  install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
-  install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
-  install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
-  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER}
+FROM toolchain as toolchain-gnu-x86_64
+ENV ARCH="x86_64"
+RUN ./build-gnu-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-musl
-ARG ARCH
-ARG KVER="5.10.162"
-RUN \
-  make O=output/${ARCH}-musl defconfig BR2_DEFCONFIG=configs/sdk_${ARCH}_musl_defconfig && \
-  make O=output/${ARCH}-musl toolchain && \
-  find output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include -name '.*' -delete
+FROM toolchain as toolchain-gnu-aarch64
+ENV ARCH="aarch64"
+RUN ./build-gnu-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
-WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
-SHELL ["/bin/bash", "-c"]
-RUN \
-  install -p -m 0644 -Dt licenses/binutils host-binutils-*/COPYING{,3}{,.LIB} && \
-  install -p -m 0644 -Dt licenses/gcc host-gcc-final-*/{COPYING,COPYING.LIB,COPYING.RUNTIME,COPYING3,COPYING3.LIB} && \
-  install -p -m 0644 -Dt licenses/gmp host-gmp-*/COPYING{,v2,v3,.LESSERv3} && \
-  install -p -m 0644 -Dt licenses/isl host-isl-*/LICENSE && \
-  install -p -m 0644 -Dt licenses/linux linux-headers-*/{COPYING,LICENSES/preferred/GPL-2.0,LICENSES/exceptions/Linux-syscall-note} && \
-  install -p -m 0644 -Dt licenses/m4 host-m4-*/COPYING && \
-  install -p -m 0644 -Dt licenses/mpc host-mpc-*/COPYING.LESSER && \
-  install -p -m 0644 -Dt licenses/mpfr host-mpfr-*/COPYING{,.LESSER}
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-# For kernel module development, we only need one toolchain, and it doesn't
-# matter which one we pick since the kernel doesn't use the C library. Record
-# the files we need so they can be archived later.
-WORKDIR /home/builder/buildroot/output/${ARCH}-musl/toolchain
-RUN find . -type f -printf '%P\n' > ../build/toolchain.txt
+FROM toolchain as toolchain-musl-x86_64
+ENV ARCH="x86_64"
+RUN ./build-musl-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
-WORKDIR /home/builder/buildroot/output/${ARCH}-musl/build
-RUN find licenses -type f -printf '%P\n' > toolchain-licenses.txt
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM toolchain as toolchain-musl-aarch64
+ENV ARCH="aarch64"
+RUN ./build-musl-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -163,29 +133,46 @@ RUN find licenses -type f -printf '%P\n' > toolchain-licenses.txt
 FROM base as sdk
 USER root
 
-ARG ARCH
 ARG UPSTREAM_SOURCE_FALLBACK
-ARG KVER="5.10.162"
+ENV KVER="5.10.162"
 
 WORKDIR /
 
-COPY --chown=0:0 --from=toolchain-gnu \
-  /home/builder/buildroot/output/${ARCH}-gnu/toolchain/ /
-COPY --chown=0:0 --from=toolchain-gnu \
-  /home/builder/buildroot/output/${ARCH}-gnu/build/linux-headers-${KVER}/usr/include/ \
-  /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/include/
-COPY --chown=0:0 --from=toolchain-gnu \
-  /home/builder/buildroot/output/${ARCH}-gnu/build/licenses/ \
-  /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
+COPY --chown=0:0 --from=toolchain-gnu-x86_64 \
+  /home/builder/buildroot/output/x86_64-gnu/toolchain/ /
+COPY --chown=0:0 --from=toolchain-gnu-x86_64 \
+  /home/builder/buildroot/output/x86_64-gnu/build/linux-headers-${KVER}/usr/include/ \
+  /x86_64-bottlerocket-linux-gnu/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-gnu-x86_64 \
+  /home/builder/buildroot/output/x86_64-gnu/build/licenses/ \
+  /x86_64-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
 
-COPY --chown=0:0 --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/toolchain/ /
-COPY --chown=0:0 --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/linux-headers-${KVER}/usr/include/ \
-  /${ARCH}-bottlerocket-linux-musl/sys-root/usr/include/
-COPY --chown=0:0 --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/licenses/ \
-  /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses/
+COPY --chown=0:0 --from=toolchain-gnu-aarch64 \
+  /home/builder/buildroot/output/aarch64-gnu/toolchain/ /
+COPY --chown=0:0 --from=toolchain-gnu-aarch64 \
+  /home/builder/buildroot/output/aarch64-gnu/build/linux-headers-${KVER}/usr/include/ \
+  /aarch64-bottlerocket-linux-gnu/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-gnu-aarch64 \
+  /home/builder/buildroot/output/aarch64-gnu/build/licenses/ \
+  /aarch64-bottlerocket-linux-gnu/sys-root/usr/share/licenses/
+
+COPY --chown=0:0 --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/toolchain/ /
+COPY --chown=0:0 --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/linux-headers-${KVER}/usr/include/ \
+  /x86_64-bottlerocket-linux-musl/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/licenses/ \
+  /x86_64-bottlerocket-linux-musl/sys-root/usr/share/licenses/
+
+COPY --chown=0:0 --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/toolchain/ /
+COPY --chown=0:0 --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/linux-headers-${KVER}/usr/include/ \
+  /aarch64-bottlerocket-linux-musl/sys-root/usr/include/
+COPY --chown=0:0 --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/licenses/ \
+  /aarch64-bottlerocket-linux-musl/sys-root/usr/share/licenses/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -193,10 +180,12 @@ COPY --chown=0:0 --from=toolchain-musl \
 FROM sdk as sdk-gnu
 USER builder
 
-ARG GLIBCVER="2.37"
-
 WORKDIR /home/builder
 COPY ./hashes/glibc ./hashes
+COPY ./helpers/glibc/* ./
+
+ENV GLIBCVER="2.37"
+ENV KVER="5.10.162"
 RUN \
   sdk-fetch hashes && \
   tar xf glibc-${GLIBCVER}.tar.xz && \
@@ -205,88 +194,57 @@ RUN \
   cd glibc && \
   mkdir build
 
-ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG SYSROOT="/${TARGET}/sys-root"
-ARG CFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
-ARG CXXFLAGS="${CFLAGS}"
-ARG CPPFLAGS=""
-ARG KVER="5.10.162"
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-WORKDIR /home/builder/glibc/build
-RUN \
-  ../configure \
-    --prefix="${SYSROOT}/usr" \
-    --sysconfdir="/etc" \
-    --localstatedir="/var" \
-    --target="${TARGET}" \
-    --host="${TARGET}" \
-    --with-headers="/${SYSROOT}/usr/include" \
-    --enable-bind-now \
-    --enable-kernel="${KVER}" \
-    --enable-shared \
-    --enable-stack-protector=strong \
-    --disable-crypt \
-    --disable-multi-arch \
-    --disable-profile \
-    --disable-systemtap \
-    --disable-timezone-tools \
-    --disable-tunables \
-    --without-cvs \
-    --without-gd \
-    --without-selinux && \
-  make -j$(nproc) -O -r
+FROM sdk-gnu as sdk-gnu-x86_64
+ENV ARCH="x86_64"
+RUN ./build-glibc.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
-USER root
-WORKDIR /home/builder/glibc/build
-RUN make install
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-gnu as sdk-gnu-aarch64
+ENV ARCH="aarch64"
+RUN ./build-glibc.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk as sdk-musl
 USER builder
 
-ARG MUSLVER="1.2.3"
-
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
+COPY ./helpers/musl/* ./
+
+ENV MUSLVER="1.2.3"
 RUN \
   sdk-fetch hashes && \
   tar xf musl-${MUSLVER}.tar.gz && \
   rm musl-${MUSLVER}.tar.gz && \
   mv musl-${MUSLVER} musl
 
-ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG SYSROOT="/${TARGET}/sys-root"
-ARG CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
-ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-WORKDIR /home/builder/musl
-RUN \
-  ./configure \
-    CFLAGS="${CFLAGS}" \
-    LDFLAGS="${LDFLAGS}" \
-    --target="${TARGET}" \
-    --disable-gcc-wrapper \
-    --enable-static \
-    --prefix="${SYSROOT}/usr" \
-    --libdir="${SYSROOT}/usr/lib" && \
-   make -j$(nproc)
+FROM sdk-musl as sdk-musl-x86_64
+ENV ARCH="x86_64"
+RUN ./build-musl.sh --arch="${ARCH}"
 
-USER root
-WORKDIR /home/builder/musl
-RUN make install
-RUN \
-  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/musl COPYRIGHT
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-ARG LLVMVER="14.0.6"
+FROM sdk-musl as sdk-musl-aarch64
+ENV ARCH="aarch64"
+RUN ./build-musl.sh --arch="${ARCH}"
 
-USER builder
-WORKDIR /home/builder
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Rust's musl targets depend on libunwind.
+FROM sdk as sdk-libunwind
+USER builder
+
+WORKDIR /home/builder
 COPY ./hashes/libunwind ./hashes
+COPY ./helpers/libunwind/* ./
+
+ENV LLVMVER="14.0.6"
 RUN \
   sdk-fetch hashes && \
   tar xf llvm-${LLVMVER}.src.tar.xz && \
@@ -300,40 +258,75 @@ RUN \
   mv libunwind-${LLVMVER}.src libunwind && \
   mkdir libunwind/build
 
-WORKDIR /home/builder/libunwind/build
-RUN \
-  cmake \
-    -DLLVM_PATH=../../llvm \
-    -DLIBUNWIND_ENABLE_SHARED=1 \
-    -DLIBUNWIND_ENABLE_STATIC=1 \
-    -DCMAKE_INSTALL_PREFIX="/usr" \
-    -DCMAKE_C_COMPILER="${TARGET}-gcc" \
-    -DCMAKE_C_COMPILER_TARGET="${TARGET}" \
-    -DCMAKE_CXX_COMPILER="${TARGET}-g++" \
-    -DCMAKE_CXX_COMPILER_TARGET="${TARGET}" \
-    -DCMAKE_AR="/usr/bin/${TARGET}-ar" \
-    -DCMAKE_RANLIB="/usr/bin/${TARGET}-ranlib" \
-    .. && \
-  make unwind
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-USER root
-WORKDIR /home/builder/libunwind/build
-RUN make install-unwind DESTDIR="${SYSROOT}"
-RUN \
-  install -p -m 0644 -Dt ${SYSROOT}/usr/share/licenses/libunwind ../LICENSE.TXT
+FROM sdk-libunwind as sdk-libunwind-x86_64
+
+ENV ARCH="x86_64"
+ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+
+COPY --chown=0:0 --from=sdk-musl-x86_64 \
+  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
+  /${MUSL_TARGET}/sys-root/
+
+RUN ./build-libunwind.sh --arch="${ARCH}"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-libunwind as sdk-libunwind-aarch64
+
+ENV ARCH="aarch64"
+ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
+
+COPY --chown=0:0 --from=sdk-musl-aarch64 \
+  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
+  /${MUSL_TARGET}/sys-root/
+
+RUN ./build-libunwind.sh --arch="${ARCH}"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM scratch as sdk-libc-gnu
+
+ENV GNU_TARGET_x86_64="x86_64-bottlerocket-linux-gnu"
+ENV GNU_TARGET_aarch64="aarch64-bottlerocket-linux-gnu"
+
+COPY --chown=0:0 --from=sdk-gnu-x86_64 \
+  /home/builder/glibc/output/${GNU_TARGET_x86_64}/sys-root/ \
+  /${GNU_TARGET_x86_64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-gnu-aarch64 \
+  /home/builder/glibc/output/${GNU_TARGET_aarch64}/sys-root/ \
+  /${GNU_TARGET_aarch64}/sys-root/
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM scratch as sdk-libc-musl
+ENV MUSL_TARGET_x86_64="x86_64-bottlerocket-linux-musl"
+ENV MUSL_TARGET_aarch64="aarch64-bottlerocket-linux-musl"
+
+COPY --chown=0:0 --from=sdk-musl-x86_64 \
+  /home/builder/musl/output/${MUSL_TARGET_x86_64}/sys-root/ \
+  /${MUSL_TARGET_x86_64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-libunwind-x86_64 \
+  /home/builder/libunwind/output/${MUSL_TARGET_x86_64}/sys-root/ \
+  /${MUSL_TARGET_x86_64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-musl-aarch64 \
+  /home/builder/musl/output/${MUSL_TARGET_aarch64}/sys-root/ \
+  /${MUSL_TARGET_aarch64}/sys-root/
+
+COPY --chown=0:0 --from=sdk-libunwind-aarch64 \
+  /home/builder/libunwind/output/${MUSL_TARGET_aarch64}/sys-root/ \
+  /${MUSL_TARGET_aarch64}/sys-root/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk as sdk-libc
 
-ARG ARCH
-ARG GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GNU_SYSROOT="/${GNU_TARGET}/sys-root"
-ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
-
-COPY --chown=0:0 --from=sdk-gnu ${GNU_SYSROOT}/ ${GNU_SYSROOT}/
-COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+COPY --from=sdk-libc-gnu / /
+COPY --from=sdk-libc-musl / /
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -344,10 +337,9 @@ RUN \
   mkdir -p /usr/libexec/rust && \
   chown -R builder:builder /usr/libexec/rust
 
-ARG ARCH
 ARG HOST_ARCH
-ARG VENDOR="bottlerocket"
-ARG RUSTVER="1.76.0"
+ENV VENDOR="bottlerocket"
+ENV RUSTVER="1.76.0"
 
 USER builder
 WORKDIR /home/builder
@@ -391,24 +383,28 @@ RUN \
 # module so `rustc` knows they exist.
 
 RUN \
-  for libc in gnu musl ; do \
-    cp compiler/rustc_target/src/spec/targets/${ARCH}_{unknown,${VENDOR}}_linux_${libc}.rs && \
-    sed -i -e '/let mut base = base::linux_'${libc}'::opts();/a base.vendor = "'${VENDOR}'".into();' \
-      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
-    sed -i -e '/ \.\.base::linux_'${libc}'::opts()/i vendor: "'${VENDOR}'".into(),' \
-      compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_${libc}.rs && \
-    sed -i -e '/("'${ARCH}-unknown-linux-${libc}'", .*),/a("'${ARCH}-${VENDOR}-linux-${libc}'", '${ARCH}_${VENDOR}_linux_${libc}'),' \
-      compiler/rustc_target/src/spec/mod.rs ; \
+  for arch in x86_64 aarch64 ; do \
+    for libc in gnu musl ; do \
+      cp compiler/rustc_target/src/spec/targets/${arch}_{unknown,${VENDOR}}_linux_${libc}.rs && \
+      sed -i -e '/let mut base = base::linux_'${libc}'::opts();/a base.vendor = "'${VENDOR}'".into();' \
+        compiler/rustc_target/src/spec/targets/${arch}_${VENDOR}_linux_${libc}.rs && \
+      sed -i -e '/ \.\.base::linux_'${libc}'::opts()/i vendor: "'${VENDOR}'".into(),' \
+        compiler/rustc_target/src/spec/targets/${arch}_${VENDOR}_linux_${libc}.rs && \
+      sed -i -e '/("'${arch}-unknown-linux-${libc}'", .*),/a("'${arch}-${VENDOR}-linux-${libc}'", '${arch}_${VENDOR}_linux_${libc}'),' \
+        compiler/rustc_target/src/spec/mod.rs ; \
+    done ; \
   done && \
   grep -Fq ${VENDOR} compiler/rustc_target/src/spec/mod.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_gnu.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/${ARCH}_${VENDOR}_linux_musl.rs
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/x86_64_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/x86_64_${VENDOR}_linux_musl.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/aarch64_${VENDOR}_linux_gnu.rs && \
+  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/aarch64_${VENDOR}_linux_musl.rs
 
 # In addition to our vendor-specific targets, we also need to build for the host
 # platform, since that is no longer done implicitly.
 COPY ./configs/rust/* ./
 RUN \
-  sed -e "s,@HOST_TRIPLE@,${HOST_ARCH}-unknown-linux-gnu,g" config-${ARCH}.toml.in > config.toml && \
+  sed -e "s,@HOST_TRIPLE@,${HOST_ARCH}-unknown-linux-gnu,g" config.toml.in > config.toml && \
   RUSTUP_DIST_SERVER=example:// python3 ./x.py install
 
 RUN \
@@ -419,11 +415,11 @@ ENV PATH="/usr/libexec/rust/bin:$PATH" LD_LIBRARY_PATH="/usr/libexec/rust/lib"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libc as sdk-bootconfig
+FROM sdk as sdk-bootconfig
 
 USER root
 
-ARG KVER="5.10.162"
+ENV KVER="5.10.162"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \
@@ -447,9 +443,7 @@ RUN \
 
 FROM sdk-libc as sdk-go
 
-ARG ARCH
-ARG TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GOVER="1.21.8"
+ENV GOVER="1.21.8"
 
 USER root
 RUN dnf -y install golang
@@ -462,41 +456,24 @@ RUN \
   tar --strip-components=1 -xf go${GOVER}.src.tar.gz && \
   rm go${GOVER}.src.tar.gz
 
-ARG GOROOT_FINAL="/usr/libexec/go"
-ARG GOOS="linux"
-ARG CGO_ENABLED=1
-ARG GOARCH_aarch64="arm64"
-ARG GOARCH_x86_64="amd64"
-ARG GOARCH_ARCH="GOARCH_${ARCH}"
-ARG CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
-ARG CXXFLAGS="${CFLAGS}"
-ARG LDFLAGS="-Wl,-z,relro -Wl,-z,now"
-ARG CGO_CFLAGS="${CFLAGS}"
-ARG CGO_CXXFLAGS="${CXXFLAGS}"
-ARG CGO_LDFLAGS="${LDFLAGS}"
+ENV GOROOT_FINAL="/usr/libexec/go"
+ENV GOOS="linux"
+ENV CGO_ENABLED=1
+ENV CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ENV CXXFLAGS="${CFLAGS}"
+ENV LDFLAGS="-Wl,-z,relro -Wl,-z,now"
+ENV CGO_CFLAGS="${CFLAGS}"
+ENV CGO_CXXFLAGS="${CXXFLAGS}"
+ENV CGO_LDFLAGS="${LDFLAGS}"
 
 WORKDIR /home/builder/sdk-go/src
 RUN ./all.bash
 
-# Build the standard library with and without PIE. Target binaries
-# should use PIE, but any host binaries generated during the build
-# might not.
+# Install the Go standard library and toolchain.
 WORKDIR /home/builder/sdk-go
-ENV PATH="/home/builder/sdk-go/bin:${PATH}" \
-  GO111MODULE="auto"
+ENV PATH="/home/builder/sdk-go/bin:${PATH}" GO111MODULE="auto"
 RUN \
-  export GOARCH="${!GOARCH_ARCH}" ; \
-  export CC="${TARGET}-gcc" ; \
-  export CC_FOR_TARGET="${TARGET}-gcc" ; \
-  export CC_FOR_${GOOS}_${GOARCH}="${TARGET}-gcc" ; \
-  export CXX="${TARGET}-g++" ; \
-  export CXX_FOR_TARGET="${TARGET}-g++" ; \
-  export CXX_FOR_${GOOS}_${GOARCH}="${TARGET}-g++" ; \
-  export GOFLAGS="-mod=vendor" ; \
-  go install std cmd && \
-  go install -buildmode=pie std cmd
-
-RUN \
+  go install -buildmode=pie std cmd && \
   install -p -m 0644 -Dt licenses LICENSE PATENTS
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
@@ -523,7 +500,7 @@ RUN rm /license-{scan,tool}/{clarify,deny}.toml
 
 FROM sdk-cargo as sdk-license-scan
 
-ARG SPDXVER="3.19"
+ENV SPDXVER="3.19"
 
 USER builder
 WORKDIR /home/builder/license-scan
@@ -550,7 +527,7 @@ RUN cargo build --release --locked
 
 FROM sdk-cargo as sdk-cargo-deny
 
-ARG DENYVER="0.13.5"
+ENV DENYVER="0.13.5"
 
 USER builder
 WORKDIR /home/builder
@@ -568,7 +545,7 @@ RUN cargo build --release --locked
 
 FROM sdk-cargo as sdk-cargo-make
 
-ARG MAKEVER="0.36.8"
+ENV MAKEVER="0.36.8"
 
 USER builder
 WORKDIR /home/builder
@@ -705,9 +682,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ARG GOVMOMIVER="0.30.2"
-ARG GOVMOMISHORTCOMMIT="9078b0b"
-ARG GOVMOMIDATE="2023-02-01T04:38:23Z"
+ENV GOVMOMIVER="0.30.2"
+ENV GOVMOMISHORTCOMMIT="9078b0b"
+ENV GOVMOMIDATE="2023-02-01T04:38:23Z"
 
 USER builder
 WORKDIR /home/builder/go/src/github.com/vmware/govmomi
@@ -745,10 +722,10 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/docker && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/docker
 
-ARG DOCKERVER="20.10.21"
-ARG DOCKERCOMMIT="baeda1f82a10204ec5708d5fbba130ad76cfee49"
-ARG DOCKERIMPORT="github.com/docker/cli"
-ARG MOBYBIRTHDAY="2017-04-18T14:29:00.000000000+00:00"
+ENV DOCKERVER="20.10.21"
+ENV DOCKERCOMMIT="baeda1f82a10204ec5708d5fbba130ad76cfee49"
+ENV DOCKERIMPORT="github.com/docker/cli"
+ENV MOBYBIRTHDAY="2017-04-18T14:29:00.000000000+00:00"
 
 USER builder
 WORKDIR /home/builder/go/src/${DOCKERIMPORT}
@@ -782,7 +759,7 @@ RUN \
 
 FROM sdk as sdk-cpp
 
-ARG AWS_SDK_CPP_VER="1.11.207"
+ENV AWS_SDK_CPP_VER="1.11.207"
 
 USER builder
 WORKDIR /home/builder/aws-sdk-cpp-src
@@ -836,7 +813,7 @@ RUN \
 
 FROM sdk-cpp as sdk-aws-kms-pkcs11
 
-ARG AWS_KMS_PKCS11_VER="0.0.9"
+ENV AWS_KMS_PKCS11_VER="0.0.9"
 
 USER builder
 WORKDIR /home/builder/aws-kms-pkcs11
@@ -856,7 +833,7 @@ RUN make install
 
 FROM sdk as sdk-e2fsprogs
 
-ARG E2FSPROGS_VER="1.46.6"
+ENV E2FSPROGS_VER="1.46.6"
 
 USER builder
 WORKDIR /home/builder
@@ -916,7 +893,7 @@ RUN \
   dnf clean all
 
 ARG HOST_ARCH
-ARG AWSCLI_VER="2.14.6"
+ENV AWSCLI_VER="2.14.6"
 
 USER builder
 WORKDIR /home/builder/awscli
@@ -939,25 +916,44 @@ RUN \
 
 FROM sdk as toolchain-archive
 
-ARG ARCH
-ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
+ENV MUSL_TARGET_x86_64="x86_64-bottlerocket-linux-musl"
+ENV MUSL_TARGET_aarch64="aarch64-bottlerocket-linux-musl"
 
-COPY --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain.txt \
-  /tmp/toolchain.txt
+COPY --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/toolchain-x86_64.txt \
+  /tmp/toolchain-x86_64.txt
 
-COPY --from=toolchain-musl \
-  /home/builder/buildroot/output/${ARCH}-musl/build/toolchain-licenses.txt \
-  /tmp/toolchain-licenses.txt
+COPY --from=toolchain-musl-x86_64 \
+  /home/builder/buildroot/output/x86_64-musl/build/toolchain-licenses-x86_64.txt \
+  /tmp/toolchain-licenses-x86_64.txt
+
+COPY --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/toolchain-aarch64.txt \
+  /tmp/toolchain-aarch64.txt
+
+COPY --from=toolchain-musl-aarch64 \
+  /home/builder/buildroot/output/aarch64-musl/build/toolchain-licenses-aarch64.txt \
+  /tmp/toolchain-licenses-aarch64.txt
 
 WORKDIR /tmp
 
 RUN \
-  tar cvf toolchain.tar --transform "s,^,toolchain/," \
-    -C / -T toolchain.txt && \
-  tar rvf toolchain.tar --transform "s,^,toolchain/licenses/," \
-    -C /${MUSL_SYSROOT}/usr/share/licenses -T toolchain-licenses.txt && \
+  tar cvf toolchain.tar \
+    --transform "s,^,toolchain/," \
+    -C / \
+    -T toolchain-x86_64.txt && \
+  tar rvf toolchain.tar \
+    --transform "s,^,toolchain/licenses/," \
+    -C "/${MUSL_TARGET_x86_64}/sys-root/usr/share/licenses" \
+    -T toolchain-licenses-x86_64.txt && \
+  tar rvf toolchain.tar \
+    --transform "s,^,toolchain/," \
+    -C / \
+    -T toolchain-aarch64.txt && \
+  tar rvf toolchain.tar \
+    --transform "s,^,toolchain/licenses/," \
+    -C "/${MUSL_TARGET_aarch64}/sys-root/usr/share/licenses" \
+    -T toolchain-licenses-aarch64.txt && \
   tar xvf toolchain.tar -C /
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
@@ -965,19 +961,31 @@ RUN \
 # Generate macros for the target.
 
 FROM sdk as sdk-macros
-ARG ARCH
 
 COPY macros/* /tmp/
 
 WORKDIR /tmp
 RUN \
-  cat ${ARCH} shared rust cargo > /etc/rpm/macros.bottlerocket
+  for arch in x86_64 aarch64 ; do \
+    platform_dir="/usr/lib/rpm/platform/${arch}-bottlerocket" ; \
+    mkdir -p "${platform_dir}" ; \
+    cat ${arch} shared rust cargo > "${platform_dir}/macros" ; \
+  done
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
-# Collects all toolchain builds as single image layer
-FROM scratch as toolchain-golden
-COPY --from=toolchain-archive /toolchain /toolchain
+# Create symlinks that can be added to $PATH to override programs invoked by
+# find-debuginfo.sh, which does not expect to add a prefix.
+FROM sdk as sdk-find-debuginfo-symlinks
+RUN \
+  for arch in x86_64 aarch64 ; do \
+    triple="${arch}-bottlerocket-linux-gnu" ; \
+    debuginfo_bindir="/usr/${triple}/debuginfo/bin" ; \
+    mkdir -p "${debuginfo_bindir}" ; \
+    for b in nm objcopy objdump strip ; do \
+      ln -sr "/usr/bin/${triple}-${b}" "${debuginfo_bindir}/${b}" ; \
+    done ; \
+  done
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
@@ -985,21 +993,19 @@ COPY --from=toolchain-archive /toolchain /toolchain
 FROM scratch as sdk-final
 USER root
 
-ARG ARCH
-ARG GNU_TARGET="${ARCH}-bottlerocket-linux-gnu"
-ARG GNU_SYSROOT="/${GNU_TARGET}/sys-root"
-ARG MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-ARG MUSL_SYSROOT="/${MUSL_TARGET}/sys-root"
-
 WORKDIR /
 # "sdk-plus" has our C/C++ toolchain and kernel headers for both targets, and
 # any other host programs we want available for OS builds.
 COPY --from=sdk-plus / /
 
-# "sdk-musl" has the musl C library and headers. We omit "sdk-gnu" because we
-# expect to build glibc again for the target OS, while we will use the musl
-# artifacts directly to generate static binaries such as migrations.
-COPY --chown=0:0 --from=sdk-musl ${MUSL_SYSROOT}/ ${MUSL_SYSROOT}/
+# "toolchain-archive" has the toolchains for both targets bundled together in
+# a format that's convenient for extracting later.
+COPY --from=toolchain-archive /toolchain /toolchain
+
+# "sdk-libc-musl" has the musl C library and headers. We omit "sdk-libc-gnu"
+# because we expect to build glibc again for the target OS, while we will use
+# the musl artifacts directly to generate static binaries such as migrations.
+COPY --from=sdk-libc-musl / /
 
 # "sdk-rust" has our Rust toolchain with the required targets.
 COPY --chown=0:0 --from=sdk-rust /usr/libexec/rust/ /usr/libexec/rust/
@@ -1076,8 +1082,20 @@ COPY --chown=0:0 --from=sdk-e2fsprogs \
 
 # "sdk-macros" has the rpm macros
 COPY --chown=0:0 --from=sdk-macros \
-  /etc/rpm/macros.bottlerocket \
-  /etc/rpm/macros.bottlerocket
+  /usr/lib/rpm/platform/x86_64-bottlerocket/ \
+  /usr/lib/rpm/platform/x86_64-bottlerocket/
+
+COPY --chown=0:0 --from=sdk-macros \
+  /usr/lib/rpm/platform/aarch64-bottlerocket/ \
+  /usr/lib/rpm/platform/aarch64-bottlerocket/
+
+COPY --chown=0:0 --from=sdk-find-debuginfo-symlinks \
+  /usr/x86_64-bottlerocket-linux-gnu/debuginfo/bin/ \
+  /usr/x86_64-bottlerocket-linux-gnu/debuginfo/bin/
+
+COPY --chown=0:0 --from=sdk-find-debuginfo-symlinks \
+  /usr/aarch64-bottlerocket-linux-gnu/debuginfo/bin/ \
+  /usr/aarch64-bottlerocket-linux-gnu/debuginfo/bin/
 
 # Add Rust programs and libraries to the path.
 # Also add symlinks to help out with sysroot discovery.
@@ -1097,13 +1115,6 @@ RUN \
   ln -s ../libexec/go/bin/gofmt /usr/bin/gofmt && \
   find /usr/libexec/go -type f -exec touch -r /usr/libexec/go/bin/go {} \+
 
-# Add target binutils to $PATH to override programs used to extract debuginfo.
-RUN \
-  ln -s ../../${GNU_TARGET}/bin/nm /usr/local/bin/nm && \
-  ln -s ../../${GNU_TARGET}/bin/objcopy /usr/local/bin/objcopy && \
-  ln -s ../../${GNU_TARGET}/bin/objdump /usr/local/bin/objdump && \
-  ln -s ../../${GNU_TARGET}/bin/strip /usr/local/bin/strip
-
 # Strip and add tools to the path.
 RUN \
   for b in /usr/libexec/tools/* ; do \
@@ -1113,8 +1124,10 @@ RUN \
 
 # Make the licenses in the sys-roots easier to find.
 RUN \
-  ln -sr /${ARCH}-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu && \
-  ln -sr /${ARCH}-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl
+  ln -sr /x86_64-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu-x86_64 && \
+  ln -sr /x86_64-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl-x86_64 && \
+  ln -sr /aarch64-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu-aarch64 && \
+  ln -sr /aarch64-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl-aarch64
 
 # Configure the Docker CLI.
 COPY \

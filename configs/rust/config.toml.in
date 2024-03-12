@@ -6,6 +6,8 @@ target = [
   "@HOST_TRIPLE@",
   "aarch64-bottlerocket-linux-gnu",
   "aarch64-bottlerocket-linux-musl",
+  "x86_64-bottlerocket-linux-gnu",
+  "x86_64-bottlerocket-linux-musl",
 ]
 
 docs = false
@@ -44,4 +46,21 @@ ar = "/usr/bin/aarch64-bottlerocket-linux-musl-ar"
 ranlib = "/usr/bin/aarch64-bottlerocket-linux-musl-ranlib"
 linker = "aarch64-bottlerocket-linux-musl-gcc"
 musl-root = "/aarch64-bottlerocket-linux-musl/sys-root/usr"
+crt-static = true
+
+[target.x86_64-bottlerocket-linux-gnu]
+cc = "x86_64-bottlerocket-linux-gnu-gcc"
+cxx = "x86_64-bottlerocket-linux-gnu-g++"
+ar = "/usr/bin/x86_64-bottlerocket-linux-gnu-ar"
+ranlib = "/usr/bin/x86_64-bottlerocket-linux-gnu-ranlib"
+linker = "x86_64-bottlerocket-linux-gnu-gcc"
+crt-static = false
+
+[target.x86_64-bottlerocket-linux-musl]
+cc = "x86_64-bottlerocket-linux-musl-gcc"
+cxx = "x86_64-bottlerocket-linux-musl-g++"
+ar = "/usr/bin/x86_64-bottlerocket-linux-musl-ar"
+ranlib = "/usr/bin/x86_64-bottlerocket-linux-musl-ranlib"
+linker = "x86_64-bottlerocket-linux-musl-gcc"
+musl-root = "/x86_64-bottlerocket-linux-musl/sys-root/usr"
 crt-static = true
