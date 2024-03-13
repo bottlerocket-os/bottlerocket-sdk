@@ -1,0 +1,38 @@
+From 11e8de79f810f02dc426d184b6eb54c011f09aa6 Mon Sep 17 00:00:00 2001
+From: Ben Cressey <bcressey@amazon.com>
+Date: Wed, 13 Mar 2024 18:16:53 +0000
+Subject: [PATCH] Always restrict boringcrypto crypto/tls to FIPS
+
+Signed-off-by: Ben Cressey <bcressey@amazon.com>
+---
+ src/crypto/tls/boring.go  | 1 +
+ src/go/build/deps_test.go | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/src/crypto/tls/boring.go b/src/crypto/tls/boring.go
+index 1827f76..625a67c 100644
+--- a/src/crypto/tls/boring.go
++++ b/src/crypto/tls/boring.go
+@@ -8,6 +8,7 @@ package tls
+ 
+ import (
+ 	"crypto/internal/boring/fipstls"
++	_ "crypto/tls/fipsonly"
+ )
+ 
+ // needFIPS returns fipstls.Required(); it avoids a new import in common.go.
+diff --git a/src/go/build/deps_test.go b/src/go/build/deps_test.go
+index 592f2fd..5584339 100644
+--- a/src/go/build/deps_test.go
++++ b/src/go/build/deps_test.go
+@@ -482,6 +482,7 @@ var depsRules = `
+ 	< crypto/x509/internal/macos
+ 	< crypto/x509/pkix;
+ 
++	crypto/tls/fipsonly,
+ 	crypto/internal/boring/fipstls, crypto/x509/pkix
+ 	< crypto/x509
+ 	< crypto/tls;
+-- 
+2.43.0
+
