@@ -17,6 +17,8 @@
 %__cargo_cross_opts_static %{__cargo_common_opts} --target %{__cargo_target_static}
 %__cargo_env CARGO_TARGET_DIR="${HOME}/.cache" SKIP_README="true"
 %__cargo_env_static CARGO_TARGET_DIR="${HOME}/.cache/.static" SKIP_README="true"
+%__cargo_outdir "${HOME}/.cache/%{__cargo_target}/release"
+%__cargo_outdir_static "${HOME}/.cache/.static/%{__cargo_target_static}/release"
 %__cargo_cross_pkg_config PKG_CONFIG_PATH="%{_cross_pkgconfigdir}" PKG_CONFIG_ALLOW_CROSS=1
 %__cargo_cross_env %{__cargo_env} %{__cargo_cross_pkg_config} TARGET_CC="%{_cross_triple}-gnu-gcc"
 %__cargo_cross_env_static %{__cargo_env_static} %{__cargo_cross_pkg_config} TARGET_CC="%{_cross_triple}-musl-gcc"
