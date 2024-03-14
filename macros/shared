@@ -23,6 +23,8 @@
 %_cross_ldflags -Wl,-z,relro -Wl,-z,now -Wl,-Bsymbolic-functions
 %_cross_c_link_args '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-Bsymbolic-functions'
 
+%_cross_bootdir /boot
+%_cross_bootconfigdir %{_cross_bootdir}/boot-config.d
 %_cross_lib lib
 %_cross_rootdir /%{_cross_target}/sys-root
 %_cross_prefix %{_cross_rootdir}%{_prefix}
