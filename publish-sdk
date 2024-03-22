@@ -59,9 +59,9 @@ update_image() {
     arm64) alt_docker_arch="amd64" ;;
   esac
 
-  local local_host_arch_image="${local_image}-${SHORT_SHA}-${host_arch}"
-  local remote_host_arch_image="${remote_image}-${SHORT_SHA}-${host_arch}"
-  local remote_alt_arch_image="${remote_image}-${SHORT_SHA}-${alt_arch}"
+  local local_host_arch_image="${local_image}-${SHORT_SHA}-${docker_arch}"
+  local remote_host_arch_image="${remote_image}-${SHORT_SHA}-${docker_arch}"
+  local remote_alt_arch_image="${remote_image}-${SHORT_SHA}-${alt_docker_arch}"
 
   if [[ "${ONLY_MANIFEST}" != "true" ]]; then
     if ! docker image inspect "${local_host_arch_image}" >/dev/null 2>&1 ; then
@@ -132,7 +132,7 @@ update_image() {
     ((++ECR_OPERATIONS))
 }
 
-local_sdk="bottlerocket/sdk:${TAG}"
+local_sdk="bottlerocket-sdk:${TAG}"
 remote_sdk="${REGISTRY}/${REPOSITORY}:${TAG}"
 update_image "${local_sdk}" "${remote_sdk}"
 
