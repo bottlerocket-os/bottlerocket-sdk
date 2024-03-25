@@ -1,18 +1,19 @@
 TOP := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
 
 HOST_ARCH ?= $(shell uname -m)
+DOCKER_ARCH ?= $(lastword $(subst :, ,$(filter $(HOST_ARCH):%,x86_64:amd64 aarch64:arm64)))
 UPSTREAM_SOURCE_FALLBACK ?= false
 
 VERSION := $(shell cat $(TOP)VERSION)
 SHORT_SHA := $(shell git rev-parse --short=8 HEAD)
 
-SDK_TAG := bottlerocket/sdk:$(VERSION)-$(SHORT_SHA)-$(HOST_ARCH)
+IMAGE_NAME ?= bottlerocket-sdk:$(VERSION)-$(SHORT_SHA)-$(DOCKER_ARCH)
 
 all: sdk
 
 sdk:
 	@DOCKER_BUILDKIT=1 docker build . \
-		--tag $(SDK_TAG) \
+		--tag $(IMAGE_NAME) \
 		--target sdk-golden \
 		--build-arg HOST_ARCH=$(HOST_ARCH) \
 		--build-arg UPSTREAM_SOURCE_FALLBACK=$(UPSTREAM_SOURCE_FALLBACK)
