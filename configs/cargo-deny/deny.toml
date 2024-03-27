@@ -13,18 +13,24 @@ allow = [
     "Apache-2.0",
     "BSD-3-Clause",
     "BSL-1.0",
+    "ISC",
     "MIT",
+    "OpenSSL",
     "Unlicense",
     "Zlib",
 ]
 
 exceptions = [
-    { name = "bitmaps", allow = ["MPL-2.0"], version = "*" },
-    { name = "im-rc", allow = ["MPL-2.0"], version = "*" },
-    { name = "sized-chunks", allow = ["MPL-2.0"], version = "*" },
-    { name = "smartstring", allow = ["MPL-2.0"], version = "*" },
+    { name = "webpki-roots", allow = ["MPL-2.0"] },
     { name = "target-lexicon", allow = ["Apache-2.0 WITH LLVM-exception"] },
     { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-DFS-2016"] },
+]
+
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 },
 ]
 
 [bans]
@@ -33,9 +39,21 @@ multiple-versions = "deny"
 wildcards = "deny"
 
 skip = [
-    # newer version used by cargo
-    # older version used by crypto-hash
-    { name = "hex", version = "0.3.2" },
+    # newer version used by clap_derive
+    # older version used by strum_macros
+    { name = "heck", version = "0.4.1" },
+    # older version used by toml_edit
+    # newer version used by gix-actor
+    { name = "winnow", version = "0.5.40" },
+]
+
+skip-tree = [
+    # windows-sys is not a direct dependency. we skip the
+    # dependency tree because windows-sys has many sub-crates
+    # that differ in major version.
+    { name = "windows-sys" },
+    # redox_syscall is also not a direct dependency.
+    { name = "redox_syscall" },
 ]
 
 [sources]
