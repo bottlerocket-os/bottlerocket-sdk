@@ -15,21 +15,13 @@ The SDK includes:
 
 ### Availability
 
-The SDK is available through Amazon ECR Public Gallery:
-
-- [bottlerocket-sdk-aarch64](https://gallery.ecr.aws/bottlerocket/bottlerocket-sdk-aarch64)
-- [bottlerocket-sdk-x86_64](https://gallery.ecr.aws/bottlerocket/bottlerocket-sdk-x86_64)
-- [bottlerocket-toolchain-aarch64](https://gallery.ecr.aws/bottlerocket/bottlerocket-toolchain-aarch64)
-- [bottlerocket-toolchain-x86_64](https://gallery.ecr.aws/bottlerocket/bottlerocket-toolchain-x86_64)
+The [Bottlerocket SDK](https://gallery.ecr.aws/bottlerocket/bottlerocket-sdk) is available through Amazon ECR Public.
 
 ### Development
 
-The SDK can be built for either **x86_64** or **aarch64**.
+The SDK can be built on either an **x86_64** or an **aarch64** host.
 ```shell
-make ARCH="x86_64"
-make ARCH="aarch64"
+make
 ```
-
-It supports either architecture for a build host in both cases.
 
 See the [BUILDING](https://github.com/bottlerocket-os/bottlerocket-sdk/blob/develop/BUILDING.md) guide for more details.
