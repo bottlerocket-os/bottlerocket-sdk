@@ -757,6 +757,46 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-go as sdk-oras
+
+USER root
+RUN \
+  mkdir -p /usr/libexec/tools /usr/share/licenses/oras && \
+  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/oras
+
+ENV ORASVER="1.1.0"
+ENV ORASCOMMIT="7079c468a06fb5815c99395eb4aaf46dd459d3fa"
+ENV ORASIMPORT="oras.land/oras"
+
+USER builder
+WORKDIR /home/builder/go/src/${ORASIMPORT}
+COPY ./hashes/oras /home/builder/hashes
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  tar --strip-components=1 -xf oras-${ORASVER}.tar.gz && \
+  rm oras-${ORASVER}.tar.gz
+
+COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
+RUN \
+  cp -p LICENSE /usr/share/licenses/oras && \
+  go mod vendor && \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/oras/vendor \
+    go-vendor ./vendor
+
+RUN \
+  export CGO_ENABLED=0 ; \
+  export BUILD_VERSION_PKG="${ORASIMPORT}/internal/version" ; \
+  go build -mod=vendor -o /usr/libexec/tools/oras -ldflags " \
+    -s -w \
+    -X ${BUILD_VERSION_PKG}.BuildMetadata=${ORASVER} \
+    -X ${BUILD_VERSION_PKG}.GitCommit=${ORASCOMMIT} \
+    -X ${BUILD_VERSION_PKG}.GitTreeState=clean \
+    " ${ORASIMPORT}/cmd/oras
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as sdk-cpp
 
 ENV AWS_SDK_CPP_VER="1.11.207"
@@ -1037,6 +1077,10 @@ COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/license
 # "sdk-docker" has the Docker CLI and licenses.
 COPY --chown=0:0 --from=sdk-docker /usr/libexec/tools/docker /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-docker /usr/share/licenses/docker/ /usr/share/licenses/docker/
+
+# "sdk-oras" has the ORAS CLI and licenses.
+COPY --chown=0:0 --from=sdk-oras /usr/libexec/tools/oras /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-oras /usr/share/licenses/oras/ /usr/share/licenses/oras/
 
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
