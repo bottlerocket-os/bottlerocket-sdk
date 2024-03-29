@@ -899,6 +899,7 @@ RUN \
     e2fsprogs \
     efitools \
     erofs-utils \
+    flatbuffers-compiler \
     gdisk \
     glibc \
     glib2-devel \
