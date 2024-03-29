@@ -17,3 +17,11 @@ operating system images.
 macros/rust and macros/cargo (used during build) are derived from the Fedora Rust SIG's rust2rpm.
 https://pagure.io/fedora-rust/rust2rpm
 Copyright (c) 2017 Igor Gnatenko. Licensed under the MIT License.
+
+=^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+helpers/go/parse-functions.go, helpers/go/umod-arm64.c, and helpers/go/umod-amd64.s are derived
+from the Go project's build-goboring.sh:
+https://github.com/golang/go/blob/master/src/crypto/internal/boring/build-goboring.sh
+Copyright (c) 2020 The Go Authors. Licensed under a BSD-3-Clause license.
+See helpers/aws-lc/LICENSE.

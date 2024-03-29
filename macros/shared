@@ -31,8 +31,10 @@
 %_cross_exec_prefix %{_cross_rootdir}%{_exec_prefix}
 %_cross_bindir %{_cross_rootdir}%{_bindir}
 %_cross_sbindir %{_cross_rootdir}%{_sbindir}
+%_cross_fips_bindir %{_cross_rootdir}%{_prefix}/fips/bin
 %_cross_libdir %{_cross_prefix}/%{_cross_lib}
 %_cross_libexecdir %{_cross_rootdir}%{_libexecdir}
+%_cross_fips_libexecdir %{_cross_rootdir}%{_prefix}/fips/libexec
 %_cross_includedir %{_cross_rootdir}%{_includedir}
 %_cross_sysconfdir %{_sysconfdir}
 %_cross_tmpfilesdir %{_cross_rootdir}%{_tmpfilesdir}
@@ -170,27 +172,39 @@ CROSS_COMPILATION_CONF_EOF\
 
 %_cross_go_os linux
 
-%set_cross_go_flags \
+%set_cross_go_env() \
+  CROSS_TARGET="%1" ; export CROSS_TARGET ; \
   GOPATH="${PWD}/GOPATH" ; export GOPATH ; \
   GOOS="%{_cross_go_os}" ; export GOOS ; \
   GOARCH="%{_cross_go_arch}" ; export GOARCH ; \
-  CC="%{_cross_target}-gcc" ; export CC ; \
-  CC_FOR_TARGET="%{_cross_target}-gcc" ; export CC_FOR_TARGET ; \
-  CC_FOR_%{_cross_go_os}_%{_cross_go_arch}="%{_cross_target}-gcc" ; export CC_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
-  CXX="%{_cross_target}-g++" ; export CXX ; \
-  CXX_FOR_TARGET="%{_cross_target}-g++" ; export CXX_FOR_TARGET ; \
-  CXX_FOR_%{_cross_go_os}_%{_cross_go_arch}="%{_cross_target}-g++" ; export CXX_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
+  CC="%1-gcc" ; export CC ; \
+  CC_FOR_TARGET="%1-gcc" ; export CC_FOR_TARGET ; \
+  CC_FOR_%{_cross_go_os}_%{_cross_go_arch}="%1-gcc" ; export CC_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
+  CXX="%1-g++" ; export CXX ; \
+  CXX_FOR_TARGET="%1-g++" ; export CXX_FOR_TARGET ; \
+  CXX_FOR_%{_cross_go_os}_%{_cross_go_arch}="%1-g++" ; export CXX_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
   CGO_ENABLED=1 ; export CGO_ENABLED ; \
   CGO_CFLAGS="%{_cross_cflags}" ; export CGO_CFLAGS ; \
   CGO_CXXFLAGS="%{_cross_cxxflags}" ; export CGO_CXXFLAGS ; \
   CGO_LDFLAGS="%{_cross_ldflags}" ; export CGO_LDFLAGS ; \
   PKG_CONFIG_PATH="%{_cross_pkgconfigdir}" ; export PKG_CONFIG_PATH ; \
   PKG_CONFIG_ALLOW_CROSS=1 ; export PKG_CONFIG_ALLOW_CROSS ; \
-  GOFLAGS="-mod=vendor"; export GOFLAGS ; \
-  GOLDFLAGS="-compressdwarf=false -linkmode=external" ; export GOLDFLAGS ; \
+  GOFLAGS="-mod=vendor -a -buildmode=pie"; export GOFLAGS ; \
+  GOLDFLAGS_INT="-compressdwarf=false -linkmode=external" ; export GOLDFLAGS_INT ; \
+  GOLDFLAGS_EXT="%{expand:%%%2}" ; export GOLDFLAGS_EXT ; \
+  GOLDFLAGS="${GOLDFLAGS_INT} -extldflags '${GOLDFLAGS_EXT}'" ; export GOLDFLAGS ; \
   GOPROXY="off"; export GOPROXY ; \
   GOSUMDB="off"; export GOSUMDB ; \
   GO111MODULE="auto"; export GO111MODULE ; \
+
+%_cross_go_extldflags %{_cross_ldflags}
+%_cross_go_extldflags_static %{_cross_ldflags} -static-pie
+
+%set_cross_go_flags \
+  %set_cross_go_env %{_cross_target} _cross_go_extldflags
+
+%set_cross_go_flags_static \
+  %set_cross_go_env %{_cross_triple}-musl _cross_go_extldflags_static
 
 %cross_go_setup() \
   mkdir -p GOPATH/src/%2 ; \
@@ -241,8 +255,21 @@ CROSS_COMPILATION_CONF_EOF\
 %_source_payload w1.zstdio
 %_binary_payload w1.zstdio
 
+# Invocation for the check-fips buildroot policy script.
+%__cross_check_fips_cmd %{shrink: \
+  /usr/lib/rpm/bottlerocket/check-fips \
+    --target="%{_cross_target}" \
+    --bindir="%{_cross_bindir}" \
+    --fips-bindir="%{_cross_fips_bindir}" \
+    --libexecdir="%{_cross_libexecdir}" \
+    --fips-libexecdir="%{_cross_fips_libexecdir}" \
+    %{nil}}
+
+# Generate license attribution and check for FIPS-enabled binaries.
+# (The FIPS check is disabled by default, pending tree-wide packaging changes.)
 %__arch_install_post \
   /usr/lib/rpm/check-buildroot \
+  %{?cross_check_fips:%{__cross_check_fips_cmd}} \
   %cross_generate_attribution
 
 %source_date_epoch_from_changelog 0

@@ -1,0 +1,88 @@
+#!/bin/bash
+
+set -euo pipefail
+shopt -qs failglob
+
+for opt in "$@"; do
+   optarg="$(expr "${opt}" : '[^=]*=\(.*\)')"
+   case "${opt}" in
+      --target=*) TARGET="${optarg}" ;;
+      --bindir=*) BINDIR="${optarg}" ;;
+      --fips-bindir=*) FIPS_BINDIR="${optarg}" ;;
+      --libexecdir=*) LIBEXECDIR="${optarg}" ;;
+      --fips-libexecdir=*) FIPS_LIBEXECDIR="${optarg}" ;;
+   esac
+done
+
+STRINGS="${TARGET}-strings"
+BUILDROOT_BINDIR="${RPM_BUILD_ROOT}${BINDIR}"
+BUILDROOT_FIPS_BINDIR="${RPM_BUILD_ROOT}${FIPS_BINDIR}"
+BUILDROOT_LIBEXECDIR="${RPM_BUILD_ROOT}${LIBEXECDIR}"
+BUILDROOT_FIPS_LIBEXECDIR="${RPM_BUILD_ROOT}${FIPS_LIBEXECDIR}"
+
+if [ ! -d "${BUILDROOT_BINDIR}" ] && [ ! -d "${BUILDROOT_LIBEXECDIR}" ] ; then
+  echo "no binaries found, skipping FIPS check"
+  exit 0
+fi
+
+is_go_bin() {
+  local bin
+  bin="${1:?}"
+  go version "${bin}" 2>&1 | grep -Fqw -v 'not a Go executable'
+}
+
+uses_go_crypto_tls() {
+  local bin output
+  bin="${1:?}"
+  output="$("${STRINGS}" "${bin}")"
+  grep -Fqw -m1 'crypto/tls' <<<"${output}"
+}
+
+uses_go_boring_crypto() {
+  local bin output
+  bin="${1:?}"
+  output="$("${STRINGS}" "${bin}")"
+  grep -Fq -m1 'goboringcrypto' <<<"${output}"
+}
+
+found=0
+not_found=0
+miscompiled=0
+for b in $(find "${BUILDROOT_BINDIR}" "${BUILDROOT_LIBEXECDIR}" -type f -executable) ; do
+  if is_go_bin "${b}" && uses_go_crypto_tls "${b}" ; then
+    f="${b/${BUILDROOT_BINDIR}/${BUILDROOT_FIPS_BINDIR}}"
+    f="${f/${BUILDROOT_LIBEXECDIR}/${BUILDROOT_FIPS_LIBEXECDIR}}"
+    if [ -s "${f}" ] ; then
+      echo "${b} uses Go crypto/tls and FIPS build found in ${f}"
+      (( found+=1 ))
+      if uses_go_boring_crypto "${b}" ; then
+        echo "${b} is built with FIPS crypto rather than standard crypto" >&2
+        (( miscompiled+=1 ))
+      fi
+      if ! uses_go_boring_crypto "${f}"; then
+        echo "${f} is built with standard crypto rather than FIPS crypto" >&2
+        (( miscompiled+=1 ))
+      fi
+    else
+      echo "${b} uses Go crypto/tls but no FIPS build found in ${f}" >&2
+      (( not_found+=1 ))
+    fi
+  fi
+done
+
+if [ "${found}" -gt 0 ] ; then
+  [ "${found}" -eq 1 ] && what="binary" || what="binaries"
+  echo "Found ${found} ${what} built for FIPS."
+fi
+
+if [ "${not_found}" -gt 0 ] ; then
+  [ "${not_found}" -eq 1 ] && what="binary" || what="binaries"
+  echo "Could not find ${not_found} ${what} built for FIPS." >&2
+  exit 1
+fi
+
+if [ "${miscompiled}" -gt 0 ] ; then
+  [ "${miscompiled}" -eq 1 ] && what="binary" || what="binaries"
+  echo "Found ${miscompiled} ${what} using the wrong crypto." >&2
+  exit 1
+fi
