@@ -9,7 +9,7 @@ publish = false
 [dependencies]
 anyhow = "1"
 askalono = "0.4"
-cargo_metadata = "0.14"
+cargo_metadata = "0.18"
 ignore = "0.4"
 lazy_static = "1"
 semver = { version = "1", features = ["serde"] }
