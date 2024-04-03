@@ -9,14 +9,14 @@ publish = false
 [dependencies]
 anyhow = "1"
 askalono = "0.4"
-cargo_metadata = "0.14"
+cargo_metadata = "0.18"
 ignore = "0.4"
 lazy_static = "1"
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 spdx = "0.3"
 structopt = { version = "0.3", default-features = false }
-toml = "0.5"
+toml = "0.8"
 twox-hash = "1"
 walkdir = "2"
 

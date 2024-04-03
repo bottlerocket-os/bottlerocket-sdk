@@ -200,9 +200,10 @@ where
     P: AsRef<Path>,
 {
     let licenses_file = licenses_file.as_ref();
-    Ok(toml::from_slice(&fs::read(licenses_file).context(
-        format!("Failed to read file '{}'", licenses_file.display()),
-    )?)?)
+    Ok(toml::from_str(
+        &fs::read_to_string(licenses_file)
+            .context(format!("Failed to read file '{}'", licenses_file.display()))?,
+    )?)
 }
 
 #[tokio::main]

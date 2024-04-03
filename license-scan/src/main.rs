@@ -62,7 +62,7 @@ fn main() -> Result<()> {
 
     let clarify = match opt.clarify {
         None => Clarifications::default(),
-        Some(path) => toml::from_slice(&fs::read(path)?)?,
+        Some(path) => toml::from_str(&fs::read_to_string(path)?)?,
     };
 
     let mut store = Store::new();
