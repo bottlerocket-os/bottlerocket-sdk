@@ -964,6 +964,7 @@ RUN \
     kpartx \
     less \
     libcap-devel \
+    libkcapi-hmaccalc \
     lz4 \
     mtools \
     nss-tools \
