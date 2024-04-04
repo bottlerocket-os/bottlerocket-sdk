@@ -443,7 +443,7 @@ RUN \
 
 FROM sdk-libc as sdk-go-prep
 
-ENV GOVER="1.22.1"
+ENV GOVER="1.21.9"
 ENV AWS_LC_FIPS_VER="2.0.9"
 
 USER root
