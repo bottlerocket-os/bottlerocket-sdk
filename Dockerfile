@@ -443,44 +443,6 @@ RUN \
 
 FROM sdk-libc as sdk-go-prep
 
-ENV GOVER="1.21.9"
-ENV AWS_LC_FIPS_VER="2.0.9"
-
-USER root
-RUN dnf -y install golang
-
-USER builder
-WORKDIR /home/builder/sdk-go
-COPY ./hashes/go /home/builder/hashes
-RUN \
-  sdk-fetch /home/builder/hashes && \
-  tar --strip-components=1 -xf go${GOVER}.src.tar.gz && \
-  rm go${GOVER}.src.tar.gz
-
-# Patch Go sources so that they work with AWS-LC as the crypto implementation.
-# Note that this will break use of `GOEXPERIMENT=boringcrypto` when using the
-# default syso files that ship with Go, since the functions and data structures
-# will no longer match. We build the replacement AWS-LC syso files below.
-COPY patches/go/* ./
-RUN \
-  git init && \
-  git apply --whitespace=nowarn *.patch
-
-# We need to build AWS-LC before we can build Go.
-WORKDIR /home/builder/aws-lc
-COPY ./hashes/aws-lc /home/builder/hashes
-RUN \
-  sdk-fetch /home/builder/hashes && \
-  tar --strip-components=1 -xf AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz && \
-  rm AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz
-
-# Patch AWS-LC sources to avoid weak symbols for memory management functions
-# when GOBORING is defined.
-COPY patches/aws-lc/* ./
-RUN \
-  git init && \
-  git apply --whitespace=nowarn *.patch
-
 # Set up the environment for building.
 ENV GOOS="linux"
 ENV CGO_ENABLED=1
@@ -491,45 +453,121 @@ ENV CGO_CFLAGS="${CFLAGS}"
 ENV CGO_CXXFLAGS="${CXXFLAGS}"
 ENV CGO_LDFLAGS="${LDFLAGS}"
 
+ENV GO111MODULE="auto"
+
+ENV AWS_LC_FIPS_VER="2.0.9"
+
+USER root
+RUN dnf -y install golang
+
+ENV GO121VER="1.21.9"
+ENV GO122VER="1.22.2"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-prep as sdk-go-1.21-prep
+
+ENV GOVER="1.21.9"
+ENV GOMAJOR="1.21"
+
+USER builder
+
+WORKDIR /home/builder/sdk-go
+
+COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
+COPY ./helpers/go/* ./
+COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
+
+COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
+COPY ./patches/aws-lc /home/builder/patches-aws-lc
+
+RUN ./prep-go.sh --go-version=${GOVER} 
+
 WORKDIR /home/builder/aws-lc/build
 COPY ./configs/aws-lc/* .
 COPY ./helpers/aws-lc/* .
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-prep as sdk-go-aws-lc-x86_64
+FROM sdk-go-prep as sdk-go-1.22-prep
+
+ENV GOVER="1.22.2"
+ENV GOMAJOR="1.22"
+
+USER builder
+
+WORKDIR /home/builder/sdk-go
+
+COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
+COPY ./helpers/go/* ./
+COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
+
+COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
+COPY ./patches/aws-lc /home/builder/patches-aws-lc
+
+RUN ./prep-go.sh --go-version=${GOVER}
+
+WORKDIR /home/builder/aws-lc/build
+COPY ./configs/aws-lc/* .
+COPY ./helpers/aws-lc/* .
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-1.21-prep as sdk-go-1.21-aws-lc-x86_64
 ENV ARCH="x86_64"
 RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-prep as sdk-go-aws-lc-aarch64
+FROM sdk-go-1.21-prep as sdk-go-1.21-aws-lc-aarch64
 ENV ARCH="aarch64"
 RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-prep as sdk-go
+FROM sdk-go-1.22-prep as sdk-go-1.22-aws-lc-x86_64
+ENV ARCH="x86_64"
+RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
 
-COPY --from=sdk-go-aws-lc-x86_64 \
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-1.22-prep as sdk-go-1.22-aws-lc-aarch64
+ENV ARCH="aarch64"
+RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-1.21-prep as sdk-go-1.21
+
+COPY --from=sdk-go-1.21-aws-lc-x86_64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
   /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_amd64.syso
 
-COPY --from=sdk-go-aws-lc-aarch64 \
+COPY --from=sdk-go-1.21-aws-lc-aarch64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
   /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_arm64.syso
 
-# Build Go - finally!
-ENV GOROOT_FINAL="/usr/libexec/go"
-WORKDIR /home/builder/sdk-go/src
-RUN ./all.bash
+COPY ./helpers/go/* ./
 
-# Install the Go standard library and toolchain.
-WORKDIR /home/builder/sdk-go
-ENV PATH="/home/builder/sdk-go/bin:${PATH}" GO111MODULE="auto"
-RUN \
-  go install -buildmode=pie std cmd && \
-  install -p -m 0644 -Dt licenses LICENSE PATENTS
+# Build Go - finally!
+RUN ./build-go.sh --go-version=${GOVER}
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-1.22-prep as sdk-go-1.22
+
+COPY --from=sdk-go-1.22-aws-lc-x86_64 \
+  /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
+  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_amd64.syso
+
+COPY --from=sdk-go-1.22-aws-lc-aarch64 \
+  /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
+  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_arm64.syso
+
+COPY ./helpers/go/* ./
+
+# Build Go - finally!
+RUN ./build-go.sh --go-version=${GOVER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -730,7 +768,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go as sdk-govc
+FROM sdk-go-1.22 as sdk-govc
 
 USER root
 RUN \
@@ -770,7 +808,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go as sdk-docker
+FROM sdk-go-1.22 as sdk-docker
 
 USER root
 RUN \
@@ -812,7 +850,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go as sdk-oras
+FROM sdk-go-1.22 as sdk-oras
 
 USER root
 RUN \
@@ -1114,17 +1152,31 @@ COPY --chown=0:0 --from=sdk-rust \
   /usr/share/licenses/rust/
 
 # "sdk-go" has the Go toolchain and standard library builds.
-COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/bin /usr/libexec/go/bin/
-COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/lib /usr/libexec/go/lib/
-COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/pkg /usr/libexec/go/pkg/
-COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/src /usr/libexec/go/src/
-COPY --chown=0:0 --from=sdk-go /home/builder/sdk-go/go.env /usr/libexec/go/go.env
-COPY --chown=0:0 --from=sdk-go \
+ENV GOVER="1.21.9"
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/bin /usr/libexec/go-${GOVER}/bin/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/lib /usr/libexec/go-${GOVER}/lib/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/pkg /usr/libexec/go-${GOVER}/pkg/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/src /usr/libexec/go-${GOVER}/src/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/go.env /usr/libexec/go-${GOVER}/go.env
+COPY --chown=0:0 --from=sdk-go-1.21 \
   /home/builder/sdk-go/licenses/ \
-  /usr/share/licenses/go/
-COPY --chown=0:0 --from=sdk-go \
+  /usr/share/licenses/go-${GOVER}/
+
+COPY --chown=0:0 --from=sdk-go-1.21 \
   /home/builder/aws-lc/LICENSE \
   /usr/share/licenses/aws-lc/LICENSE
+
+
+ENV GOVER="1.22.2"
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/bin /usr/libexec/go-${GOVER}/bin/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/lib /usr/libexec/go-${GOVER}/lib/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/pkg /usr/libexec/go-${GOVER}/pkg/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/src /usr/libexec/go-${GOVER}/src/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/go.env /usr/libexec/go-${GOVER}/go.env
+
+COPY --chown=0:0 --from=sdk-go-1.22 \
+  /home/builder/sdk-go/licenses/ \
+  /usr/share/licenses/go-${GOVER}/
 
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
@@ -1220,15 +1272,17 @@ RUN \
     ln -s ../libexec/rust/lib/rustlib ${d}/rustlib ; \
   done
 
+# Instead of a symlink to libexec, we must select by go version.
+COPY ./wrappers/go/go /usr/bin/go
+COPY ./wrappers/go/gofmt /usr/bin/gofmt
+COPY ./wrappers/go/gofips /usr/bin/gofips
+
 # Add Go programs to $PATH and sync timestamps to avoid rebuilds.
+ENV GO121VER="1.21.9"
+ENV GO122VER="1.22.2"
 RUN \
-  ln -s ../libexec/go/bin/go /usr/bin/go && \
-  ln -s ../libexec/go/bin/gofmt /usr/bin/gofmt && \
-  echo "#!/bin/bash" > /usr/bin/gofips && \
-  echo "export GOEXPERIMENT=boringcrypto" >> /usr/bin/gofips && \
-  echo 'exec /usr/libexec/go/bin/go "${@}"' >> /usr/bin/gofips && \
-  chmod +x /usr/bin/gofips && \
-  find /usr/libexec/go -type f -exec touch -r /usr/libexec/go/bin/go {} \+
+  find /usr/libexec/go-${GO121VER} -type f -exec touch -r /usr/libexec/go-${GO121VER}/bin/go {} \+ && \
+  find /usr/libexec/go-${GO122VER} -type f -exec touch -r /usr/libexec/go-${GO122VER}/bin/go {} \+
 
 # Strip and add tools to the path.
 RUN \
@@ -1276,5 +1330,7 @@ COPY --from=sdk-final / /
 # default `root` user
 USER builder
 WORKDIR /home/builder
+
+ENV GO_VERSION="1.21.9"
 
 CMD ["/bin/bash"]
