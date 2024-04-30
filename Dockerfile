@@ -441,6 +441,26 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk as sdk-ca-certificates
+
+USER root
+
+ENV CABUNDLEVER="2024-03-11"
+
+RUN \
+  mkdir -p /usr/share/bottlerocket/ca-certificates && \
+  chown -R builder:builder /usr/share/bottlerocket/ca-certificates
+
+USER builder
+WORKDIR /home/builder
+COPY ./hashes/ca-certificates ./hashes
+
+RUN \
+  sdk-fetch hashes && \
+  install -p -m 0644 cacert-${CABUNDLEVER}.pem /usr/share/bottlerocket/ca-certificates/ca-bundle.crt
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk-libc as sdk-go-prep
 
 ENV GOVER="1.21.9"
@@ -1148,6 +1168,15 @@ COPY --chown=0:0 --from=sdk-oras /usr/share/licenses/oras/ /usr/share/licenses/o
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
 COPY --chown=0:0 --from=sdk-bootconfig /usr/share/licenses/bootconfig /usr/share/licenses/bootconfig
+
+# "sdk-ca-certificates" has CA certificates extracted from Mozilla
+COPY --chown=0:0 --from=sdk-ca-certificates \
+  /usr/share/bottlerocket/ca-certificates \
+  /usr/share/bottlerocket/ca-certificates
+
+COPY --chown=0:0 --chmod=0644 \
+  ./configs/ca-certificates/attribution.txt \
+  /usr/share/licenses/ca-certificates/
 
 # "sdk-aws-kms-pkcs11" has the PKCS#11 provider for an AWS KMS backend
 COPY --chown=0:0 --from=sdk-aws-kms-pkcs11 \
