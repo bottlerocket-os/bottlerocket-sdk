@@ -265,6 +265,9 @@ CROSS_COMPILATION_CONF_EOF\
     --fips-libexecdir="%{_cross_fips_libexecdir}" \
     %{nil}}
 
+# Enable FIPS check by default.
+%cross_check_fips 1
+
 # Generate license attribution and check for FIPS-enabled binaries.
 # (The FIPS check is disabled by default, pending tree-wide packaging changes.)
 %__arch_install_post \
