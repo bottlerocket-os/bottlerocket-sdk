@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# wrapper script to run a specific version of Go
+
+set -eu -o pipefail
+shopt -qs failglob
+
+GO_VERSION="${GO_VERSION:?}"
+
+exec /usr/libexec/go-"${GO_VERSION}"/bin/go "${@}"

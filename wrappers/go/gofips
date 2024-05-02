@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# wrapper script for Go FIPS support
+
+set -eu -o pipefail
+shopt -qs failglob
+
+GO_VERSION="${GO_VERSION:?}"
+
+export GOEXPERIMENT=boringcrypto
+exec /usr/libexec/go-"${GO_VERSION}"/bin/go "${@}"

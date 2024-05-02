@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# wrapper script to run the correct version of gofmt
+
+set -eu -o pipefail
+shopt -qs failglob
+
+GO_VERSION="${GO_VERSION:?}"
+
+exec /usr/libexec/gofmt-"${GO_VERSION}" "${@}"
