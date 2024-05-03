@@ -7,4 +7,4 @@ shopt -qs failglob
 
 GO_VERSION="${GO_VERSION:?}"
 
-exec /usr/libexec/gofmt-"${GO_VERSION}" "${@}"
+exec /usr/libexec/go-"${GO_VERSION}"/bin/gofmt "${@}"
