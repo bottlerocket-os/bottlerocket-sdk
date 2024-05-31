@@ -1,7 +1,0 @@
-[the-package]
-spdx-id = "text-id"
-licenses = [ { license-url = "file://license.txt", path = "license-path.txt"} ]
-
-[the-other-package]
-spdx-id = "text-id"
-licenses = [ { path = "license-path-2.txt" } ]
