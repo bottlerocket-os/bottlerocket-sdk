@@ -1086,6 +1086,7 @@ USER root
 RUN \
   dnf -y install --setopt=install_weak_deps=False \
     ccache \
+    clang \
     createrepo_c \
     dosfstools \
     e2fsprogs \
