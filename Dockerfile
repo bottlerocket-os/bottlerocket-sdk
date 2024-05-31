@@ -415,6 +415,85 @@ ENV PATH="/usr/libexec/rust/bin:$PATH" LD_LIBRARY_PATH="/usr/libexec/rust/lib"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk as sdk-grub
+
+USER root
+ARG HOST_ARCH
+ENV GRUB_VER="2.06-61.amzn2023.0.9"
+
+RUN \
+  mkdir -p /usr/libexec/tools /usr/share/licenses/grub && \
+  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/grub
+
+USER builder
+WORKDIR /home/builder
+COPY ./hashes/grub /home/builder/hashes
+COPY ./patches/grub /home/builder/patches
+
+# This rather elaborate way of unpacking the sources and applying the
+# patches mimics the way GRUB is built in Bottlerocket, which in turn
+# mimics the way that Amazon Linux and Fedora build it.
+RUN \
+  sdk-fetch /home/builder/hashes && \
+  rpm2cpio "grub2-${GRUB_VER}.src.rpm" \
+  | cpio -iu \
+     "grub-${GRUB_VER%%-*}.tar.xz" \
+      bootstrap bootstrap.conf gitignore \
+      "gnulib-*.tar.gz" "*.patch" && \
+  rm "grub2-${GRUB_VER}.src.rpm" && \
+  mkdir "grub-${GRUB_VER}" && \
+  cd "grub-${GRUB_VER}" && \
+  tar --strip-components=1 -xof "../grub-${GRUB_VER%%-*}.tar.xz" && \
+  rm "../grub-${GRUB_VER%%-*}.tar.xz" && \
+  mv ../bootstrap{,.conf} . && \
+  mv ../gitignore .gitignore && \
+  tar -xof ../gnulib-*.tar.gz && \
+  rm ../gnulib-*.tar.gz && \
+  mv gnulib-* gnulib && \
+  mv unicode/COPYING COPYING.unicode && \
+  rm -f configure && \
+  git init && \
+  git config user.name 'Builder' && \
+  git config user.email 'builder@localhost' && \
+  git add . && \
+  git commit -a -q -m "base" && \
+  git am --whitespace=nowarn ../*.patch ../patches/*.patch && \
+  rm ../*.patch && \
+  rm -r build-aux m4 && \
+  ./bootstrap
+
+WORKDIR /home/builder/grub-${GRUB_VER}
+RUN \
+  cp -p COPYING COPYING.unicode /usr/share/licenses/grub
+
+# We only need the grub-bios-setup tool for the host. However, we can only get
+# it by specifying the "i386" target, which the host toolchain may not support.
+# Work around this by using our cross-compiling toolchain for x86_64 to build
+# any target binaries.
+ENV TARGET="x86_64-bottlerocket-linux-gnu"
+ENV TARGET_CPP="${TARGET}-gcc -E"
+ENV TARGET_CC="${TARGET}-gcc"
+ENV TARGET_NM="${TARGET}-nm"
+ENV TARGET_OBJCOPY="${TARGET}-objcopy"
+ENV TARGET_STRIP="${TARGET}-strip"
+
+RUN \
+  ./configure \
+    --host="${HOST_ARCH}-redhat-linux" \
+    --target="i386" \
+    --with-platform="pc" \
+    --with-utils=host \
+    --disable-grub-mkfont \
+    --disable-rpm-sort \
+    --disable-werror \
+    --enable-efiemu=no \
+    --enable-device-mapper=no \
+    --enable-libzfs=no && \
+  make -j"$(nproc)" && \
+  cp -p grub-bios-setup /usr/libexec/tools/grub-bios-setup
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk as sdk-bootconfig
 
 USER root
@@ -1220,6 +1299,10 @@ COPY --chown=0:0 --from=sdk-oras /usr/share/licenses/oras/ /usr/share/licenses/o
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
 COPY --chown=0:0 --from=sdk-bootconfig /usr/share/licenses/bootconfig /usr/share/licenses/bootconfig
+
+# "sdk-grub" has the grub-bios-setup tool
+COPY --chown=0:0 --from=sdk-grub /usr/libexec/tools/grub-bios-setup /usr/libexec/tools/grub-bios-setup
+COPY --chown=0:0 --from=sdk-grub /usr/share/licenses/grub /usr/share/licenses/grub
 
 # "sdk-ca-certificates" has CA certificates extracted from Mozilla
 COPY --chown=0:0 --from=sdk-ca-certificates \
