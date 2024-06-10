@@ -681,10 +681,9 @@ FROM sdk-rust as rust-sources
 # Copy the sources without clarify.toml or deny.toml, so that validation failures
 # don't require a full rebuild from source every time those files are modified.
 COPY license-scan /license-scan
-COPY license-tool /license-tool
 
 USER root
-RUN rm /license-{scan,tool}/{clarify,deny}.toml
+RUN rm /license-scan/{clarify,deny}.toml
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -702,15 +701,6 @@ RUN \
   mv license-list-data-${SPDXVER} license-list-data
 
 COPY --from=rust-sources /license-scan /home/builder/license-scan
-RUN cargo build --release --locked
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-cargo as sdk-license-tool
-
-USER builder
-WORKDIR /home/builder/license-tool
-COPY --from=rust-sources license-tool .
 RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
@@ -763,10 +753,6 @@ COPY --from=sdk-cargo-make \
   /home/builder/cargo-make \
   /home/builder/cargo-make
 
-COPY --from=sdk-license-tool \
-  /home/builder/license-tool \
-  /home/builder/license-tool
-
 COPY --from=sdk-license-scan \
   /home/builder/license-scan \
   /home/builder/license-scan
@@ -777,10 +763,6 @@ COPY --chown=0:0 --from=sdk-cargo-deny \
 
 COPY --chown=0:0 --from=sdk-cargo-make \
   /home/builder/cargo-make/target/release/cargo-make \
-  /usr/libexec/tools/
-
-COPY --chown=0:0 --from=sdk-license-tool \
-  /home/builder/license-tool/target/release/bottlerocket-license-tool \
   /usr/libexec/tools/
 
 COPY --chown=0:0 --from=sdk-license-scan \
@@ -798,10 +780,6 @@ COPY --chown=1000:1000 --from=sdk-cargo-deny \
 COPY --chown=1000:1000 --from=sdk-cargo-make \
   /home/builder/cargo-make/LICENSE \
   /usr/share/licenses/cargo-make/
-
-COPY --chown=1000:1000 \
-  COPYRIGHT LICENSE-APACHE LICENSE-MIT \
-  /usr/share/licenses/bottlerocket-license-tool/
 
 COPY --chown=1000:1000 \
   COPYRIGHT LICENSE-APACHE LICENSE-MIT \
@@ -831,20 +809,6 @@ RUN \
     cargo --locked Cargo.toml
 
 COPY ./configs/cargo-make/deny.toml .
-RUN \
-  /usr/libexec/tools/cargo-deny \
-    --all-features check --disable-fetch licenses bans sources
-
-WORKDIR /home/builder/license-tool
-COPY license-tool/clarify.toml .
-RUN \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --clarify clarify.toml \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/bottlerocket-license-tool/vendor \
-    cargo --locked Cargo.toml
-
-COPY license-tool/deny.toml .
 RUN \
   /usr/libexec/tools/cargo-deny \
     --all-features check --disable-fetch licenses bans sources
@@ -1275,7 +1239,6 @@ COPY --chown=0:0 --from=sdk-go-1.22 \
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
-COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-tool/ /usr/share/licenses/bottlerocket-license-tool/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-make/ /usr/share/licenses/cargo-make/
 
