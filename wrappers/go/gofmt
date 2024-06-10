@@ -5,6 +5,9 @@
 set -eu -o pipefail
 shopt -qs failglob
 
-GO_VERSION="${GO_VERSION:?}"
+# prefer GO_VERSION over GO_MAJOR if present, to preserve original behavior
+if [ -n "${GO_VERSION:-}" ] ; then
+  GO_MAJOR="${GO_VERSION%.*}"
+fi
 
-exec /usr/libexec/go-"${GO_VERSION}"/bin/gofmt "${@}"
+exec /usr/libexec/go-"${GO_MAJOR}"/bin/gofmt "${@}"

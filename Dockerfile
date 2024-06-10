@@ -559,14 +559,13 @@ ENV AWS_LC_FIPS_VER="2.0.9"
 USER root
 RUN dnf -y install golang
 
-ENV GO121VER="1.21.9"
-ENV GO122VER="1.22.2"
+ENV GO121VER="1.21.11"
+ENV GO122VER="1.22.4"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-prep as sdk-go-1.21-prep
 
-ENV GOVER="1.21.9"
 ENV GOMAJOR="1.21"
 
 USER builder
@@ -580,7 +579,7 @@ COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
 COPY ./patches/aws-lc /home/builder/patches-aws-lc
 
-RUN ./prep-go.sh --go-version=${GOVER} 
+RUN ./prep-go.sh --go-version=${GO121VER}
 
 WORKDIR /home/builder/aws-lc/build
 COPY ./configs/aws-lc/* .
@@ -590,7 +589,6 @@ COPY ./helpers/aws-lc/* .
 
 FROM sdk-go-prep as sdk-go-1.22-prep
 
-ENV GOVER="1.22.2"
 ENV GOMAJOR="1.22"
 
 USER builder
@@ -604,7 +602,7 @@ COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
 COPY ./patches/aws-lc /home/builder/patches-aws-lc
 
-RUN ./prep-go.sh --go-version=${GOVER}
+RUN ./prep-go.sh --go-version=${GO122VER}
 
 WORKDIR /home/builder/aws-lc/build
 COPY ./configs/aws-lc/* .
@@ -649,7 +647,7 @@ COPY --from=sdk-go-1.21-aws-lc-aarch64 \
 COPY ./helpers/go/* ./
 
 # Build Go - finally!
-RUN ./build-go.sh --go-version=${GOVER}
+RUN ./build-go.sh --go-version=${GO121VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -666,7 +664,7 @@ COPY --from=sdk-go-1.22-aws-lc-aarch64 \
 COPY ./helpers/go/* ./
 
 # Build Go - finally!
-RUN ./build-go.sh --go-version=${GOVER}
+RUN ./build-go.sh --go-version=${GO122VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -1251,31 +1249,28 @@ COPY --chown=0:0 --from=sdk-rust \
   /usr/share/licenses/rust/
 
 # "sdk-go" has the Go toolchain and standard library builds.
-ENV GOVER="1.21.9"
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/bin /usr/libexec/go-${GOVER}/bin/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/lib /usr/libexec/go-${GOVER}/lib/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/pkg /usr/libexec/go-${GOVER}/pkg/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/src /usr/libexec/go-${GOVER}/src/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/go.env /usr/libexec/go-${GOVER}/go.env
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/bin /usr/libexec/go-1.21/bin/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/lib /usr/libexec/go-1.21/lib/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/pkg /usr/libexec/go-1.21/pkg/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/src /usr/libexec/go-1.21/src/
+COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/go.env /usr/libexec/go-1.21/go.env
 COPY --chown=0:0 --from=sdk-go-1.21 \
   /home/builder/sdk-go/licenses/ \
-  /usr/share/licenses/go-${GOVER}/
+  /usr/share/licenses/go-1.21/
 
 COPY --chown=0:0 --from=sdk-go-1.21 \
   /home/builder/aws-lc/LICENSE \
   /usr/share/licenses/aws-lc/LICENSE
 
-
-ENV GOVER="1.22.2"
-COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/bin /usr/libexec/go-${GOVER}/bin/
-COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/lib /usr/libexec/go-${GOVER}/lib/
-COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/pkg /usr/libexec/go-${GOVER}/pkg/
-COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/src /usr/libexec/go-${GOVER}/src/
-COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/go.env /usr/libexec/go-${GOVER}/go.env
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/bin /usr/libexec/go-1.22/bin/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/lib /usr/libexec/go-1.22/lib/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/pkg /usr/libexec/go-1.22/pkg/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/src /usr/libexec/go-1.22/src/
+COPY --chown=0:0 --from=sdk-go-1.22 /home/builder/sdk-go/go.env /usr/libexec/go-1.22/go.env
 
 COPY --chown=0:0 --from=sdk-go-1.22 \
   /home/builder/sdk-go/licenses/ \
-  /usr/share/licenses/go-${GOVER}/
+  /usr/share/licenses/go-1.22/
 
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
@@ -1390,11 +1385,9 @@ COPY ./wrappers/go/gofmt /usr/bin/gofmt
 COPY ./wrappers/go/gofips /usr/bin/gofips
 
 # Add Go programs to $PATH and sync timestamps to avoid rebuilds.
-ENV GO121VER="1.21.9"
-ENV GO122VER="1.22.2"
 RUN \
-  find /usr/libexec/go-${GO121VER} -type f -exec touch -r /usr/libexec/go-${GO121VER}/bin/go {} \+ && \
-  find /usr/libexec/go-${GO122VER} -type f -exec touch -r /usr/libexec/go-${GO122VER}/bin/go {} \+
+  find /usr/libexec/go-1.21 -type f -exec touch -r /usr/libexec/go-1.21/bin/go {} \+ && \
+  find /usr/libexec/go-1.22 -type f -exec touch -r /usr/libexec/go-1.22/bin/go {} \+
 
 # Strip and add tools to the path.
 RUN \
@@ -1443,6 +1436,7 @@ COPY --from=sdk-final / /
 USER builder
 WORKDIR /home/builder
 
-ENV GO_VERSION="1.21.9"
+# Set the default Go major version.
+ENV GO_MAJOR="1.21"
 
 CMD ["/bin/bash"]

@@ -13,7 +13,10 @@ TOOLSDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOTDIR=$(realpath "${TOOLSDIR}/..")
 
 VERSION="${1}"
-OUTPUT="${ROOTDIR}/hashes/go"
+GOMAJOR="${VERSION%.*}"
+GOVER="${GOMAJOR//./}"
+
+OUTPUT="${ROOTDIR}/hashes/go-${GOMAJOR}"
 PACKAGE_ROOT="https://go.dev/dl"
 
 # Get the go source package
@@ -21,6 +24,7 @@ PACKAGE_ROOT="https://go.dev/dl"
 GO_SRC_PACKAGE="go${VERSION}.src.tar.gz"
 GO_SRC_URL="${PACKAGE_ROOT}/${GO_SRC_PACKAGE}"
 
+rm -f "${GO_SRC_PACKAGE}"
 curl -s -L -O -C - "${GO_SRC_URL}"
 
 # SHA256 is only used to validate the package with the published checksum
@@ -46,8 +50,8 @@ echo "# ${GO_SRC_URL}" > "${OUTPUT}"
 echo "SHA512 (${GO_SRC_PACKAGE}) = ${GO_512_SHA}" >> "${OUTPUT}"
 
 DOCKERFILE="${ROOTDIR}/Dockerfile"
-sed -i -e "s,^ENV GOVER=.*,ENV GOVER=\"${VERSION}\",g" "${DOCKERFILE}"
+sed -i -e "s,^ENV GO${GOVER}VER=.*,ENV GO${GOVER}VER=\"${VERSION}\",g" "${DOCKERFILE}"
 
 echo "================================================"
-echo "go toolchain updated to ${VERSION}"
+echo "go-${GOMAJOR} toolchain updated to ${VERSION}"
 echo "================================================"
