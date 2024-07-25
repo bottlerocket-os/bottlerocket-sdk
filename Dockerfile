@@ -1426,4 +1426,9 @@ WORKDIR /home/builder
 # Set the default Go major version.
 ENV GO_MAJOR="1.21"
 
+# In NSS 3.101, lib::pkix was enabled as the default X.509 validator.
+# This causes signature checking of secureboot artifacts to fail during build.
+# Temporarily revert to the previous verifier.
+ENV NSS_DISABLE_PKIX_VERIFY=1
+
 CMD ["/bin/bash"]
