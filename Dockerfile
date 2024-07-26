@@ -1065,7 +1065,6 @@ RUN \
     less \
     libcap-devel \
     libkcapi-hmaccalc \
-    lz4 \
     mtools \
     nss-tools \
     openssl-pkcs11 \
@@ -1107,6 +1106,28 @@ RUN \
   install -p -m 0644 -D -t \
     /usr/share/licenses/awscli-${AWSCLI_VER} \
     aws/THIRD_PARTY_LICENSES && \
+  rm -rf /home/builder
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+FROM sdk-plus as sdk-plus-lz4
+
+ENV LZ4_VER="1.10.0"
+
+USER builder
+WORKDIR /home/builder/lz4
+COPY ./hashes/lz4 ./hashes
+RUN \
+  sdk-fetch hashes && \
+  tar --strip-components=1 -xf lz4-${LZ4_VER}.tar.gz && \
+  rm lz4-${LZ4_VER}.tar.gz
+RUN make
+
+USER root
+RUN \
+  make install && \
+  install -p -m 0644 -D -t \
+    /usr/share/licenses/lz4 \
+    programs/COPYING && \
   rm -rf /home/builder
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
@@ -1197,6 +1218,8 @@ WORKDIR /
 # "sdk-plus" has our C/C++ toolchain and kernel headers for both targets, and
 # any other host programs we want available for OS builds.
 COPY --from=sdk-plus / /
+COPY --from=sdk-plus-lz4 /usr/local /usr/local
+COPY --from=sdk-plus-lz4 /usr/share/licenses/lz4 /usr/share/licenses/lz4
 
 # "toolchain-archive" has the toolchains for both targets bundled together in
 # a format that's convenient for extracting later.
