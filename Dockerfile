@@ -339,7 +339,7 @@ RUN \
 
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
-ENV RUSTVER="1.78.0"
+ENV RUSTVER="1.79.0"
 
 USER builder
 WORKDIR /home/builder
@@ -559,8 +559,8 @@ ENV AWS_LC_FIPS_VER="2.0.9"
 USER root
 RUN dnf -y install golang
 
-ENV GO121VER="1.21.11"
-ENV GO122VER="1.22.4"
+ENV GO121VER="1.21.12"
+ENV GO122VER="1.22.5"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -1425,5 +1425,10 @@ WORKDIR /home/builder
 
 # Set the default Go major version.
 ENV GO_MAJOR="1.21"
+
+# In NSS 3.101, lib::pkix was enabled as the default X.509 validator.
+# This causes signature checking of secureboot artifacts to fail during build.
+# Temporarily revert to the previous verifier.
+ENV NSS_DISABLE_PKIX_VERIFY=1
 
 CMD ["/bin/bash"]
