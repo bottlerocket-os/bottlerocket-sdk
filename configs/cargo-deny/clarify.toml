@@ -131,6 +131,17 @@ license-files = [
     { path = "LICENSE-THIRD-PARTY", hash = 0xcf4d856 },
 ]
 
+[clarify.petgraph]
+expression = "MIT OR Apache-2.0"
+license-files = [
+    { path = "LICENSE-APACHE", hash = 0x24b54f4b },
+    { path = "LICENSE-MIT", hash = 0xc97e30bd },
+]
+# we aren't distributing graphical assets
+skip-files = [
+    "assets/LICENSE.md"
+]
+
 [clarify.regex]
 expression = "MIT OR Apache-2.0"
 license-files = [
@@ -166,6 +177,12 @@ skip-files = [
     "src/advisory/license.rs",
 ]
 
+[clarify.sha1_smol]
+expression = "BSD-3-Clause AND Apache-2.0"
+license-files = [
+    { path = "LICENSE", hash = 0xcfa59836 },
+]
+
 [clarify.spdx]
 expression = "MIT OR Apache-2.0"
 license-files = [
@@ -187,6 +204,7 @@ skip-files = [
     "src/text/licenses/AGPL-3.0-or-later",
     "src/text/licenses/BSD-1-Clause",
     "src/text/licenses/BSD-2-Clause",
+    "src/text/licenses/BSD-2-Clause-first-lines",
     "src/text/licenses/BSD-2-Clause-Darwin",
     "src/text/licenses/BSD-2-Clause-FreeBSD",
     "src/text/licenses/BSD-2-Clause-NetBSD",
