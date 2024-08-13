@@ -559,14 +559,14 @@ ENV AWS_LC_FIPS_VER="2.0.9"
 USER root
 RUN dnf -y install golang
 
-ENV GO121VER="1.21.12"
+ENV GO123VER="1.23.0"
 ENV GO122VER="1.22.5"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-prep as sdk-go-1.21-prep
+FROM sdk-go-prep as sdk-go-1.23-prep
 
-ENV GOMAJOR="1.21"
+ENV GOMAJOR="1.23"
 
 USER builder
 
@@ -579,7 +579,7 @@ COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
 COPY ./patches/aws-lc /home/builder/patches-aws-lc
 
-RUN ./prep-go.sh --go-version=${GO121VER}
+RUN ./prep-go.sh --go-version=${GO123VER}
 
 WORKDIR /home/builder/aws-lc/build
 COPY ./configs/aws-lc/* .
@@ -610,13 +610,13 @@ COPY ./helpers/aws-lc/* .
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.21-prep as sdk-go-1.21-aws-lc-x86_64
+FROM sdk-go-1.23-prep as sdk-go-1.23-aws-lc-x86_64
 ENV ARCH="x86_64"
 RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.21-prep as sdk-go-1.21-aws-lc-aarch64
+FROM sdk-go-1.23-prep as sdk-go-1.23-aws-lc-aarch64
 ENV ARCH="aarch64"
 RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
 
@@ -634,20 +634,20 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --go-dir="${HOME}/sdk-go"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.21-prep as sdk-go-1.21
+FROM sdk-go-1.23-prep as sdk-go-1.23
 
-COPY --from=sdk-go-1.21-aws-lc-x86_64 \
+COPY --from=sdk-go-1.23-aws-lc-x86_64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
   /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_amd64.syso
 
-COPY --from=sdk-go-1.21-aws-lc-aarch64 \
+COPY --from=sdk-go-1.23-aws-lc-aarch64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
   /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_arm64.syso
 
 COPY ./helpers/go/* ./
 
 # Build Go - finally!
-RUN ./build-go.sh --go-version=${GO121VER}
+RUN ./build-go.sh --go-version=${GO123VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -1237,16 +1237,16 @@ COPY --chown=0:0 --from=sdk-rust \
   /usr/share/licenses/rust/
 
 # "sdk-go" has the Go toolchain and standard library builds.
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/bin /usr/libexec/go-1.21/bin/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/lib /usr/libexec/go-1.21/lib/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/pkg /usr/libexec/go-1.21/pkg/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/src /usr/libexec/go-1.21/src/
-COPY --chown=0:0 --from=sdk-go-1.21 /home/builder/sdk-go/go.env /usr/libexec/go-1.21/go.env
-COPY --chown=0:0 --from=sdk-go-1.21 \
+COPY --chown=0:0 --from=sdk-go-1.23 /home/builder/sdk-go/bin /usr/libexec/go-1.23/bin/
+COPY --chown=0:0 --from=sdk-go-1.23 /home/builder/sdk-go/lib /usr/libexec/go-1.23/lib/
+COPY --chown=0:0 --from=sdk-go-1.23 /home/builder/sdk-go/pkg /usr/libexec/go-1.23/pkg/
+COPY --chown=0:0 --from=sdk-go-1.23 /home/builder/sdk-go/src /usr/libexec/go-1.23/src/
+COPY --chown=0:0 --from=sdk-go-1.23 /home/builder/sdk-go/go.env /usr/libexec/go-1.23/go.env
+COPY --chown=0:0 --from=sdk-go-1.23 \
   /home/builder/sdk-go/licenses/ \
-  /usr/share/licenses/go-1.21/
+  /usr/share/licenses/go-1.23/
 
-COPY --chown=0:0 --from=sdk-go-1.21 \
+COPY --chown=0:0 --from=sdk-go-1.23 \
   /home/builder/aws-lc/LICENSE \
   /usr/share/licenses/aws-lc/LICENSE
 
@@ -1373,7 +1373,7 @@ COPY ./wrappers/go/gofips /usr/bin/gofips
 
 # Add Go programs to $PATH and sync timestamps to avoid rebuilds.
 RUN \
-  find /usr/libexec/go-1.21 -type f -exec touch -r /usr/libexec/go-1.21/bin/go {} \+ && \
+  find /usr/libexec/go-1.23 -type f -exec touch -r /usr/libexec/go-1.23/bin/go {} \+ && \
   find /usr/libexec/go-1.22 -type f -exec touch -r /usr/libexec/go-1.22/bin/go {} \+
 
 # Strip and add tools to the path.
@@ -1424,7 +1424,7 @@ USER builder
 WORKDIR /home/builder
 
 # Set the default Go major version.
-ENV GO_MAJOR="1.21"
+ENV GO_MAJOR="1.23"
 
 # In NSS 3.101, lib::pkix was enabled as the default X.509 validator.
 # This causes signature checking of secureboot artifacts to fail during build.
