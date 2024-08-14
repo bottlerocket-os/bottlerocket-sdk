@@ -1,5 +1,6 @@
 # See the example config for more details on these settings:
-# https://github.com/rust-lang/rust/blob/master/config.toml.example
+# https://github.com/rust-lang/rust/blob/master/config.example.toml
+change-id = 125535
 
 [build]
 target = [
