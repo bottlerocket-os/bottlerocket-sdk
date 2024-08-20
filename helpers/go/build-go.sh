@@ -12,12 +12,12 @@ done
 
 GOVER="${GOVER:?}"
 
-export GOROOT_FINAL="/usr/libexec/go-${GOVER}"
 cd "${HOME}/sdk-go/src"
 ./all.bash
 
 # Install the Go standard library and toolchain.
 cd "${HOME}/sdk-go"
+# shellcheck disable=SC2034
 PATH="${HOME}/sdk-go/bin:${PATH}" GO111MODULE="auto"
 go install -buildmode=pie std cmd
 install -p -m 0644 -Dt licenses LICENSE PATENTS
