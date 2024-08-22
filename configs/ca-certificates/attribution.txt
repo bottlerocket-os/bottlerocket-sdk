@@ -1,2 +1,2 @@
-ca-certificates - https://curl.haxx.se/docs/caextract.html
+ca-certificates - https://curl.se/docs/caextract.html
 SPDX-License-Identifier: MPL-2.0
