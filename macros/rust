@@ -9,7 +9,7 @@
 %__rustdoc %{_bindir}/rustdoc
 
 # Enable optimization, debuginfo, and link hardening.
-%__global_rustflags -Copt-level=3 -Cdebuginfo=2 -Ccodegen-units=1 -Clink-arg=-Wl,-z,relro,-z,now
+%__global_rustflags -Copt-level=3 -Cdebuginfo=2 -Ccodegen-units=1 -Cforce-frame-pointers=yes -Clink-arg=-Wl,-z,relro,-z,now
 
 # Enable dynamic linking.
 %__global_rustflags_shared -Cprefer-dynamic %__global_rustflags

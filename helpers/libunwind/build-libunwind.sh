@@ -14,7 +14,7 @@ ARCH="${ARCH:?}"
 
 TARGET="${ARCH}-bottlerocket-linux-musl"
 SYSROOT="/${TARGET}/sys-root"
-export CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+export CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection -fno-omit-frame-pointer"
 export LDFLAGS="-Wl,-z,relro -Wl,-z,now"
 
 cd "${HOME}/libunwind/build"
