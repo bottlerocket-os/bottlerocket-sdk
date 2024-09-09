@@ -13,10 +13,10 @@
   "llvm-target": "x86_64-unknown-linux-gnu",
   "max-atomic-width": 64,
   "metadata": {
-    "description": null,
-    "host_tools": null,
-    "std": null,
-    "tier": null
+    "description": "64-bit Linux (kernel 3.2+, glibc 2.17+)",
+    "host_tools": true,
+    "std": true,
+    "tier": 1
   },
   "os": "linux",
   "plt-by-default": false,

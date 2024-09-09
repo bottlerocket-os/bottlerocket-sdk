@@ -14,10 +14,10 @@
   "llvm-target": "aarch64-unknown-linux-musl",
   "max-atomic-width": 128,
   "metadata": {
-    "description": null,
-    "host_tools": null,
-    "std": null,
-    "tier": null
+    "description": "ARM64 Linux with musl 1.2.3",
+    "host_tools": true,
+    "std": true,
+    "tier": 2
   },
   "os": "linux",
   "position-independent-executables": true,

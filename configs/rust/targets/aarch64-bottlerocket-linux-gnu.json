@@ -13,10 +13,10 @@
   "llvm-target": "aarch64-unknown-linux-gnu",
   "max-atomic-width": 128,
   "metadata": {
-    "description": null,
-    "host_tools": null,
-    "std": null,
-    "tier": null
+    "description": "ARM64 Linux (kernel 4.1, glibc 2.17+)",
+    "host_tools": true,
+    "std": true,
+    "tier": 1
   },
   "os": "linux",
   "position-independent-executables": true,
