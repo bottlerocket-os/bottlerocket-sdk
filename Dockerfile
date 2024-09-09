@@ -953,7 +953,7 @@ RUN \
 
 FROM sdk as sdk-cpp
 
-ENV AWS_SDK_CPP_VER="1.11.207"
+ENV AWS_SDK_CPP_VER="1.11.398"
 
 USER builder
 WORKDIR /home/builder/aws-sdk-cpp-src
@@ -996,7 +996,7 @@ WORKDIR /home/builder/aws-sdk-cpp-src/build
 RUN \
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_ONLY=kms \
+    -DBUILD_ONLY="kms;acm-pca" \
     -DENABLE_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=/home/builder/aws-sdk-cpp \
     -DBUILD_SHARED_LIBS=OFF && \
@@ -1007,7 +1007,7 @@ RUN \
 
 FROM sdk-cpp as sdk-aws-kms-pkcs11
 
-ENV AWS_KMS_PKCS11_VER="0.0.9"
+ENV AWS_KMS_PKCS11_VER="0.0.11"
 
 USER builder
 WORKDIR /home/builder/aws-kms-pkcs11
