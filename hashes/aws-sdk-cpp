@@ -1,31 +1,31 @@
-### See https://github.com/aws/aws-sdk-cpp/blob/1.11.207/prefetch_crt_dependency.sh for what to use below. ###
-# https://codeload.github.com/awslabs/aws-crt-cpp/tar.gz/1bdd7dc9ca877697265a6b3a4685f6b190b3b811
-SHA512 (aws-crt-cpp.tar.gz) = e095f7fd764fd32f8f46cdeb9d8711792eaf60ed1d3714fd6c6cde086a0932945014b7daae61220d4c660419179736de898b77aa387e11a2c74533922925cee1
-# https://codeload.github.com/awslabs/aws-c-auth/tar.gz/71bad382fe0a61e4426987c1abe6aca2fe1c1953
-SHA512 (aws-c-auth.tar.gz) = fd4fb53e2948c2e8db97ae5ce731bd8fe19587a10db45413be863b8aca839fc3bcf9e8f58fc424a33bd16cafea4a6b98f203c912bbfa126bc1043cd2af354650
-# https://codeload.github.com/awslabs/aws-c-cal/tar.gz/b52d9e8ee7af8155e6928c977ec5fde25a507ba0
-SHA512 (aws-c-cal.tar.gz) = f4831410f272c63d5904facc9fc3b3acf1ae60bb488548140ddddefdd239ddd1c8841be9bd839f4c1dfc17ca2b2ed851a50e869f947ca52e129e28d5f840a61c
-# https://codeload.github.com/awslabs/aws-c-common/tar.gz/fefbf4bdca1b3bada588baefec059849c268e73e
-SHA512 (aws-c-common.tar.gz) = bf6951cb770d59d42712c0a3a7a175982dea6f4cf10916312c784e2af6a829654dbd9dbf8e9d0f6556e7a25dc0e6dbf9e9428b60917d43b0a8fbc556ebe96caa
-# https://codeload.github.com/awslabs/aws-c-compression/tar.gz/99ec79ee2970f1a045d4ced1501b97ee521f2f85
-SHA512 (aws-c-compression.tar.gz) = 5f1ec7f1c5da04122dfc31b9034a1abddf7872dcaf4b64bc7f4aa7e7ba57ccdfe3a217876e7a52ad9806a7ffd1f3b7646d2117c5ba3c2959ac56757844d2fe54
-# https://codeload.github.com/awslabs/aws-c-event-stream/tar.gz/08f24e384e5be20bcffa42b49213d24dad7881ae
-SHA512 (aws-c-event-stream.tar.gz) = 3f988b8c07441e7103a5045ce58be8df37ddb07423a8fc4e9f71c65e2972d59d17ded2d9ef9482d2512f8d776c2ca8c87e0333f9bddf3a9e9340be0593afa5a9
-# https://codeload.github.com/awslabs/aws-c-http/tar.gz/a082f8a2067e4a31db73f1d4ffd702a8dc0f7089
-SHA512 (aws-c-http.tar.gz) = 03006a860bdafe2efacca7faa77a2504b253b8117324737e218aa04c6b748c9de31c56f753363ede5c48f3536c303ff3a5ba2198c53167acf06b30fb25149b0d
-# https://codeload.github.com/awslabs/aws-c-io/tar.gz/c9cb77747d3fd2809cf3d9c43be7d5decc17e4b3
-SHA512 (aws-c-io.tar.gz) = 06d8687ddd5f0defc95d480be3a3f2b1005a50554c2c32b85066ab3aadbc4e0bdc35c0fe0ffed6bfee16b7b55c32f7bd508b11fdb5aa1a4620cc0f353dc14e89
-# https://codeload.github.com/awslabs/aws-c-mqtt/tar.gz/5d198cf2d09b19bb18bf03e4425831a246d0a391
-SHA512 (aws-c-mqtt.tar.gz) = f107b09769d783bdba99c9519f288c25315659bf3e2ccfa9e35ee49eff1080ec7a466910467a56af6cba501cec09b9d0742fd04c72c95bdfdc6514bb83c6df61
-# https://codeload.github.com/awslabs/aws-c-s3/tar.gz/83008e577804643bc632ae4e603f36ab96219b9b
-SHA512 (aws-c-s3.tar.gz) = 0695a1141bf43cbc61912e225a2ef5f45bc814c85ab3ee8b8e6e74e1ab396c57f2640f246fa62a046ab0552d4007f97e93f5bef768470ec55cf912e8f2d1ec3e
-# https://codeload.github.com/awslabs/aws-c-sdkutils/tar.gz/a6fd80cf7c163062d31abb28f309e47330fbfc17
-SHA512 (aws-c-sdkutils.tar.gz) = 5ba7dd0ed47379e2b2600d54a15e788148b4e55472005c0c9a4aec6c22bb80c9b2e857a997fbfd8f9963b2f347c75a6dbf484a32a9b371673db89c35829bcfdd
-# https://codeload.github.com/awslabs/aws-checksums/tar.gz/321b805559c8e911be5bddba13fcbd222a3e2d3a
-SHA512 (aws-checksums.tar.gz) = 297f0c75f01a7560a55fe30a9a56fb885beef90dc44b952d4e66ca70130ae6ef0da62d2fec3fc9aaedf6c26bc39a072cd36e8668321045bc7695e8f6ddec2e37
-# https://codeload.github.com/awslabs/aws-lc/tar.gz/a8d06de79e405692ac06fe17163626eaab515e4e
-SHA512 (aws-lc.tar.gz) = 005ab1d1c80885e10c8dd381318dea0cfb2e017afa906ca84900d4a96661adf782b2d06c73ccfbacce7100b3888ace4f6344e684bc3cde91f66b295e327d4168
-# https://codeload.github.com/awslabs/s2n/tar.gz/95753f0c528b59025343e8799cb25d3e9df89e21
-SHA512 (s2n.tar.gz) = f9d5fb7db71f09f61ae791457a3ba6392f014e820e2e83875f88105e921ff08daef6ba82ee2e767de652a3a7297016d1ab9fc54e5369e8e747b43af7d53174a9
-# https://github.com/awslabs/aws-sdk-cpp/archive/1.11.207.tar.gz#/aws-sdk-cpp-1.11.207.tar.gz
-SHA512 (aws-sdk-cpp-1.11.207.tar.gz) = 8b6238f7eefb1be8c047489113c4bf285ef99fae7270bd38581a5488c0b1e0b7d69b45106daf1db45aabbc93b636113cab673340c82f1c5e3191f25d6ad3d3a5
+### See https://github.com/aws/aws-sdk-cpp/blob/1.11.398/prefetch_crt_dependency.sh for what to use below. ###
+# https://codeload.github.com/awslabs/aws-crt-cpp/tar.gz/e14c814728dc438a0b7dc694bd83418addc5a6a1
+SHA512 (aws-crt-cpp.tar.gz) = 1b06204d42a7ecd2611329be54769bc470444311da596b93fc48cf710d3670d292bcd77a0315392ff45617994f0d713dcd028ca6781841e741f3c40e48be2ce7
+# https://codeload.github.com/awslabs/aws-c-auth/tar.gz/877c029fc4e93d205f9c6855188c3c51f6b497b4
+SHA512 (aws-c-auth.tar.gz) = 5a8ba5599c97a7467d864a5799e28851310752ba103082a55a735f96661aee47376a9a9392474a07c6ea46daa8485e04cb8bf7f06bf7d122c7651f8a8cec7b6d
+# https://codeload.github.com/awslabs/aws-c-cal/tar.gz/2cb1d2eac925e2dbc45025eb89af82bd790c23a0
+SHA512 (aws-c-cal.tar.gz) = 86e5110611b73e2d114c62cd95bbf7bf8c22b06e5372aa16306a07063b3ce6cddef7855229610a2a4ec862979fd2a67dddf9c64424ef333dca523bdfde6230e6
+# https://codeload.github.com/awslabs/aws-c-common/tar.gz/672cc0032eb28d69fbdd22c9463253c89d7a6f30
+SHA512 (aws-c-common.tar.gz) = 8ec3c2224a68018e505bb9374635ed54184e6b7f0957f2193b32499005b3f6aca08dffab5ea401742f14bf794c6e7d5ded9ca17016ef243a4d81e18d71a0254c
+# https://codeload.github.com/awslabs/aws-c-compression/tar.gz/f36d01672d61e49d96a777870d456f66fa391cd4
+SHA512 (aws-c-compression.tar.gz) = d7a7e93eed0fff75b273f6a0cbf9b02f6a49b0c3603a93dc30a9cc0f2a7091d7bdd2dca8d5b458d1df01e1e8b55bf24702eeac8e38aa0d61aadc9eeab99beb46
+# https://codeload.github.com/awslabs/aws-c-event-stream/tar.gz/1b3825fc9cae2e9c7ed7479ee5d354d52ebdf7a0
+SHA512 (aws-c-event-stream.tar.gz) = 84bd7487d60afa336a5c2e886c03a8bc1fbfb0ae290a4d4956ed7b7c3cb28cd5bbdc3a74290a96606b28ae36ea22d6f2da33b684e13f5cff956ea1bd1251229c
+# https://codeload.github.com/awslabs/aws-c-http/tar.gz/4e74ab1e3702763e0b87bd1752f5a37c2f0400ac
+SHA512 (aws-c-http.tar.gz) = bed8196d8cb8d4842f6f1fa3b6ec3b02d14709823cb6055103e82b973c21b3133bd17495aa17a7b5934ca6c1178d29ff8025f4410b589b0de63f617198fa2afc
+# https://codeload.github.com/awslabs/aws-c-io/tar.gz/c345d77274db83c0c2e30331814093e7c84c45e2
+SHA512 (aws-c-io.tar.gz) = 59be35e4d4dcea640258c22c198dc1663e76217577007c8dd2685ad65bf92214c845feb0108532d9047382dee6a1a735501323173551d154d023506c3fb15feb
+# https://codeload.github.com/awslabs/aws-c-mqtt/tar.gz/ed7bbd68c03d7022c915a2924740ab7992ad2311
+SHA512 (aws-c-mqtt.tar.gz) = 78c4cc9ff4bf7c1648c4c4472f3f343fd8be56133890f136251ddcc9a8f27626647aead7f542f7362ae9b10601ae9d14b507d9d1189b720b0077351778d95dc7
+# https://codeload.github.com/awslabs/aws-c-s3/tar.gz/0ab4d58ef0bd97970d43828cb6b57a3de5747343
+SHA512 (aws-c-s3.tar.gz) = 1e4a7becc977a7a33b45519dee480bad2fce5833bdc74da57c7e5188f571b81ca0a21d16354c3f29954119214298c0a726fa941c26b84c1d97c9cb9c8bcbf019
+# https://codeload.github.com/awslabs/aws-c-sdkutils/tar.gz/4658412a61ad5749db92a8d1e0717cb5e76ada1c
+SHA512 (aws-c-sdkutils.tar.gz) = 3f604e0713c893313b9ebb2ce623a2b3db4a1145e3b44a47afcc06aba3de840c7d4c00b09c51413551734f8cdb0d00e3a5a1143acc136050d032457a5f1a18ab
+# https://codeload.github.com/awslabs/aws-checksums/tar.gz/aac442a2dbbb5e72d0a3eca8313cf65e7e1cac2f
+SHA512 (aws-checksums.tar.gz) = b14e10564223d73efdc7a1b31dcb33b601f38cf48c90a0e08ec724601f4257a493218779187257ac261a218a5907cd50580a5b3c9ee193f81411d84c822d13fc
+# https://codeload.github.com/awslabs/aws-lc/tar.gz/2f1879759b2e0fc70592665bdf10087b64f44b7d
+SHA512 (aws-lc.tar.gz) = 1a56d6c7b2a80676876259b0426b3358fa0f012affa7fbd617fab5e92c0495ec73cd516116bbdc5db1f9b64feb1b70367fe421c5584e324812d17e62add2f3fe
+# https://codeload.github.com/awslabs/s2n/tar.gz/87f4a0585dc3056433f193b9305f587cff239be3
+SHA512 (s2n.tar.gz) = 1aeb8ef2abe9e27a45121e5b136b11ba5c1eaf8160bf21fcc5b3b5c993fdb24da5d5032675e03ef5c6a612ee36d18237a89d6e9e280f8cc460ac9bb6c1f9e0f4
+# https://github.com/awslabs/aws-sdk-cpp/archive/1.11.398.tar.gz#/aws-sdk-cpp-1.11.398.tar.gz
+SHA512 (aws-sdk-cpp-1.11.398.tar.gz) = 2d6d853ffaa05d77e982dbdfee10cac24ad9f875a1e7c72857dd5c917c2b282e9ccfd7fb06217934fd0a4db6c469a4a8e33fb2cb23b0cb4980fd0cb4a5cbfdba
