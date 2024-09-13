@@ -19,7 +19,7 @@ TARGET="${ARCH}-bottlerocket-linux-gnu"
 # Some of the AWS-LC sources are built with `-O0`. This is not compatible with
 # `-Wp,-D_FORTIFY_SOURCE=2`, which needs at least `-O2`. Add `-DGOBORING` to
 # avoid weak symbols.
-CFLAGS="${CFLAGS} -Wp,-U_FORTIFY_SOURCE -DGOBORING"
+CFLAGS="${CFLAGS} -Wp,-U_FORTIFY_SOURCE -DGOBORING -fno-omit-frame-pointer"
 
 cd "${HOME}/aws-lc/build"
 cmake \

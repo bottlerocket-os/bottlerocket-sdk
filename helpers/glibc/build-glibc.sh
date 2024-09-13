@@ -16,7 +16,7 @@ KVER="${KVER:?}"
 
 TARGET="${ARCH}-bottlerocket-linux-gnu"
 SYSROOT="/${TARGET}/sys-root"
-BUILDFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection"
+BUILDFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection -fno-omit-frame-pointer"
 
 cd "${HOME}/glibc/build"
 CFLAGS="${BUILDFLAGS}" CPPFLAGS="" CXXFLAGS="${BUILDFLAGS}" \

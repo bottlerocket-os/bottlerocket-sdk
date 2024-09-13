@@ -545,7 +545,7 @@ FROM sdk-libc as sdk-go-prep
 # Set up the environment for building.
 ENV GOOS="linux"
 ENV CGO_ENABLED=1
-ENV CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection"
+ENV CFLAGS="-O2 -g -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection -fno-omit-frame-pointer"
 ENV CXXFLAGS="${CFLAGS}"
 ENV LDFLAGS="-Wl,-z,relro -Wl,-z,now"
 ENV CGO_CFLAGS="${CFLAGS}"

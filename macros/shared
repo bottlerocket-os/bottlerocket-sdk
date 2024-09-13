@@ -10,14 +10,14 @@
   -Werror=format-security -Werror=strict-aliasing \
   -Wp,-U_FORTIFY_SOURCE -Wp,-D_FORTIFY_SOURCE=2 \
   -Wp,-D_GLIBCXX_ASSERTIONS \
-  -fexceptions -fstack-clash-protection -fno-semantic-interposition \
+  -fexceptions -fstack-clash-protection -fno-semantic-interposition -fno-omit-frame-pointer \
   %{nil}}
 %_cross_c_args %{shrink: \
   '-O2', '-g', '-pipe', '-Wall', \
   '-Werror=format-security', '-Werror=strict-aliasing', \
   '-Wp,-U_FORTIFY_SOURCE', '-Wp,-D_FORTIFY_SOURCE=2', \
   '-Wp,-D_GLIBCXX_ASSERTIONS', \
-  '-fexceptions', '-fstack-clash-protection', '-fno-semantic-interposition' \
+  '-fexceptions', '-fstack-clash-protection', '-fno-semantic-interposition', '-fno-omit-frame-pointer' \
   %{nil}}
 %_cross_cxxflags %_cross_cflags
 %_cross_ldflags -Wl,-z,relro -Wl,-z,now -Wl,-Bsymbolic-functions
