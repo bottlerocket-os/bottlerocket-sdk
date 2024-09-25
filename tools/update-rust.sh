@@ -1,9 +1,9 @@
 #!/bin/bash
 
-set -e
+set -eu
 
 if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 $RUST_VERSION"
+    echo "Usage: $0 <RUST_VERSION>"
     echo
     echo "Example: $0 1.71.0"
     exit 2
@@ -23,7 +23,7 @@ function get_package_url {
     local package="$1"
     local arch="$2"
 
-    path=$(grep -e "${package}.*${arch}-unknown-linux-gnu.tar.xz" "${METADATA_FILE}" | cut -d '"' -f 2)
+    path=$(grep -e "${package}.*${arch}-unknown-linux-gnu.tar.xz" "${METADATA_FILE}" | cut -d '=' -f 1)
 
     echo "${path}"
 }
@@ -67,7 +67,7 @@ gpg --verify "${RUSTC_PACKAGE}.asc" "${RUSTC_PACKAGE}"
 RUSTC_SHA=$(sha512sum "${RUSTC_PACKAGE}" | cut -d ' ' -f 1)
 rm "${RUSTC_PACKAGE}.asc"
 
-ARTIFACT_URL="https://raw.githubusercontent.com/rust-lang/rust/${VERSION}/src/stage0.json"
+ARTIFACT_URL="https://raw.githubusercontent.com/rust-lang/rust/${VERSION}/src/stage0"
 curl -s -o "${METADATA_FILE}" "${ARTIFACT_URL}"
 
 # Add the root/header information
@@ -83,6 +83,37 @@ for arch in "${ARCHES[@]}"; do
 done
 
 rm "${METADATA_FILE}"
+
+# Refresh the target specs. Ideally we want to use the "unknown" targets from
+# upstream with no changes except for setting the vendor field. We also have to
+# flip the built-in field to false since it's a custom spec.
+
+# Install the version of rustc that we're updating to, so that the base specs
+# come from that version and not whatever happens to be installed.
+rustup install "${VERSION}" >/dev/null 2>&1
+
+for arch in x86_64 aarch64 ; do
+  for libc in gnu musl ; do
+    upstream_target="${arch}-unknown-linux-${libc}"
+    upstream_spec="${ROOTDIR}/configs/rust/targets/${upstream_target}.json"
+    vendor_target="${arch}-bottlerocket-linux-${libc}"
+    vendor_spec="${ROOTDIR}/configs/rust/targets/${vendor_target}.json"
+
+    # Add the target to the versioned install.
+    rustup target add "${upstream_target}" --toolchain "${VERSION}" >/dev/null 2>&1
+
+    RUSTC_BOOTSTRAP=1 rustc +"${VERSION}" \
+      -Z unstable-options \
+      --print target-spec-json \
+      --target "${upstream_target}" \
+      > "${upstream_spec}"
+
+    jq '."is-builtin" = false | . += {"vendor": "bottlerocket"}' \
+      "${upstream_spec}" > "${vendor_spec}"
+
+    rm "${upstream_spec}"
+  done
+done
 
 DOCKERFILE="${ROOTDIR}/Dockerfile"
 sed -i -e "s,^ENV RUSTVER=.*,ENV RUSTVER=\"${VERSION}\",g" "${DOCKERFILE}"

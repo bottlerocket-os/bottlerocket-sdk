@@ -1,0 +1,103 @@
+{
+  "arch": "aarch64",
+  "crt-objects-fallback": "musl",
+  "crt-static-default": true,
+  "crt-static-respected": true,
+  "data-layout": "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128-Fn32",
+  "dynamic-linking": true,
+  "env": "musl",
+  "features": "+v8a",
+  "has-rpath": true,
+  "has-thread-local": true,
+  "is-builtin": false,
+  "linker-flavor": "gnu-cc",
+  "llvm-target": "aarch64-unknown-linux-musl",
+  "max-atomic-width": 128,
+  "metadata": {
+    "description": "ARM64 Linux with musl 1.2.3",
+    "host_tools": true,
+    "std": true,
+    "tier": 2
+  },
+  "os": "linux",
+  "position-independent-executables": true,
+  "post-link-objects-fallback": {
+    "dynamic-dylib": [
+      "crtendS.o",
+      "crtn.o"
+    ],
+    "dynamic-nopic-exe": [
+      "crtend.o",
+      "crtn.o"
+    ],
+    "dynamic-pic-exe": [
+      "crtendS.o",
+      "crtn.o"
+    ],
+    "static-dylib": [
+      "crtendS.o",
+      "crtn.o"
+    ],
+    "static-nopic-exe": [
+      "crtend.o",
+      "crtn.o"
+    ],
+    "static-pic-exe": [
+      "crtendS.o",
+      "crtn.o"
+    ]
+  },
+  "pre-link-objects-fallback": {
+    "dynamic-dylib": [
+      "crti.o",
+      "crtbeginS.o"
+    ],
+    "dynamic-nopic-exe": [
+      "crt1.o",
+      "crti.o",
+      "crtbegin.o"
+    ],
+    "dynamic-pic-exe": [
+      "Scrt1.o",
+      "crti.o",
+      "crtbeginS.o"
+    ],
+    "static-dylib": [
+      "crti.o",
+      "crtbeginS.o"
+    ],
+    "static-nopic-exe": [
+      "crt1.o",
+      "crti.o",
+      "crtbegin.o"
+    ],
+    "static-pic-exe": [
+      "rcrt1.o",
+      "crti.o",
+      "crtbeginS.o"
+    ]
+  },
+  "relro-level": "full",
+  "stack-probes": {
+    "kind": "inline"
+  },
+  "supported-sanitizers": [
+    "address",
+    "leak",
+    "memory",
+    "thread",
+    "cfi"
+  ],
+  "supported-split-debuginfo": [
+    "packed",
+    "unpacked",
+    "off"
+  ],
+  "supports-xray": true,
+  "target-family": [
+    "unix"
+  ],
+  "target-mcount": "\u0001_mcount",
+  "target-pointer-width": "64",
+  "vendor": "bottlerocket"
+}

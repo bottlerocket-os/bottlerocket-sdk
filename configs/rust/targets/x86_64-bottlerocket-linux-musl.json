@@ -1,0 +1,112 @@
+{
+  "arch": "x86_64",
+  "cpu": "x86-64",
+  "crt-objects-fallback": "musl",
+  "crt-static-default": true,
+  "crt-static-respected": true,
+  "data-layout": "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128",
+  "dynamic-linking": true,
+  "env": "musl",
+  "has-rpath": true,
+  "has-thread-local": true,
+  "is-builtin": false,
+  "linker-flavor": "gnu-cc",
+  "llvm-target": "x86_64-unknown-linux-musl",
+  "max-atomic-width": 64,
+  "metadata": {
+    "description": "64-bit Linux with musl 1.2.3",
+    "host_tools": true,
+    "std": true,
+    "tier": 2
+  },
+  "os": "linux",
+  "plt-by-default": false,
+  "position-independent-executables": true,
+  "post-link-objects-fallback": {
+    "dynamic-dylib": [
+      "crtendS.o",
+      "crtn.o"
+    ],
+    "dynamic-nopic-exe": [
+      "crtend.o",
+      "crtn.o"
+    ],
+    "dynamic-pic-exe": [
+      "crtendS.o",
+      "crtn.o"
+    ],
+    "static-dylib": [
+      "crtendS.o",
+      "crtn.o"
+    ],
+    "static-nopic-exe": [
+      "crtend.o",
+      "crtn.o"
+    ],
+    "static-pic-exe": [
+      "crtendS.o",
+      "crtn.o"
+    ]
+  },
+  "pre-link-args": {
+    "gnu-cc": [
+      "-m64"
+    ],
+    "gnu-lld-cc": [
+      "-m64"
+    ]
+  },
+  "pre-link-objects-fallback": {
+    "dynamic-dylib": [
+      "crti.o",
+      "crtbeginS.o"
+    ],
+    "dynamic-nopic-exe": [
+      "crt1.o",
+      "crti.o",
+      "crtbegin.o"
+    ],
+    "dynamic-pic-exe": [
+      "Scrt1.o",
+      "crti.o",
+      "crtbeginS.o"
+    ],
+    "static-dylib": [
+      "crti.o",
+      "crtbeginS.o"
+    ],
+    "static-nopic-exe": [
+      "crt1.o",
+      "crti.o",
+      "crtbegin.o"
+    ],
+    "static-pic-exe": [
+      "rcrt1.o",
+      "crti.o",
+      "crtbeginS.o"
+    ]
+  },
+  "relro-level": "full",
+  "stack-probes": {
+    "kind": "inline"
+  },
+  "static-position-independent-executables": true,
+  "supported-sanitizers": [
+    "address",
+    "leak",
+    "memory",
+    "thread",
+    "cfi"
+  ],
+  "supported-split-debuginfo": [
+    "packed",
+    "unpacked",
+    "off"
+  ],
+  "supports-xray": true,
+  "target-family": [
+    "unix"
+  ],
+  "target-pointer-width": "64",
+  "vendor": "bottlerocket"
+}

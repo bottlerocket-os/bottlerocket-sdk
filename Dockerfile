@@ -339,7 +339,7 @@ RUN \
 
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
-ENV RUSTVER="1.79.0"
+ENV RUSTVER="1.81.0"
 
 USER builder
 WORKDIR /home/builder
@@ -352,7 +352,7 @@ RUN \
 
 WORKDIR /home/builder/rust
 RUN \
-  dir=build/cache/$(jq -r '.compiler.date' src/stage0.json); \
+  dir=build/cache/$(awk -F= '/^compiler_date/{print $2}' src/stage0); \
   mkdir -p $dir && mv ../*.xz $dir
 
 # For any architecture, we rely on two or more of Rust's native targets:
@@ -378,34 +378,22 @@ RUN \
 # To resolve this, we create vendor-specific targets based on the native ones.
 # That allows us to leave the settings for the host platform alone, while also
 # ensuring that the target platform always uses the libraries from our sysroot.
-# These vendor targets are effectively the same as the "unknown" targets, so we
-# just need to copy them, change the "vendor" field, and refer to them in the
-# module so `rustc` knows they exist.
-
-RUN \
-  for arch in x86_64 aarch64 ; do \
-    for libc in gnu musl ; do \
-      cp compiler/rustc_target/src/spec/targets/${arch}_{unknown,${VENDOR}}_linux_${libc}.rs && \
-      sed -i -e '/let mut base = base::linux_'${libc}'::opts();/a base.vendor = "'${VENDOR}'".into();' \
-        compiler/rustc_target/src/spec/targets/${arch}_${VENDOR}_linux_${libc}.rs && \
-      sed -i -e '/ \.\.base::linux_'${libc}'::opts()/i vendor: "'${VENDOR}'".into(),' \
-        compiler/rustc_target/src/spec/targets/${arch}_${VENDOR}_linux_${libc}.rs && \
-      sed -i -e '/("'${arch}-unknown-linux-${libc}'", .*),/a("'${arch}-${VENDOR}-linux-${libc}'", '${arch}_${VENDOR}_linux_${libc}'),' \
-        compiler/rustc_target/src/spec/mod.rs ; \
-    done ; \
-  done && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/mod.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/x86_64_${VENDOR}_linux_gnu.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/x86_64_${VENDOR}_linux_musl.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/aarch64_${VENDOR}_linux_gnu.rs && \
-  grep -Fq ${VENDOR} compiler/rustc_target/src/spec/targets/aarch64_${VENDOR}_linux_musl.rs
+# These vendor targets are effectively the same as the "unknown" targets.
+COPY ./configs/rust/targets ./targets
 
 # In addition to our vendor-specific targets, we also need to build for the host
 # platform, since that is no longer done implicitly.
-COPY ./configs/rust/* ./
+COPY ./configs/rust/config.toml.in ./
 RUN \
   sed -e "s,@HOST_TRIPLE@,${HOST_ARCH}-unknown-linux-gnu,g" config.toml.in > config.toml && \
-  RUSTUP_DIST_SERVER=example:// python3 ./x.py install
+  RUSTUP_DIST_SERVER=example:// RUST_TARGET_PATH=${PWD}/targets python3 ./x.py install && \
+  for arch in x86_64 aarch64 ; do \
+    for libc in gnu musl ; do \
+      cp \
+        targets/${arch}-bottlerocket-linux-${libc}.json \
+        /usr/libexec/rust/lib/rustlib/${arch}-bottlerocket-linux-${libc}/target.json ; \
+    done ; \
+  done
 
 RUN \
   install -p -m 0644 -Dt licenses COPYRIGHT LICENSE-*
