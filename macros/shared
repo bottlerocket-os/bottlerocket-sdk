@@ -282,3 +282,8 @@ CROSS_COMPILATION_CONF_EOF\
 %force_disable_rpath \
   sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool \
   sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+
+# By default, find-debuginfo comes from /usr/bin, and adds the tools there to
+# the path ahead of any other directories. To force it to use the target-specific
+# binutils programs, point to the symlink in the debuginfo override path instead.
+%__find_debuginfo /usr/%{_cross_target}/debuginfo/bin/find-debuginfo

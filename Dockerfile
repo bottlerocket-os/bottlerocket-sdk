@@ -1183,15 +1183,19 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
-# Create symlinks that can be added to $PATH to override programs invoked by
-# find-debuginfo.sh, which does not expect to add a prefix.
+# find-debuginfo adds the directory where it's located as the first entry in $PATH.
+# Set up a directory for each architecture containing the unprefixed versions of
+# the binutils programs, along with a link to find-debuginfo, so that it will work
+# as expected when extracting and stripping debuginfo from binaries built for the
+# target architecture.
 FROM sdk as sdk-find-debuginfo-symlinks
 RUN \
   for arch in x86_64 aarch64 ; do \
     triple="${arch}-bottlerocket-linux-gnu" ; \
     debuginfo_bindir="/usr/${triple}/debuginfo/bin" ; \
     mkdir -p "${debuginfo_bindir}" ; \
-    for b in nm objcopy objdump strip ; do \
+    ln -sr /usr/bin/find-debuginfo "${debuginfo_bindir}/find-debuginfo" ; \
+    for b in nm objcopy objdump readelf strip ; do \
       ln -sr "/usr/bin/${triple}-${b}" "${debuginfo_bindir}/${b}" ; \
     done ; \
   done
