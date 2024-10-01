@@ -45,13 +45,11 @@ uses_go_boring_crypto() {
   grep -Fq -m1 'goboringcrypto' <<<"${output}"
 }
 
-found=0
-not_found=0
-miscompiled=0
-for b in $(find "${BUILDROOT_BINDIR}" "${BUILDROOT_LIBEXECDIR}" -type f -executable) ; do
-  if is_go_bin "${b}" && uses_go_crypto_tls "${b}" ; then
-    f="${b/${BUILDROOT_BINDIR}/${BUILDROOT_FIPS_BINDIR}}"
-    f="${f/${BUILDROOT_LIBEXECDIR}/${BUILDROOT_FIPS_LIBEXECDIR}}"
+check_go_bin() {
+  local b f
+  b="${1:?}"
+  f="${2:?}"
+  if uses_go_crypto_tls "${b}" ; then
     if [ -s "${f}" ] ; then
       echo "${b} uses Go crypto/tls and FIPS build found in ${f}"
       (( found+=1 ))
@@ -67,6 +65,76 @@ for b in $(find "${BUILDROOT_BINDIR}" "${BUILDROOT_LIBEXECDIR}" -type f -executa
       echo "${b} uses Go crypto/tls but no FIPS build found in ${f}" >&2
       (( not_found+=1 ))
     fi
+  fi
+}
+
+is_rust_bin() {
+  local bin output
+  bin="${1:?}"
+  output="$("${STRINGS}" "${bin}")"
+  grep -Fq -m1 -e 'rust_alloc' -e 'rust_begin' <<<"${output}"
+}
+
+uses_ring() {
+  local bin output
+  bin="${1:?}"
+  output="$("${STRINGS}" "${bin}")"
+  grep -Fq -m1 '/ring' <<<"${output}"
+}
+
+uses_aws_lc_rs() {
+  local bin output
+  bin="${1:?}"
+  output="$("${STRINGS}" "${bin}")"
+  grep -Fq -m1 'aws-lc-rs' <<<"${output}"
+}
+
+uses_aws_lc_fips_sys() {
+  local bin output
+  bin="${1:?}"
+  output="$("${STRINGS}" "${bin}")"
+  grep -Fq -m1 'aws-lc-fips-sys' <<<"${output}"
+}
+
+check_rust_bin() {
+  local b f
+  b="${1:?}"
+  f="${2:?}"
+
+  if uses_aws_lc_rs "${b}"; then
+    if [ -s "${f}" ] ; then
+      echo "${b} uses aws-lc-rs and FIPS build found in ${f}"
+      (( found+=1 ))
+      if uses_aws_lc_fips_sys "${b}" ; then
+        echo "${b} is built with aws-lc-rs in FIPS mode rather than standard aws-lc-rs" >&2
+        (( miscompiled+=1 ))
+      fi
+      if ! uses_aws_lc_fips_sys "${f}"; then
+        echo "${f} is built with standard aws-lc-rs rather than in FIPS mode" >&2
+        (( miscompiled+=1 ))
+      fi
+    else
+      echo "${b} uses aws-lc-rs but no FIPS build found in ${f}" >&2
+      (( not_found+=1 ))
+    fi
+  else
+    if uses_ring "${b}"; then
+      echo "${b} must use aws-lc-rs" >&2
+      (( miscompiled+=1 ))
+    fi
+  fi
+}
+
+found=0
+not_found=0
+miscompiled=0
+for b in $(find "${BUILDROOT_BINDIR}" "${BUILDROOT_LIBEXECDIR}" -type f -executable) ; do
+  f="${b/${BUILDROOT_BINDIR}/${BUILDROOT_FIPS_BINDIR}}"
+  f="${f/${BUILDROOT_LIBEXECDIR}/${BUILDROOT_FIPS_LIBEXECDIR}}"
+  if is_go_bin "${b}"; then
+    check_go_bin "${b}" "${f}"
+  elif is_rust_bin "${b}"; then
+    check_rust_bin "${b}" "${f}"
   fi
 done
 
