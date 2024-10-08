@@ -58,6 +58,7 @@ enum Cmd {
 }
 
 fn main() -> Result<()> {
+    println!("Hello, world!");
     let opt = Opt::from_args();
 
     let clarify = match opt.clarify {
