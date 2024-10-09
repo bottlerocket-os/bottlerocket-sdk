@@ -8,8 +8,14 @@
 %__rustc %{_bindir}/rustc
 %__rustdoc %{_bindir}/rustdoc
 
-# Enable optimization, debuginfo, and link hardening.
-%__global_rustflags -Copt-level=3 -Cdebuginfo=2 -Ccodegen-units=1 -Cforce-frame-pointers=yes -Clink-arg=-Wl,-z,relro,-z,now
+# Enable some optimization, debuginfo, and link hardening.
+%__global_rustflags_base -Copt-level=3 -Cdebuginfo=2 -Cforce-frame-pointers=yes -Clink-arg=-Wl,-z,relro,-z,now
+
+# Optimize generated code by using one codegen unit
+%__global_rustflags -Ccodegen-units=1 %__global_rustflags_base
+
+# Pessimize AWS SDK binaries in favor of faster builds
+%__global_rustflags_aws_sdk -Cprefer-dynamic %__global_rustflags_base
 
 # Enable dynamic linking.
 %__global_rustflags_shared -Cprefer-dynamic %__global_rustflags

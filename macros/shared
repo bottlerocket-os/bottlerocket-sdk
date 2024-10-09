@@ -152,22 +152,70 @@ CROSS_COMPILATION_CONF_EOF\
 %cross_meson_install \
   %ninja_install -C %{_cross_vpath_builddir}
 
+%_cross_cmake_toolchain_conf %{_builddir}/toolchain.%{_cross_target}.cmake
+
+%write_cross_cmake_toolchain_conf \
+cat <<CROSS_CMAKE_TOOLCHAIN_EOF > %_cross_cmake_toolchain_conf 2>/dev/null || :\
+set(CMAKE_SYSTEM_NAME Linux)\
+set(CMAKE_BUILD_TYPE Release)\
+set(CMAKE_VERBOSE_MAKEFILE TRUE)\
+set(CMAKE_SKIP_RPATH TRUE)\
+set(CMAKE_INSTALL_PREFIX %{_cross_prefix})\
+set(CMAKE_SYSTEM_PROCESSOR %{_cross_arch})\
+set(triple %{_cross_triple})\
+set(CMAKE_SYSROOT %{_cross_rootdir})\
+set(CMAKE_C_COMPILER %{_cross_target}-gcc)\
+set(CMAKE_C_COMPILER_TARGET %_cross_target)\
+set(CMAKE_CXX_COMPILER %{_cross_target}-g++)\
+set(CMAKE_CXX_COMPILER_TARGET %_cross_target)\
+set(CMAKE_C_FLAGS "%{_cross_cflags}")\
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG")\
+set(CMAKE_CXX_FLAGS "%{_cross_cxxflags}")\
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG")\
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)\
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)\
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)\
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)\
+CROSS_CMAKE_TOOLCHAIN_EOF\
+%{nil}
+
+%_cross_cmake_toolchain_conf_static %{_builddir}/toolchain.%{_cross_triple}-musl.static.cmake
+
+%write_cross_cmake_toolchain_conf_static \
+cat <<CROSS_CMAKE_TOOLCHAIN_EOF > %_cross_cmake_toolchain_conf_static 2>/dev/null || :\
+set(CMAKE_SYSTEM_NAME Linux)\
+set(CMAKE_BUILD_TYPE Release)\
+set(CMAKE_VERBOSE_MAKEFILE TRUE)\
+set(CMAKE_SKIP_RPATH TRUE)\
+set(CMAKE_SYSTEM_PROCESSOR %{_cross_arch})\
+set(triple %{_cross_triple})\
+set(CMAKE_SYSROOT /%{_cross_triple}-musl/sys-root)\
+set(CMAKE_C_COMPILER %{_cross_triple}-musl-gcc)\
+set(CMAKE_C_COMPILER_TARGET %{_cross_triple}-musl)\
+set(CMAKE_CXX_COMPILER %{_cross_triple}-musl-g++)\
+set(CMAKE_CXX_COMPILER_TARGET %{_cross_triple}-musl)\
+set(CMAKE_C_FLAGS "%{_cross_cflags}")\
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG")\
+set(CMAKE_CXX_FLAGS "%{_cross_cxxflags}")\
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG")\
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)\
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)\
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)\
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)\
+CROSS_CMAKE_TOOLCHAIN_EOF\
+%{nil}
+
 %cross_cmake \
+  %write_cross_cmake_toolchain_conf \
   %set_cross_build_flags \
+  CMAKE_TOOLCHAIN_FILE="%{_cross_cmake_toolchain_conf}" ; \
+  export CMAKE_TOOLCHAIN_FILE ; \
   %{shrink:%{__cmake} \
-    -DCMAKE_C_SYSTEM_NAME:STRING="Linux" \
-    -DCMAKE_C_COMPILER:STRING="%{_cross_target}-gcc" \
-    -DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG" \
-    -DCMAKE_CXX_FLAGS_RELEASE:STRING="-DNDEBUG" \
-    -DCMAKE_BUILD_TYPE="Release" \
-    -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-    -DCMAKE_INSTALL_PREFIX:PATH=%{_cross_prefix} \
     -DINCLUDE_INSTALL_DIR:PATH=%{_cross_includedir} \
     -DLIB_INSTALL_DIR:PATH=%{_cross_libdir} \
     -DSYSCONF_INSTALL_DIR:PATH=%{_cross_sysconfdir} \
     -DSHARE_INSTALL_PREFIX:PATH=%{_cross_datadir} \
     -DBUILD_SHARED_LIBS:BOOL=ON \
-    -DCMAKE_SKIP_RPATH:BOOL=ON \
     %{nil}}
 
 %_cross_go_os linux
