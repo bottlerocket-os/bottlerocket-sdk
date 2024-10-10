@@ -686,7 +686,7 @@ RUN \
   sdk-fetch hashes && \
   tar xf license-list-data-${SPDXVER}.tar.gz license-list-data-${SPDXVER}/json/details && \
   rm license-list-data-${SPDXVER}.tar.gz && \
-  mv license-list-data-${SPDXVER} license-list-data
+  mv license-list-data-${SPDXVER} /home/builder/license-list-data
 
 COPY --from=rust-sources /license-scan /home/builder/license-scan
 RUN cargo build --release --locked
@@ -758,7 +758,7 @@ COPY --chown=0:0 --from=sdk-license-scan \
   /usr/libexec/tools/
 
 COPY --chown=0:0 --from=sdk-license-scan \
-  /home/builder/license-scan/license-list-data/json/details \
+  /home/builder/license-list-data/json/details \
   /usr/libexec/tools/spdx-data
 
 COPY --chown=1000:1000 --from=sdk-cargo-deny \
