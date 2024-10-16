@@ -84,7 +84,7 @@ index aa883beb7b..0f61ff0df1 100644
 -else
 -HOST_GCC_FINAL_CONF_OPTS += --enable-shared
 +ifeq (y,y)
-+HOST_GCC_FINAL_CONF_OPTS += --enable-shared=libgcc
++HOST_GCC_FINAL_CONF_OPTS += --enable-shared=libgcc,libstdc++
  endif
  
  ifeq ($(BR2_GCC_ENABLE_OPENMP),y)
