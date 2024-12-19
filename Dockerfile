@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/fedora:39 as base
+FROM public.ecr.aws/docker/library/fedora:39 AS base
 
 # Everything we need to build our SDK and packages.
 RUN \
@@ -48,7 +48,7 @@ COPY ./sdk-fetch /usr/local/bin
 
 # We expect our C cross-compiler to be used on other distros for building kernel
 # modules, so we build it with an older glibc for compatibility.
-FROM public.ecr.aws/docker/library/ubuntu:16.04 as compat
+FROM public.ecr.aws/docker/library/ubuntu:16.04 AS compat
 RUN \
   apt-get update && \
   apt-get -y dist-upgrade && \
@@ -74,7 +74,7 @@ COPY ./sdk-fetch /usr/local/bin
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM compat as toolchain
+FROM compat AS toolchain
 USER builder
 
 # Configure Git for any subsequent use.
@@ -105,32 +105,32 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-gnu-x86_64
+FROM toolchain AS toolchain-gnu-x86_64
 ENV ARCH="x86_64"
 RUN ./build-gnu-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-gnu-aarch64
+FROM toolchain AS toolchain-gnu-aarch64
 ENV ARCH="aarch64"
 RUN ./build-gnu-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-musl-x86_64
+FROM toolchain AS toolchain-musl-x86_64
 ENV ARCH="x86_64"
 RUN ./build-musl-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM toolchain as toolchain-musl-aarch64
+FROM toolchain AS toolchain-musl-aarch64
 ENV ARCH="aarch64"
 RUN ./build-musl-toolchain.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Add our cross-compilers to the base SDK layer.
-FROM base as sdk
+FROM base AS sdk
 USER root
 
 ARG UPSTREAM_SOURCE_FALLBACK
@@ -177,7 +177,7 @@ COPY --chown=0:0 --from=toolchain-musl-aarch64 \
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Build C libraries so we can build our rust and golang toolchains.
-FROM sdk as sdk-gnu
+FROM sdk AS sdk-gnu
 USER builder
 
 WORKDIR /home/builder
@@ -196,19 +196,19 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-gnu as sdk-gnu-x86_64
+FROM sdk-gnu AS sdk-gnu-x86_64
 ENV ARCH="x86_64"
 RUN ./build-glibc.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-gnu as sdk-gnu-aarch64
+FROM sdk-gnu AS sdk-gnu-aarch64
 ENV ARCH="aarch64"
 RUN ./build-glibc.sh --arch="${ARCH}" --kernel-version="${KVER}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-musl
+FROM sdk AS sdk-musl
 USER builder
 
 WORKDIR /home/builder
@@ -224,20 +224,20 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-musl as sdk-musl-x86_64
+FROM sdk-musl AS sdk-musl-x86_64
 ENV ARCH="x86_64"
 RUN ./build-musl.sh --arch="${ARCH}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-musl as sdk-musl-aarch64
+FROM sdk-musl AS sdk-musl-aarch64
 ENV ARCH="aarch64"
 RUN ./build-musl.sh --arch="${ARCH}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Rust's musl targets depend on libunwind.
-FROM sdk as sdk-libunwind
+FROM sdk AS sdk-libunwind
 USER builder
 
 WORKDIR /home/builder
@@ -260,7 +260,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libunwind as sdk-libunwind-x86_64
+FROM sdk-libunwind AS sdk-libunwind-x86_64
 
 ENV ARCH="x86_64"
 ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
@@ -273,7 +273,7 @@ RUN ./build-libunwind.sh --arch="${ARCH}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libunwind as sdk-libunwind-aarch64
+FROM sdk-libunwind AS sdk-libunwind-aarch64
 
 ENV ARCH="aarch64"
 ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
@@ -286,7 +286,7 @@ RUN ./build-libunwind.sh --arch="${ARCH}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM scratch as sdk-libc-gnu
+FROM scratch AS sdk-libc-gnu
 
 ENV GNU_TARGET_x86_64="x86_64-bottlerocket-linux-gnu"
 ENV GNU_TARGET_aarch64="aarch64-bottlerocket-linux-gnu"
@@ -301,7 +301,7 @@ COPY --chown=0:0 --from=sdk-gnu-aarch64 \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM scratch as sdk-libc-musl
+FROM scratch AS sdk-libc-musl
 ENV MUSL_TARGET_x86_64="x86_64-bottlerocket-linux-musl"
 ENV MUSL_TARGET_aarch64="aarch64-bottlerocket-linux-musl"
 
@@ -323,14 +323,14 @@ COPY --chown=0:0 --from=sdk-libunwind-aarch64 \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-libc
+FROM sdk AS sdk-libc
 
 COPY --from=sdk-libc-gnu / /
 COPY --from=sdk-libc-musl / /
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libc as sdk-rust
+FROM sdk-libc AS sdk-rust
 
 USER root
 RUN \
@@ -403,7 +403,7 @@ ENV PATH="/usr/libexec/rust/bin:$PATH" LD_LIBRARY_PATH="/usr/libexec/rust/lib"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-grub
+FROM sdk AS sdk-grub
 
 USER root
 ARG HOST_ARCH
@@ -482,7 +482,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-bootconfig
+FROM sdk AS sdk-bootconfig
 
 USER root
 
@@ -508,7 +508,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-ca-certificates
+FROM sdk AS sdk-ca-certificates
 
 USER root
 
@@ -528,7 +528,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libc as sdk-go-prep
+FROM sdk-libc AS sdk-go-prep
 
 # Set up the environment for building.
 ENV GOOS="linux"
@@ -552,7 +552,7 @@ ENV GO122VER="1.22.9"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-prep as sdk-go-1.23-prep
+FROM sdk-go-prep AS sdk-go-1.23-prep
 
 ENV GOMAJOR="1.23"
 
@@ -575,7 +575,7 @@ COPY ./helpers/aws-lc/* .
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-prep as sdk-go-1.22-prep
+FROM sdk-go-prep AS sdk-go-1.22-prep
 
 ENV GOMAJOR="1.22"
 
@@ -598,7 +598,7 @@ COPY ./helpers/aws-lc/* .
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.23-prep as sdk-go-1.23-aws-lc-gnu-x86_64
+FROM sdk-go-1.23-prep AS sdk-go-1.23-aws-lc-gnu-x86_64
 ENV ARCH="x86_64"
 ENV LIBC="gnu"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -606,7 +606,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.23-prep as sdk-go-1.23-aws-lc-gnu-aarch64
+FROM sdk-go-1.23-prep AS sdk-go-1.23-aws-lc-gnu-aarch64
 ENV ARCH="aarch64"
 ENV LIBC="gnu"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -614,7 +614,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.23-prep as sdk-go-1.23-aws-lc-musl-x86_64
+FROM sdk-go-1.23-prep AS sdk-go-1.23-aws-lc-musl-x86_64
 ENV ARCH="x86_64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -622,7 +622,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.23-prep as sdk-go-1.23-aws-lc-musl-aarch64
+FROM sdk-go-1.23-prep AS sdk-go-1.23-aws-lc-musl-aarch64
 ENV ARCH="aarch64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -630,7 +630,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22-prep as sdk-go-1.22-aws-lc-gnu-x86_64
+FROM sdk-go-1.22-prep AS sdk-go-1.22-aws-lc-gnu-x86_64
 ENV ARCH="x86_64"
 ENV LIBC="gnu"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -638,7 +638,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22-prep as sdk-go-1.22-aws-lc-gnu-aarch64
+FROM sdk-go-1.22-prep AS sdk-go-1.22-aws-lc-gnu-aarch64
 ENV ARCH="aarch64"
 ENV LIBC="gnu"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -646,7 +646,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22-prep as sdk-go-1.22-aws-lc-musl-x86_64
+FROM sdk-go-1.22-prep AS sdk-go-1.22-aws-lc-musl-x86_64
 ENV ARCH="x86_64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -654,7 +654,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22-prep as sdk-go-1.22-aws-lc-musl-aarch64
+FROM sdk-go-1.22-prep AS sdk-go-1.22-aws-lc-musl-aarch64
 ENV ARCH="aarch64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -662,7 +662,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.23-prep as sdk-go-1.23
+FROM sdk-go-1.23-prep AS sdk-go-1.23
 
 COPY --from=sdk-go-1.23-aws-lc-gnu-x86_64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
@@ -687,7 +687,7 @@ RUN ./build-go.sh --go-version=${GO123VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22-prep as sdk-go-1.22
+FROM sdk-go-1.22-prep AS sdk-go-1.22
 
 COPY --from=sdk-go-1.22-aws-lc-gnu-x86_64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
@@ -712,7 +712,7 @@ RUN ./build-go.sh --go-version=${GO122VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-rust as sdk-cargo
+FROM sdk-rust AS sdk-cargo
 USER builder
 
 # Cache crates.io index here to avoid repeated downloads if a build fails.
@@ -720,7 +720,7 @@ RUN cargo install lazy_static ||:
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-rust as rust-sources
+FROM sdk-rust AS rust-sources
 
 # Copy the sources without clarify.toml or deny.toml, so that validation failures
 # don't require a full rebuild from source every time those files are modified.
@@ -731,7 +731,7 @@ RUN rm /license-scan/{clarify,deny}.toml
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-cargo as sdk-license-scan
+FROM sdk-cargo AS sdk-license-scan
 
 ENV SPDXVER="3.19"
 
@@ -749,7 +749,7 @@ RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-cargo as sdk-cargo-deny
+FROM sdk-cargo AS sdk-cargo-deny
 
 ENV DENYVER="0.16.1"
 
@@ -767,7 +767,7 @@ RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-cargo as sdk-cargo-make
+FROM sdk-cargo AS sdk-cargo-make
 
 ENV MAKEVER="0.36.8"
 
@@ -785,7 +785,7 @@ RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-cargo as sdk-rust-tools
+FROM sdk-cargo AS sdk-rust-tools
 
 # Bring it all back together and run license-scan and cargo-deny on everything.
 
@@ -873,7 +873,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22 as sdk-govc
+FROM sdk-go-1.22 AS sdk-govc
 
 USER root
 RUN \
@@ -913,7 +913,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22 as sdk-docker
+FROM sdk-go-1.22 AS sdk-docker
 
 USER root
 RUN \
@@ -955,7 +955,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.22 as sdk-oras
+FROM sdk-go-1.22 AS sdk-oras
 
 USER root
 RUN \
@@ -995,7 +995,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-cpp
+FROM sdk AS sdk-cpp
 
 ENV AWS_SDK_CPP_VER="1.11.398"
 
@@ -1049,7 +1049,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-cpp as sdk-aws-kms-pkcs11
+FROM sdk-cpp AS sdk-aws-kms-pkcs11
 
 ENV AWS_KMS_PKCS11_VER="0.0.11"
 
@@ -1069,7 +1069,7 @@ RUN make install
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-e2fsprogs
+FROM sdk AS sdk-e2fsprogs
 
 ENV E2FSPROGS_VER="1.46.6"
 
@@ -1083,7 +1083,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as sdk-plus
+FROM sdk AS sdk-plus
 
 # Install any host tools that we don't need to build the software above, but
 # that we want in the final SDK. This happens in a separate stage so we don't
@@ -1153,7 +1153,7 @@ RUN \
   rm -rf /home/builder
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-FROM sdk-plus as sdk-plus-lz4
+FROM sdk-plus AS sdk-plus-lz4
 
 ENV LZ4_VER="1.10.0"
 
@@ -1176,7 +1176,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk as toolchain-archive
+FROM sdk AS toolchain-archive
 
 ENV MUSL_TARGET_x86_64="x86_64-bottlerocket-linux-musl"
 ENV MUSL_TARGET_aarch64="aarch64-bottlerocket-linux-musl"
@@ -1222,7 +1222,7 @@ RUN \
 #
 # Generate macros for the target.
 
-FROM sdk as sdk-macros
+FROM sdk AS sdk-macros
 
 COPY macros/* /tmp/
 
@@ -1244,7 +1244,7 @@ RUN \
 # the binutils programs, along with a link to find-debuginfo, so that it will work
 # as expected when extracting and stripping debuginfo from binaries built for the
 # target architecture.
-FROM sdk as sdk-find-debuginfo-symlinks
+FROM sdk AS sdk-find-debuginfo-symlinks
 RUN \
   for arch in x86_64 aarch64 ; do \
     triple="${arch}-bottlerocket-linux-gnu" ; \
@@ -1259,7 +1259,7 @@ RUN \
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
 # Collect all SDK builds
-FROM scratch as sdk-final
+FROM scratch AS sdk-final
 USER root
 
 WORKDIR /
@@ -1470,7 +1470,7 @@ RUN \
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 # Collect all builds for the SDK and squashes them into a final, single layer
-FROM scratch as sdk-golden
+FROM scratch AS sdk-golden
 
 COPY --from=sdk-final / /
 
