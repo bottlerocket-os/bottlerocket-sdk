@@ -1,7 +1,8 @@
-FROM public.ecr.aws/docker/library/fedora:39 AS base
+FROM public.ecr.aws/docker/library/fedora:41 AS base
 
 # Everything we need to build our SDK and packages.
 RUN \
+  dnf config-manager setopt fedora-cisco-openh264.enabled=0 && \
   dnf makecache && \
   dnf -y update && \
   dnf -y install --setopt=install_weak_deps=False \
@@ -28,6 +29,7 @@ RUN \
     meson \
     openssl \
     openssl-devel \
+    openssl-devel-engine \
     p11-kit-devel \
     perl-ExtUtils-MakeMaker \
     perl-FindBin \
@@ -37,9 +39,6 @@ RUN \
     rsync \
     wget \
     which \
-  && \
-  dnf config-manager --set-disabled \
-    fedora-cisco-openh264 \
   && \
   useradd builder
 COPY ./sdk-fetch /usr/local/bin
@@ -425,9 +424,9 @@ RUN \
   sdk-fetch /home/builder/hashes && \
   rpm2cpio "grub2-${GRUB_VER}.src.rpm" \
   | cpio -iu \
-     "grub-${GRUB_VER%%-*}.tar.xz" \
-      bootstrap bootstrap.conf gitignore \
-      "gnulib-*.tar.gz" "*.patch" && \
+     "./grub-${GRUB_VER%%-*}.tar.xz" \
+      ./bootstrap ./bootstrap.conf ./gitignore \
+      "./gnulib-*.tar.gz" "./*.patch" && \
   rm "grub2-${GRUB_VER}.src.rpm" && \
   mkdir "grub-${GRUB_VER}" && \
   cd "grub-${GRUB_VER}" && \
@@ -561,7 +560,7 @@ USER builder
 WORKDIR /home/builder/sdk-go
 
 COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
-COPY ./helpers/go/* ./
+COPY ./helpers/go/prep-go.sh ./
 COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 
 COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
@@ -584,7 +583,7 @@ USER builder
 WORKDIR /home/builder/sdk-go
 
 COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
-COPY ./helpers/go/* ./
+COPY ./helpers/go/prep-go.sh ./
 COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 
 COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
@@ -680,7 +679,7 @@ COPY --from=sdk-go-1.23-aws-lc-musl-aarch64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
   /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_musl_arm64.syso
 
-COPY ./helpers/go/* ./
+COPY ./helpers/go/build-go.sh ./
 
 # Build Go - finally!
 RUN ./build-go.sh --go-version=${GO123VER}
@@ -705,7 +704,7 @@ COPY --from=sdk-go-1.22-aws-lc-musl-aarch64 \
   /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
   /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_musl_arm64.syso
 
-COPY ./helpers/go/* ./
+COPY ./helpers/go/build-go.sh ./
 
 # Build Go - finally!
 RUN ./build-go.sh --go-version=${GO122VER}
@@ -956,7 +955,6 @@ RUN \
     createrepo_c \
     dosfstools \
     e2fsprogs \
-    efitools \
     erofs-utils \
     flatbuffers-compiler \
     gdisk \
@@ -1265,8 +1263,16 @@ RUN \
   ln -sr /aarch64-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu-aarch64 && \
   ln -sr /aarch64-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl-aarch64
 
+# Forcibly undefine the auto_set_build_flags macros, since it no longer works to
+# undefine it when rpmbuild is invoked (as of RPM 4.20).
+RUN \
+  sed -i '/%_auto_set_build_flags 1/d' \
+    /usr/lib/rpm/redhat/macros
+
 # Reset permissions for `builder`.
-RUN chown builder:builder -R /home/builder
+RUN \
+  mkdir -p /home/builder && \
+  chown builder:builder -R /home/builder
 
 USER builder
 RUN rpmdev-setuptree
