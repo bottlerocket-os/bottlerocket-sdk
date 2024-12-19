@@ -767,24 +767,6 @@ RUN cargo build --release --locked
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-cargo AS sdk-cargo-make
-
-ENV MAKEVER="0.36.8"
-
-USER builder
-WORKDIR /home/builder
-COPY ./hashes/cargo-make ./hashes
-RUN \
-  sdk-fetch hashes && \
-  tar xf cargo-make-${MAKEVER}.tar.gz && \
-  rm cargo-make-${MAKEVER}.tar.gz && \
-  mv cargo-make-${MAKEVER} cargo-make
-
-WORKDIR /home/builder/cargo-make
-RUN cargo build --release --locked
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
 FROM sdk-cargo AS sdk-rust-tools
 
 # Bring it all back together and run license-scan and cargo-deny on everything.
@@ -793,20 +775,12 @@ COPY --from=sdk-cargo-deny \
   /home/builder/cargo-deny \
   /home/builder/cargo-deny
 
-COPY --from=sdk-cargo-make \
-  /home/builder/cargo-make \
-  /home/builder/cargo-make
-
 COPY --from=sdk-license-scan \
   /home/builder/license-scan \
   /home/builder/license-scan
 
 COPY --chown=0:0 --from=sdk-cargo-deny \
   /home/builder/cargo-deny/target/release/cargo-deny \
-  /usr/libexec/tools/
-
-COPY --chown=0:0 --from=sdk-cargo-make \
-  /home/builder/cargo-make/target/release/cargo-make \
   /usr/libexec/tools/
 
 COPY --chown=0:0 --from=sdk-license-scan \
@@ -820,10 +794,6 @@ COPY --chown=0:0 --from=sdk-license-scan \
 COPY --chown=1000:1000 --from=sdk-cargo-deny \
   /home/builder/cargo-deny/LICENSE-* \
   /usr/share/licenses/cargo-deny/
-
-COPY --chown=1000:1000 --from=sdk-cargo-make \
-  /home/builder/cargo-make/LICENSE \
-  /usr/share/licenses/cargo-make/
 
 COPY --chown=1000:1000 \
   COPYRIGHT LICENSE-APACHE LICENSE-MIT \
@@ -839,20 +809,6 @@ RUN \
     cargo --locked Cargo.toml
 
 COPY ./configs/cargo-deny/deny.toml .
-RUN \
-  /usr/libexec/tools/cargo-deny \
-    --all-features check --disable-fetch licenses bans sources
-
-WORKDIR /home/builder/cargo-make
-COPY ./configs/cargo-make/clarify.toml .
-RUN \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --clarify clarify.toml \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/cargo-make/vendor \
-    cargo --locked Cargo.toml
-
-COPY ./configs/cargo-make/deny.toml .
 RUN \
   /usr/libexec/tools/cargo-deny \
     --all-features check --disable-fetch licenses bans sources
@@ -910,88 +866,6 @@ RUN \
     -X ${BUILD_VERSION_PKG}.BuildCommit=${GOVMOMISHORTCOMMIT} \
     -X ${BUILD_VERSION_PKG}.BuildDate=${GOVMOMIDATE} \
     " github.com/vmware/govmomi/govc
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.22 AS sdk-docker
-
-USER root
-RUN \
-  mkdir -p /usr/libexec/tools /usr/share/licenses/docker && \
-  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/docker
-
-ENV DOCKERVER="20.10.21"
-ENV DOCKERCOMMIT="baeda1f82a10204ec5708d5fbba130ad76cfee49"
-ENV DOCKERIMPORT="github.com/docker/cli"
-ENV MOBYBIRTHDAY="2017-04-18T14:29:00.000000000+00:00"
-
-USER builder
-WORKDIR /home/builder/go/src/${DOCKERIMPORT}
-COPY ./hashes/docker /home/builder/hashes
-RUN \
-  sdk-fetch /home/builder/hashes && \
-  tar --strip-components=1 -xf cli-${DOCKERVER}.tar.gz && \
-  rm cli-${DOCKERVER}.tar.gz
-
-COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
-COPY ./configs/docker/clarify.toml .
-RUN \
-  cp -p LICENSE NOTICE /usr/share/licenses/docker && \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --clarify clarify.toml \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/docker/vendor \
-    go-vendor ./vendor
-
-RUN \
-  export CGO_ENABLED=0 ; \
-  go build -o /usr/libexec/tools/docker -ldflags " \
-    -s -w \
-    -X github.com/docker/cli/cli/version.Version=${DOCKERVER} \
-    -X github.com/docker/cli/cli/version.GitCommit=${DOCKERCOMMIT} \
-    -X github.com/docker/cli/cli/version.BuildTime=${MOBYBIRTHDAY} \
-    -X \"github.com/docker/cli/cli/version.PlatformName=Docker Engine - Community\" \
-    " ${DOCKERIMPORT}/cmd/docker
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.22 AS sdk-oras
-
-USER root
-RUN \
-  mkdir -p /usr/libexec/tools /usr/share/licenses/oras && \
-  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/oras
-
-ENV ORASVER="1.1.0"
-ENV ORASCOMMIT="7079c468a06fb5815c99395eb4aaf46dd459d3fa"
-ENV ORASIMPORT="oras.land/oras"
-
-USER builder
-WORKDIR /home/builder/go/src/${ORASIMPORT}
-COPY ./hashes/oras /home/builder/hashes
-RUN \
-  sdk-fetch /home/builder/hashes && \
-  tar --strip-components=1 -xf oras-${ORASVER}.tar.gz && \
-  rm oras-${ORASVER}.tar.gz
-
-COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
-RUN \
-  cp -p LICENSE /usr/share/licenses/oras && \
-  go mod vendor && \
-  /usr/libexec/tools/bottlerocket-license-scan \
-    --spdx-data /usr/libexec/tools/spdx-data \
-    --out-dir /usr/share/licenses/oras/vendor \
-    go-vendor ./vendor
-
-RUN \
-  export CGO_ENABLED=0 ; \
-  export BUILD_VERSION_PKG="${ORASIMPORT}/internal/version" ; \
-  go build -mod=vendor -o /usr/libexec/tools/oras -ldflags " \
-    -s -w \
-    -X ${BUILD_VERSION_PKG}.BuildMetadata=${ORASVER} \
-    -X ${BUILD_VERSION_PKG}.GitCommit=${ORASCOMMIT} \
-    -X ${BUILD_VERSION_PKG}.GitTreeState=clean \
-    " ${ORASIMPORT}/cmd/oras
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -1325,19 +1199,10 @@ RUN \
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
-COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-make/ /usr/share/licenses/cargo-make/
 
 # "sdk-govc" has the VMware govc tool and licenses.
 COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-govc /usr/share/licenses/govmomi/ /usr/share/licenses/govmomi/
-
-# "sdk-docker" has the Docker CLI and licenses.
-COPY --chown=0:0 --from=sdk-docker /usr/libexec/tools/docker /usr/libexec/tools/
-COPY --chown=0:0 --from=sdk-docker /usr/share/licenses/docker/ /usr/share/licenses/docker/
-
-# "sdk-oras" has the ORAS CLI and licenses.
-COPY --chown=0:0 --from=sdk-oras /usr/libexec/tools/oras /usr/libexec/tools/
-COPY --chown=0:0 --from=sdk-oras /usr/share/licenses/oras/ /usr/share/licenses/oras/
 
 # "sdk-bootconfig" has the bootconfig tool
 COPY --chown=0:0 --from=sdk-bootconfig /usr/libexec/tools/bootconfig /usr/libexec/tools/bootconfig
@@ -1446,11 +1311,6 @@ RUN \
   ln -sr /aarch64-bottlerocket-linux-gnu/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-gnu-aarch64 && \
   ln -sr /aarch64-bottlerocket-linux-musl/sys-root/usr/share/licenses /usr/share/licenses/bottlerocket-sdk-musl-aarch64
 
-# Configure the Docker CLI.
-COPY \
-  ./configs/docker/docker-cli.json \
-  /home/builder/.docker/config.json
-
 # Reset permissions for `builder`.
 RUN chown builder:builder -R /home/builder
 
@@ -1462,10 +1322,6 @@ WORKDIR /home/builder
 RUN \
   mkdir .netscape && \
   certutil -N --empty-password
-
-# Disable cargo make update checks for invocations within the SDK.
-RUN \
-  echo "export CARGO_MAKE_DISABLE_UPDATE_CHECK=1" >> .bashrc
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
