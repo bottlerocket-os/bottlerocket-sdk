@@ -943,20 +943,6 @@ RUN make install
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk AS sdk-e2fsprogs
-
-ENV E2FSPROGS_VER="1.46.6"
-
-USER builder
-WORKDIR /home/builder
-COPY ./hashes/e2fsprogs /home/builder/hashes
-RUN \
-  sdk-fetch hashes && \
-  tar --strip-components=1 -xf e2fsprogs-${E2FSPROGS_VER}.tar.xz && \
-  rm e2fsprogs-${E2FSPROGS_VER}.tar.xz
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
 FROM sdk AS sdk-plus
 
 # Install any host tools that we don't need to build the software above, but
@@ -1249,15 +1235,6 @@ COPY --chown=0:0 \
 COPY --chown=0:0 \
   ./configs/gnupg/gnupg-pkcs11-scd.conf \
   /etc/gnupg-pkcs11-scd.conf
-
-# "sdk-e2fsprogs" has the dir2fs tool
-COPY --chown=0:0 --from=sdk-e2fsprogs \
-  /home/builder/contrib/dir2fs \
-  /usr/local/bin/dir2fs
-
-COPY --chown=0:0 --from=sdk-e2fsprogs \
-  /home/builder/NOTICE \
-  /usr/share/licenses/dir2fs/
 
 # "sdk-macros" has the rpm macros
 COPY --chown=0:0 --from=sdk-macros \
