@@ -8,11 +8,11 @@ allow = [
     "BSL-1.0",
     "MIT",
     "Unlicense",
+    "Unicode-3.0",
     "Zlib",
 ]
 
 exceptions = [
-    { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-DFS-2016"] },
 ]
 
 [bans]
