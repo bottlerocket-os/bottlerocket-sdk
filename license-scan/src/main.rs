@@ -206,6 +206,10 @@ struct InnerClarification {
     /// List of files that should be skipped as they don't contain license information.
     #[serde(default)]
     skip_files: Vec<PathBuf>,
+
+    /// List of source directories which should not be scanned for license information.
+    #[serde(default)]
+    skip_dirs: Vec<PathBuf>,
 }
 
 impl InnerClarification {
@@ -232,6 +236,7 @@ struct LicenseFile {
 struct Clarified<'a> {
     expression: &'a Expression,
     skip_files: &'a Vec<PathBuf>,
+    skip_dirs: &'a Vec<PathBuf>,
 }
 
 impl Clarifications {
@@ -258,6 +263,20 @@ impl Clarifications {
                 files.remove(file.as_path());
             }
 
+            let skipped_dir_files = files
+                .keys()
+                .filter(|input_file| {
+                    clarification
+                        .skip_dirs
+                        .iter()
+                        .any(|skipped_dir| input_file.starts_with(skipped_dir))
+                })
+                .copied()
+                .collect::<Vec<_>>();
+            for skipped_file in skipped_dir_files {
+                files.remove(skipped_file);
+            }
+
             // convert `clarification.license_files` into a struct we can compare with `files`
             let clarify_files = clarification
                 .license_files
@@ -274,6 +293,7 @@ impl Clarifications {
             Ok(Some(Clarified {
                 expression: &clarification.expression,
                 skip_files: &clarification.skip_files,
+                skip_dirs: &clarification.skip_dirs,
             }))
         } else {
             Ok(None)
@@ -568,6 +588,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
 
@@ -587,6 +608,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
     }
@@ -612,6 +634,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("MIT").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
 
@@ -675,6 +698,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0 OR BSD-3-Clause").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
         assert_eq!(
@@ -691,6 +715,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0 OR MIT").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
     }
@@ -716,6 +741,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("BSD-3-Clause").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
         assert_eq!(
@@ -732,6 +758,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("BSD-3-Clause AND Apache-2.0").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
     }
