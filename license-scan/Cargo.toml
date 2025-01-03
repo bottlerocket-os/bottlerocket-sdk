@@ -17,8 +17,9 @@ ignore = "0.4"
 lazy_static = "1"
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
-spdx = "0.3"
+spdx = "0.10"
 structopt = { version = "0.3", default-features = false }
+tempfile = "3"
 toml = "0.8"
 twox-hash = "1"
 walkdir = "2"

@@ -1,3 +1,10 @@
+[spdx]
+ignore-licenses = [
+    # Apache-2.0 is often misclassified as Pixar, which is a significantly more rare
+    # https://github.com/jpeddicord/askalono/issues/94
+    "Pixar"
+]
+
 [clarify.askalono]
 expression = "Apache-2.0"
 license-files = [
@@ -21,7 +28,6 @@ license-files = [
     { path = "COPYING", hash = 0x278afbcf },
     { path = "LICENSE-APACHE", hash = 0x24b54f4b },
     { path = "LICENSE-MIT", hash = 0x462dee44 },
-    { path = "src/unicode/data/LICENSE-UNICODE", hash = 0x70f7339 },
 ]
 
 [clarify.crossbeam-channel]
@@ -58,12 +64,16 @@ license-files = [
     { path = "src/unicode_tables/LICENSE-UNICODE", hash = 0xa7f28b93 },
 ]
 
-[clarify.unicode-ident]
-expression = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
+[clarify.spdx]
+expression = "MIT OR Apache-2.0"
 license-files = [
-    { path = "LICENSE-APACHE", hash = 0xb5518783 },
-    { path = "LICENSE-MIT", hash = 0x386ca1bc },
-    { path = "LICENSE-UNICODE", hash = 0x9698cbbe },
+    { path = "LICENSE-MIT", hash = 0xa502ee8a },
+    { path = "LICENSE-APACHE", hash = 0x4fccb6b7 },
+]
+skip-dirs = [
+    # The spdx crate contains the full text of referred licenses
+    "src/text/licenses",
+    "src/text/exceptions",
 ]
 
 [clarify.zstd-safe]
