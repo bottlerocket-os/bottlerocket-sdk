@@ -2,10 +2,13 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::redundant_closure_for_method_calls)]
 
+mod license_store;
+
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use askalono::{ScanStrategy, Store, TextData};
 use ignore::types::{Types, TypesBuilder};
 use ignore::WalkBuilder;
+use license_store::SPDXOptions;
 use semver::VersionReq;
 use serde::{Deserialize, Deserializer};
 use spdx::Expression;
@@ -66,7 +69,13 @@ fn main() -> Result<()> {
     };
 
     let mut store = Store::new();
-    store.load_spdx(&opt.spdx_data, false)?;
+
+    let spdx_proc_dir = tempfile::tempdir()?;
+    clarify
+        .spdx
+        .preprocess_licenses(&opt.spdx_data, &spdx_proc_dir)?;
+
+    store.load_spdx(spdx_proc_dir.path(), false)?;
     let scanner = ScanStrategy::new(&store)
         .confidence_threshold(0.93)
         .shallow_limit(1.0)
@@ -147,6 +156,8 @@ fn main() -> Result<()> {
 struct Clarifications {
     #[serde(default)]
     clarify: HashMap<String, Clarification>,
+    #[serde(default)]
+    pub(crate) spdx: SPDXOptions,
 }
 
 /// A clarification for a package overrides the auto-detected license string.
@@ -195,6 +206,10 @@ struct InnerClarification {
     /// List of files that should be skipped as they don't contain license information.
     #[serde(default)]
     skip_files: Vec<PathBuf>,
+
+    /// List of source directories which should not be scanned for license information.
+    #[serde(default)]
+    skip_dirs: Vec<PathBuf>,
 }
 
 impl InnerClarification {
@@ -221,6 +236,7 @@ struct LicenseFile {
 struct Clarified<'a> {
     expression: &'a Expression,
     skip_files: &'a Vec<PathBuf>,
+    skip_dirs: &'a Vec<PathBuf>,
 }
 
 impl Clarifications {
@@ -247,6 +263,20 @@ impl Clarifications {
                 files.remove(file.as_path());
             }
 
+            let skipped_dir_files = files
+                .keys()
+                .filter(|input_file| {
+                    clarification
+                        .skip_dirs
+                        .iter()
+                        .any(|skipped_dir| input_file.starts_with(skipped_dir))
+                })
+                .copied()
+                .collect::<Vec<_>>();
+            for skipped_file in skipped_dir_files {
+                files.remove(skipped_file);
+            }
+
             // convert `clarification.license_files` into a struct we can compare with `files`
             let clarify_files = clarification
                 .license_files
@@ -263,6 +293,7 @@ impl Clarifications {
             Ok(Some(Clarified {
                 expression: &clarification.expression,
                 skip_files: &clarification.skip_files,
+                skip_dirs: &clarification.skip_dirs,
             }))
         } else {
             Ok(None)
@@ -557,6 +588,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
 
@@ -576,6 +608,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
     }
@@ -601,6 +634,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("MIT").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
 
@@ -664,6 +698,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0 OR BSD-3-Clause").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
         assert_eq!(
@@ -680,6 +715,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("Apache-2.0 OR MIT").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
     }
@@ -705,6 +741,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("BSD-3-Clause").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
         assert_eq!(
@@ -721,6 +758,7 @@ mod test {
             Some(Clarified {
                 expression: &spdx::Expression::parse("BSD-3-Clause AND Apache-2.0").unwrap(),
                 skip_files: &vec![],
+                skip_dirs: &vec![],
             })
         );
     }

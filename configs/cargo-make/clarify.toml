@@ -1,3 +1,10 @@
+[spdx]
+ignore-licenses = [
+    # Apache-2.0 is often misclassified as Pixar, which is a significantly more rare
+    # https://github.com/jpeddicord/askalono/issues/94
+    "Pixar"
+]
+
 [clarify.bstr]
 expression = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
 license-files = [

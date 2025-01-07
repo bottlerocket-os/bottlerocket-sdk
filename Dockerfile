@@ -733,7 +733,7 @@ RUN rm /license-scan/{clarify,deny}.toml
 
 FROM sdk-cargo as sdk-license-scan
 
-ENV SPDXVER="3.19"
+ENV SPDXVER="3.26.0"
 
 USER builder
 WORKDIR /home/builder/license-scan
