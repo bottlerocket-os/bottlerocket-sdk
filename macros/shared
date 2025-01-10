@@ -23,6 +23,7 @@
 %_cross_ldflags -Wl,-z,relro -Wl,-z,now -Wl,-Bsymbolic-functions
 %_cross_c_link_args '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-Bsymbolic-functions'
 
+%_cross_buildsrcdir %{_topdir}/BUILD/sources
 %_cross_bootdir /boot
 %_cross_bootconfigdir %{_cross_bootdir}/boot-config.d
 %_cross_lib lib
