@@ -1,4 +1,4 @@
-From e1eefd3b2cd878a617369545ab5bac1800f76d27 Mon Sep 17 00:00:00 2001
+From dc9a878ba1b4a6d86f6ed828fcbcc6188feab43e Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:58:27 +0000
 Subject: [PATCH] build gcc with TOOLS_DIR and SYSROOT_DIR
@@ -189,7 +189,7 @@ index 1f8b76a942..6188710a01 100644
  
  $(eval $(host-autotools-package))
 diff --git a/package/gcc/gcc.mk b/package/gcc/gcc.mk
-index 41a2dfb1cc..ecba801ed6 100644
+index b39ca8566d..c10db5fb41 100644
 --- a/package/gcc/gcc.mk
 +++ b/package/gcc/gcc.mk
 @@ -71,7 +71,6 @@ HOST_GCC_COMMON_DEPENDENCIES = \

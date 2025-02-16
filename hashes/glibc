@@ -1,2 +1,2 @@
-# https://mirrors.kernel.org/gnu/glibc/glibc-2.38.tar.xz
-SHA512 (glibc-2.38.tar.xz) = a6dd5e42dcd63d58e2820c783522c8c895890b6e8c8e6c83b025553de0cc77cdf227e7044e431ead98c89c68a9ce4dd63509b47e647775fb2075f011849c1900
+# https://mirrors.kernel.org/gnu/glibc/glibc-2.40.tar.xz
+SHA512 (glibc-2.40.tar.xz) = 33caf91dbfddde6480b7cdf7a68b36aff8c522bfee56160af26af297f1b768668edb08bc4e1a7ff61c64721e3c1d49c347a5dd01c5edd3b914ee6479c8b27885

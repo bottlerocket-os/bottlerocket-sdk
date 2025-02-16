@@ -1,4 +1,4 @@
-From 361bce2ecf6949005bf34dd82fc3d9e84ecca932 Mon Sep 17 00:00:00 2001
+From e8f7676338cf4d7b69d58cfcb4b2e72af0e058b6 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:15:02 +0000
 Subject: [PATCH] disable shared for host builds of gmp, isl, mpc, mpfr
@@ -17,10 +17,10 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  5 files changed, 17 insertions(+), 1 deletion(-)
 
 diff --git a/package/Makefile.in b/package/Makefile.in
-index d610a28925..174c4b0920 100644
+index 829636900b..69ce149e25 100644
 --- a/package/Makefile.in
 +++ b/package/Makefile.in
-@@ -250,7 +250,7 @@ HOST_CPPFLAGS  = -I$(HOST_DIR)/include
+@@ -262,7 +262,7 @@ HOST_CPPFLAGS  = -I$(HOST_DIR)/include
  HOST_CFLAGS   ?= -O2
  HOST_CFLAGS   += $(HOST_CPPFLAGS)
  HOST_CXXFLAGS += $(HOST_CFLAGS)
@@ -58,7 +58,7 @@ index 42830a2689..9cba0e06d6 100644
 +
  $(eval $(host-autotools-package))
 diff --git a/package/mpc/mpc.mk b/package/mpc/mpc.mk
-index 364e4c3c85..2a93394a39 100644
+index 467bed4dbe..2a37385a44 100644
 --- a/package/mpc/mpc.mk
 +++ b/package/mpc/mpc.mk
 @@ -12,5 +12,9 @@ MPC_INSTALL_STAGING = YES
