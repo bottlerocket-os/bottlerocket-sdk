@@ -108,7 +108,7 @@ for arch in x86_64 aarch64 ; do
       --target "${upstream_target}" \
       > "${upstream_spec}"
 
-    jq '."is-builtin" = false | . += {"vendor": "bottlerocket"}' \
+    jq 'del(."is-builtin") | . += {"vendor": "bottlerocket"}' \
       "${upstream_spec}" > "${vendor_spec}"
 
     rm "${upstream_spec}"

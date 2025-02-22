@@ -338,10 +338,11 @@ RUN \
 
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
-ENV RUSTVER="1.83.0"
+ENV RUSTVER="1.85.0"
 
 USER builder
 WORKDIR /home/builder
+COPY ./patches/rust ./patches
 COPY ./hashes/rust ./hashes
 RUN \
   sdk-fetch hashes && \
@@ -352,7 +353,8 @@ RUN \
 WORKDIR /home/builder/rust
 RUN \
   dir=build/cache/$(awk -F= '/^compiler_date/{print $2}' src/stage0); \
-  mkdir -p $dir && mv ../*.xz $dir
+  mkdir -p $dir && mv ../*.xz $dir && \
+  find "${HOME}/patches" -type f -name '*.patch' -print -exec patch -p1 -i {} \;
 
 # For any architecture, we rely on two or more of Rust's native targets:
 #
