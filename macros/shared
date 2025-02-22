@@ -325,6 +325,14 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
   %{?cross_check_fips:%{__cross_check_fips_cmd}} \
   %cross_generate_attribution
 
+# Link "sources" from the new per-package build directory to the old location.
+%__spec_prep_pre \
+  %{___build_pre} \
+  if [ \"%{_cross_buildsrcdir}\" != \"%{builddir}/sources\" ]; then\
+    ln -srnf \"%{_cross_buildsrcdir}\" \"%{builddir}/sources\"\
+  fi\
+  %{nil}
+
 %source_date_epoch_from_changelog 0
 
 # Forcefully prevent libtool from embedding an explicit rpath during linking,
