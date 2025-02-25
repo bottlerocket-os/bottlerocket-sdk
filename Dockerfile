@@ -235,56 +235,6 @@ RUN ./build-musl.sh --arch="${ARCH}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-# Rust's musl targets depend on libunwind.
-FROM sdk AS sdk-libunwind
-USER builder
-
-WORKDIR /home/builder
-COPY ./hashes/libunwind ./hashes
-COPY ./helpers/libunwind/* ./
-
-ENV LLVMVER="14.0.6"
-RUN \
-  sdk-fetch hashes && \
-  tar xf llvm-${LLVMVER}.src.tar.xz && \
-  rm llvm-${LLVMVER}.src.tar.xz && \
-  mv llvm-${LLVMVER}.src llvm && \
-  tar xf libcxx-${LLVMVER}.src.tar.xz && \
-  rm libcxx-${LLVMVER}.src.tar.xz && \
-  mv libcxx-${LLVMVER}.src libcxx && \
-  tar xf libunwind-${LLVMVER}.src.tar.xz && \
-  rm libunwind-${LLVMVER}.src.tar.xz && \
-  mv libunwind-${LLVMVER}.src libunwind && \
-  mkdir libunwind/build
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-libunwind AS sdk-libunwind-x86_64
-
-ENV ARCH="x86_64"
-ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-
-COPY --chown=0:0 --from=sdk-musl-x86_64 \
-  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
-  /${MUSL_TARGET}/sys-root/
-
-RUN ./build-libunwind.sh --arch="${ARCH}"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-libunwind AS sdk-libunwind-aarch64
-
-ENV ARCH="aarch64"
-ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-
-COPY --chown=0:0 --from=sdk-musl-aarch64 \
-  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
-  /${MUSL_TARGET}/sys-root/
-
-RUN ./build-libunwind.sh --arch="${ARCH}"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
 FROM scratch AS sdk-libc-gnu
 
 ENV GNU_TARGET_x86_64="x86_64-bottlerocket-linux-gnu"
@@ -308,16 +258,8 @@ COPY --chown=0:0 --from=sdk-musl-x86_64 \
   /home/builder/musl/output/${MUSL_TARGET_x86_64}/sys-root/ \
   /${MUSL_TARGET_x86_64}/sys-root/
 
-COPY --chown=0:0 --from=sdk-libunwind-x86_64 \
-  /home/builder/libunwind/output/${MUSL_TARGET_x86_64}/sys-root/ \
-  /${MUSL_TARGET_x86_64}/sys-root/
-
 COPY --chown=0:0 --from=sdk-musl-aarch64 \
   /home/builder/musl/output/${MUSL_TARGET_aarch64}/sys-root/ \
-  /${MUSL_TARGET_aarch64}/sys-root/
-
-COPY --chown=0:0 --from=sdk-libunwind-aarch64 \
-  /home/builder/libunwind/output/${MUSL_TARGET_aarch64}/sys-root/ \
   /${MUSL_TARGET_aarch64}/sys-root/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
