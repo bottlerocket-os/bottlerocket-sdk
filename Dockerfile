@@ -943,6 +943,24 @@ RUN make install
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk AS sdk-nasm
+
+ENV NASM_VER="2.16.03"
+
+USER builder
+WORKDIR /home/builder/nasm
+COPY ./hashes/nasm ./hashes
+RUN \
+  sdk-fetch hashes && \
+  tar --strip-components=1 -xf nasm-${NASM_VER}.tar.xz && \
+  rm nasm-${NASM_VER}.tar.xz
+
+RUN \
+  ./configure && \
+  make all -j"$(nproc)"
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk AS sdk-plus
 
 # Install any host tools that we don't need to build the software above, but
@@ -1212,6 +1230,15 @@ COPY --chown=0:0 \
 COPY --chown=0:0 \
   ./configs/gnupg/gnupg-pkcs11-scd.conf \
   /etc/gnupg-pkcs11-scd.conf
+
+# "sdk-nasm" has the NASM assembler.
+COPY --chown=0:0 --from=sdk-nasm \
+  /home/builder/nasm/nasm \
+  /usr/bin/nasm
+
+COPY --chown=0:0 --from=sdk-nasm \
+  /home/builder/nasm/LICENSE \
+  /usr/share/licenses/nasm/
 
 # "sdk-macros" has the rpm macros
 COPY --chown=0:0 --from=sdk-macros \
