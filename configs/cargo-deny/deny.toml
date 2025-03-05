@@ -9,7 +9,7 @@ allow = [
     "BSL-1.0",
     "ISC",
     "MIT",
-    "OpenSSL",
+    # "OpenSSL",
     "Unlicense",
     "Zlib",
 ]
@@ -17,14 +17,26 @@ allow = [
 exceptions = [
     { name = "webpki-roots", allow = ["MPL-2.0"] },
     { name = "target-lexicon", allow = ["Apache-2.0 WITH LLVM-exception"] },
-    { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-DFS-2016"] },
-]
-
-[[licenses.clarify]]
-name = "ring"
-expression = "MIT AND ISC AND OpenSSL"
-license-files = [
-    { path = "LICENSE", hash = 0xbd0eed23 },
+    { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-3.0"] },
+    { name = "icu_collections", allow = ["Unicode-3.0"] },
+    { name = "icu_locid", allow = ["Unicode-3.0"] },
+    { name = "icu_locid_transform", allow = ["Unicode-3.0"] },
+    { name = "icu_locid_transform_data", allow = ["Unicode-3.0"] },
+    { name = "icu_normalizer", allow = ["Unicode-3.0"] },
+    { name = "icu_normalizer_data", allow = ["Unicode-3.0"] },
+    { name = "icu_properties", allow = ["Unicode-3.0"] },
+    { name = "icu_properties_data", allow = ["Unicode-3.0"] },
+    { name = "icu_provider", allow = ["Unicode-3.0"] },
+    { name = "icu_provider_macros", allow = ["Unicode-3.0"] },
+    { name = "litemap", allow = ["Unicode-3.0"] },
+    { name = "tinystr", allow = ["Unicode-3.0"] },
+    { name = "writeable", allow = ["Unicode-3.0"] },
+    { name = "yoke", allow = ["Unicode-3.0"] },
+    { name = "yoke-derive", allow = ["Unicode-3.0"] },
+    { name = "zerofrom", allow = ["Unicode-3.0"] },
+    { name = "zerofrom-derive", allow = ["Unicode-3.0"] },
+    { name = "zerovec", allow = ["Unicode-3.0"] },
+    { name = "zerovec-derive", allow = ["Unicode-3.0"] },
 ]
 
 [bans]
@@ -33,12 +45,26 @@ multiple-versions = "deny"
 wildcards = "deny"
 
 skip = [
-    # newer version used by clap_derive
-    # older version used by strum_macros
-    { name = "heck", version = "0.4.1" },
-    # older version used by toml_edit
-    # newer version used by gix-actor
-    { name = "winnow", version = "0.5.40" },
+    # older version used by gix-actor
+    # newer version used by toml_edit
+    { name = "winnow", version = "0.6.26" },
+
+    # older version from getrandom v0.2.15
+    # newer version from getrandom v0.3.1
+    { name = "wasi", version = "0.11.0+wasi-snapshot-preview1" },
+
+    # older version from rustsec v0.30.1
+    # newer version from gix v0.70.0
+    { name = "thiserror", version = "1.0.69" },
+    { name = "thiserror-impl", version = "1.0.69" },
+
+    # older version from gix-hashtable
+    # newer version from indexmap
+    { name = "hashbrown", version = "0.14.5" },
+
+    # older version from ring
+    # newer version from tempfile
+    { name = "getrandom", version = "0.2.15" },
 ]
 
 skip-tree = [
@@ -48,6 +74,8 @@ skip-tree = [
     { name = "windows-sys" },
     # redox_syscall is also not a direct dependency.
     { name = "redox_syscall" },
+    # core-foundation is not a direct dependency.
+    { name = "core-foundation" },
 ]
 
 [sources]
