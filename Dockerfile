@@ -240,56 +240,6 @@ RUN ./build-musl.sh --arch="${ARCH}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-# Rust's musl targets depend on libunwind.
-FROM sdk AS sdk-libunwind
-USER builder
-
-WORKDIR /home/builder
-COPY ./hashes/libunwind ./hashes
-COPY ./helpers/libunwind/* ./
-
-ENV LLVMVER="14.0.6"
-RUN \
-  sdk-fetch hashes && \
-  tar xf llvm-${LLVMVER}.src.tar.xz && \
-  rm llvm-${LLVMVER}.src.tar.xz && \
-  mv llvm-${LLVMVER}.src llvm && \
-  tar xf libcxx-${LLVMVER}.src.tar.xz && \
-  rm libcxx-${LLVMVER}.src.tar.xz && \
-  mv libcxx-${LLVMVER}.src libcxx && \
-  tar xf libunwind-${LLVMVER}.src.tar.xz && \
-  rm libunwind-${LLVMVER}.src.tar.xz && \
-  mv libunwind-${LLVMVER}.src libunwind && \
-  mkdir libunwind/build
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-libunwind AS sdk-libunwind-x86_64
-
-ENV ARCH="x86_64"
-ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-
-COPY --chown=0:0 --from=sdk-musl-x86_64 \
-  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
-  /${MUSL_TARGET}/sys-root/
-
-RUN ./build-libunwind.sh --arch="${ARCH}"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-libunwind AS sdk-libunwind-aarch64
-
-ENV ARCH="aarch64"
-ENV MUSL_TARGET="${ARCH}-bottlerocket-linux-musl"
-
-COPY --chown=0:0 --from=sdk-musl-aarch64 \
-  /home/builder/musl/output/${MUSL_TARGET}/sys-root/ \
-  /${MUSL_TARGET}/sys-root/
-
-RUN ./build-libunwind.sh --arch="${ARCH}"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
 FROM scratch AS sdk-libc-gnu
 
 ENV GNU_TARGET_x86_64="x86_64-bottlerocket-linux-gnu"
@@ -313,16 +263,8 @@ COPY --chown=0:0 --from=sdk-musl-x86_64 \
   /home/builder/musl/output/${MUSL_TARGET_x86_64}/sys-root/ \
   /${MUSL_TARGET_x86_64}/sys-root/
 
-COPY --chown=0:0 --from=sdk-libunwind-x86_64 \
-  /home/builder/libunwind/output/${MUSL_TARGET_x86_64}/sys-root/ \
-  /${MUSL_TARGET_x86_64}/sys-root/
-
 COPY --chown=0:0 --from=sdk-musl-aarch64 \
   /home/builder/musl/output/${MUSL_TARGET_aarch64}/sys-root/ \
-  /${MUSL_TARGET_aarch64}/sys-root/
-
-COPY --chown=0:0 --from=sdk-libunwind-aarch64 \
-  /home/builder/libunwind/output/${MUSL_TARGET_aarch64}/sys-root/ \
   /${MUSL_TARGET_aarch64}/sys-root/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
@@ -343,10 +285,11 @@ RUN \
 
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
-ENV RUSTVER="1.83.0"
+ENV RUSTVER="1.85.0"
 
 USER builder
 WORKDIR /home/builder
+COPY ./patches/rust ./patches
 COPY ./hashes/rust ./hashes
 RUN \
   sdk-fetch hashes && \
@@ -357,7 +300,8 @@ RUN \
 WORKDIR /home/builder/rust
 RUN \
   dir=build/cache/$(awk -F= '/^compiler_date/{print $2}' src/stage0); \
-  mkdir -p $dir && mv ../*.xz $dir
+  mkdir -p $dir && mv ../*.xz $dir && \
+  find "${HOME}/patches" -type f -name '*.patch' -print -exec patch -p1 -i {} \;
 
 # For any architecture, we rely on two or more of Rust's native targets:
 #
@@ -551,8 +495,8 @@ ENV AWS_LC_FIPS_VER="2.0.17"
 USER root
 RUN dnf -y install golang
 
-ENV GO123VER="1.23.4"
-ENV GO122VER="1.22.10"
+ENV GO123VER="1.23.7"
+ENV GO122VER="1.22.12"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 

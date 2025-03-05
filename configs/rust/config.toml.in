@@ -1,6 +1,6 @@
 # See the example config for more details on these settings:
 # https://github.com/rust-lang/rust/blob/master/config.example.toml
-change-id = 125535
+change-id = 134650
 
 [build]
 target = [
@@ -48,6 +48,7 @@ ranlib = "/usr/bin/aarch64-bottlerocket-linux-musl-ranlib"
 linker = "aarch64-bottlerocket-linux-musl-gcc"
 musl-root = "/aarch64-bottlerocket-linux-musl/sys-root/usr"
 crt-static = true
+llvm-libunwind = "in-tree"
 
 [target.x86_64-bottlerocket-linux-gnu]
 cc = "x86_64-bottlerocket-linux-gnu-gcc"
@@ -65,3 +66,4 @@ ranlib = "/usr/bin/x86_64-bottlerocket-linux-musl-ranlib"
 linker = "x86_64-bottlerocket-linux-musl-gcc"
 musl-root = "/x86_64-bottlerocket-linux-musl/sys-root/usr"
 crt-static = true
+llvm-libunwind = "in-tree"

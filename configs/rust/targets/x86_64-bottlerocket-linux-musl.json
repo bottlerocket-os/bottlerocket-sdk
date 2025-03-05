@@ -9,7 +9,6 @@
   "env": "musl",
   "has-rpath": true,
   "has-thread-local": true,
-  "is-builtin": false,
   "linker-flavor": "gnu-cc",
   "llvm-target": "x86_64-unknown-linux-musl",
   "max-atomic-width": 64,
