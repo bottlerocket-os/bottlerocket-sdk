@@ -213,6 +213,7 @@ USER builder
 
 WORKDIR /home/builder
 COPY ./hashes/musl ./hashes
+COPY ./patches/musl ./patches
 COPY ./helpers/musl/* ./
 
 ENV MUSLVER="1.2.5"
@@ -220,7 +221,10 @@ RUN \
   sdk-fetch hashes && \
   tar xf musl-${MUSLVER}.tar.gz && \
   rm musl-${MUSLVER}.tar.gz && \
-  mv musl-${MUSLVER} musl
+  mv musl-${MUSLVER} musl && \
+  cd musl && \
+  git init . && \
+  git apply --whitespace=nowarn ../patches/*.patch
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
