@@ -28,7 +28,6 @@ license-files = [
     { path = "COPYING", hash = 0x278afbcf },
     { path = "LICENSE-APACHE", hash = 0x24b54f4b },
     { path = "LICENSE-MIT", hash = 0x462dee44 },
-    { path = "src/unicode/data/LICENSE-UNICODE", hash = 0x70f7339 },
 ]
 
 [clarify.cargo-deny]
@@ -174,6 +173,17 @@ license-files = [
     { path = "src/unicode_tables/LICENSE-UNICODE", hash = 0xa7f28b93 },
 ]
 
+[clarify.ring]
+expression = "Apache-2.0 AND MIT AND ISC"
+license-files = [
+    { path = "LICENSE", hash = 0xd99693a },
+    { path = "LICENSE-BoringSSL", hash = 0x8f795a3 },
+    { path = "LICENSE-other-bits", hash = 0x8b770de2 },
+    { path = "src/polyfill/once_cell/LICENSE-MIT", hash = 0x69371061 },
+    { path = "src/polyfill/once_cell/LICENSE-APACHE", hash = 0x24b54f4b },
+    { path = "third_party/fiat/LICENSE", hash = 0x931a8dd4 },
+]
+
 [clarify.rustsec]
 expression = "MIT OR Apache-2.0"
 license-files = [
@@ -198,6 +208,7 @@ license-files = [
 ]
 # skip files that contain the text of licenses
 skip-files = [
+    "src/text/exceptions/GPL-3.0-389-ds-base-exception",
     "src/text/exceptions/GPL-3.0-interface-exception",
     "src/text/exceptions/GPL-3.0-linking-exception",
     "src/text/exceptions/GPL-3.0-linking-source-exception",
@@ -362,11 +373,11 @@ license-files = [
 ]
 
 [clarify.unicode-ident]
-expression = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
+expression = "(MIT OR Apache-2.0) AND Unicode-3.0"
 license-files = [
     { path = "LICENSE-APACHE", hash = 0xb5518783 },
     { path = "LICENSE-MIT", hash = 0x386ca1bc },
-    { path = "LICENSE-UNICODE", hash = 0x9698cbbe },
+    { path = "LICENSE-UNICODE", hash = 0x3475d800 },
 ]
 
 [clarify.zstd-safe]
