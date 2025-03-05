@@ -1,4 +1,4 @@
-From e6d1a9eed631f9d30174fc178f359f2916f04b88 Mon Sep 17 00:00:00 2001
+From 9a1e2fb5fc6482735d338d9e459c6c7d5a74a810 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:40:50 +0000
 Subject: [PATCH] build binutils with TOOLS_DIR and SYSROOT_DIR
@@ -16,7 +16,7 @@ Signed-off-by: Ben Cressey <bcressey@amazon.com>
  1 file changed, 20 insertions(+), 3 deletions(-)
 
 diff --git a/package/binutils/binutils.mk b/package/binutils/binutils.mk
-index 6846933646..aab042fbe3 100644
+index 3d1f77c8c4..31d8deab05 100644
 --- a/package/binutils/binutils.mk
 +++ b/package/binutils/binutils.mk
 @@ -66,9 +66,10 @@ endif
@@ -53,7 +53,7 @@ index 6846933646..aab042fbe3 100644
  # binutils run configure script of subdirs at make time, so ensure
  # our TARGET_CONFIGURE_ARGS are taken into consideration for those
  BINUTILS_MAKE_ENV = $(TARGET_CONFIGURE_ARGS)
-@@ -152,5 +157,17 @@ define HOST_BINUTILS_FIXUP_HARDLINKS
+@@ -146,5 +151,17 @@ define HOST_BINUTILS_FIXUP_HARDLINKS
  endef
  HOST_BINUTILS_POST_INSTALL_HOOKS += HOST_BINUTILS_FIXUP_HARDLINKS
  
