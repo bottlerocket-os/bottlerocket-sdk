@@ -1272,7 +1272,7 @@ USER builder
 WORKDIR /home/builder
 
 # Set the default Go major version.
-ENV GO_MAJOR="1.22"
+ENV GO_MAJOR="1.23"
 
 # In NSS 3.101, lib::pkix was enabled as the default X.509 validator.
 # This causes signature checking of secureboot artifacts to fail during build.
