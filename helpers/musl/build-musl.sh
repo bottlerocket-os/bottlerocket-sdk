@@ -19,7 +19,7 @@ LDFLAGS="-Wl,-z,relro -Wl,-z,now"
 
 case "${ARCH}" in
   x86_64)
-    ARCH_CFLAGS=""
+    ARCH_CFLAGS="-fcf-protection=full"
     ARCH_CONFIG=""
     ;;
   aarch64)

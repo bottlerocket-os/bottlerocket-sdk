@@ -23,7 +23,7 @@ TARGET="${TARGET:?}"
 CFLAGS="${CFLAGS} -Wp,-U_FORTIFY_SOURCE -DGOBORING -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"
 
 case "${ARCH}" in
-  x86_64) ARCH_CFLAGS="" ;;
+  x86_64) ARCH_CFLAGS="-fcf-protection=full" ;;
   aarch64) ARCH_CFLAGS="" ;;
 esac
 

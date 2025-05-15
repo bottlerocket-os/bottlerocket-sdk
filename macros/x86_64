@@ -1,6 +1,6 @@
 %_cross_arch x86_64
-%_cross_arch_cflags %{nil}
-%_cross_arch_ldflags %{nil}
+%_cross_arch_cflags -fcf-protection=full
+%_cross_arch_ldflags -Wl,-z,ibt -Wl,-z,shstk -Wl,-z,cet-report=error
 %_cross_arch_rust_flags %{nil}
 
 %_cross_karch x86
