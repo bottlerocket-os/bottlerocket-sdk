@@ -24,7 +24,7 @@ CFLAGS="${CFLAGS} -Wp,-U_FORTIFY_SOURCE -DGOBORING -fno-omit-frame-pointer -mno-
 
 case "${ARCH}" in
   x86_64) ARCH_CFLAGS="-march=x86-64-v2 -mtune=generic -fcf-protection=full" ;;
-  aarch64) ARCH_CFLAGS="" ;;
+  aarch64) ARCH_CFLAGS="-march=armv8-a+crypto+crc" ;;
 esac
 
 CFLAGS="${CFLAGS} ${ARCH_CFLAGS}"

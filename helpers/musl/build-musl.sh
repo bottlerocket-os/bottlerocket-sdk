@@ -23,7 +23,7 @@ case "${ARCH}" in
     ARCH_CONFIG=""
     ;;
   aarch64)
-    ARCH_CFLAGS=""
+    ARCH_CFLAGS="-march=armv8-a+crypto+crc"
     ARCH_CONFIG=""
     ;;
 esac
