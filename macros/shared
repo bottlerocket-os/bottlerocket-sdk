@@ -14,6 +14,7 @@
   -fexceptions -fstack-clash-protection -fno-semantic-interposition \
   -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer \
   -ftrivial-auto-var-init=zero \
+  -flto=auto -ffat-lto-objects \
   %{nil}}
 
 %_cross_cxxflags %_cross_cflags

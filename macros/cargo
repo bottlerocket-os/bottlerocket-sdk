@@ -52,9 +52,18 @@
 
 %__cargo_incremental false
 
+# GCC and LLVM formats for LTO are not compatible, so disable LTO for builds
+# that use the C/C++ toolchains via `cmake`.
 %cargo_prep (\
 %write_cross_cmake_toolchain_conf \
 %write_cross_cmake_toolchain_conf_static \
+%{shrink: \
+sed -i \
+  -e "s/-flto=auto//g" \
+  -e "s/-ffat-lto-objects//g" \
+  %_cross_cmake_toolchain_conf \
+  %_cross_cmake_toolchain_conf_static \
+%{nil}} \
 %{__mkdir} -p %{_builddir}/.cargo \
 cat > %{_builddir}/.cargo/config << EOF \
 [build]\
