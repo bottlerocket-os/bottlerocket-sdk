@@ -7,14 +7,22 @@
 
 %_cross_cflags %{shrink: \
   -O2 -g -pipe -Wall \
+  -Werror=trampolines -Wbidi-chars=any \
   -Werror=format-security -Werror=strict-aliasing \
   -Wp,-U_FORTIFY_SOURCE -Wp,-D_FORTIFY_SOURCE=2 \
   -Wp,-D_GLIBCXX_ASSERTIONS \
   -fexceptions -fstack-clash-protection -fno-semantic-interposition \
   -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer \
+  -ftrivial-auto-var-init=zero \
   %{nil}}
+
 %_cross_cxxflags %_cross_cflags
-%_cross_ldflags -Wl,-z,relro -Wl,-z,now -Wl,-Bsymbolic-functions -Wl,-z,pack-relative-relocs
+
+%_cross_ldflags %{shrink: \
+  -Wl,-z,relro -Wl,-z,now \
+  -Wl,-z,noexecstack -Wl,--as-needed  \
+  -Wl,-Bsymbolic-functions -Wl,-z,pack-relative-relocs \
+  %{nil}}
 
 %_cross_quoted_list() %{lua:
   local macro = rpm.expand("%1")
