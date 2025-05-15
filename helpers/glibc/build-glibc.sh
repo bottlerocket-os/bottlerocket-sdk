@@ -20,7 +20,7 @@ BUILDFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection -fno-omit-
 
 case "${ARCH}" in
   x86_64)
-    ARCH_CFLAGS=""
+    ARCH_CFLAGS="-march=x86-64-v2 -mtune=generic"
     ARCH_CONFIG="--enable-cet"
     ;;
   aarch64)
