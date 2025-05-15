@@ -18,7 +18,19 @@ TARGET="${ARCH}-bottlerocket-linux-gnu"
 SYSROOT="/${TARGET}/sys-root"
 BUILDFLAGS="-O2 -g -Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"
 
+case "${ARCH}" in
+  x86_64)
+    ARCH_CFLAGS=""
+    ARCH_CONFIG=""
+    ;;
+  aarch64)
+    ARCH_CFLAGS=""
+    ARCH_CONFIG=""
+    ;;
+esac
+
 cd "${HOME}/glibc/build"
+CC="${TARGET}-gcc ${ARCH_CFLAGS}" CXX="${TARGET}-g++ ${ARCH_CFLAGS}" \
 CFLAGS="${BUILDFLAGS}" CPPFLAGS="" CXXFLAGS="${BUILDFLAGS}" \
 ../configure \
   --prefix="${SYSROOT}/usr" \
@@ -39,7 +51,8 @@ CFLAGS="${BUILDFLAGS}" CPPFLAGS="" CXXFLAGS="${BUILDFLAGS}" \
   --disable-tunables \
   --without-cvs \
   --without-gd \
-  --without-selinux
+  --without-selinux \
+  ${ARCH_CONFIG}
 
 make -j"$(nproc)" -O -r
 make install_root="${HOME}/glibc/output" install

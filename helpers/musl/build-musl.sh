@@ -17,6 +17,19 @@ SYSROOT="/${TARGET}/sys-root"
 CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-clash-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"
 LDFLAGS="-Wl,-z,relro -Wl,-z,now"
 
+case "${ARCH}" in
+  x86_64)
+    ARCH_CFLAGS=""
+    ARCH_CONFIG=""
+    ;;
+  aarch64)
+    ARCH_CFLAGS=""
+    ARCH_CONFIG=""
+    ;;
+esac
+
+CFLAGS="${CFLAGS} ${ARCH_CFLAGS}"
+
 cd "${HOME}/musl"
 ./configure \
   CFLAGS="${CFLAGS}" \
@@ -25,7 +38,8 @@ cd "${HOME}/musl"
   --disable-gcc-wrapper \
   --enable-static \
   --prefix="${SYSROOT}/usr" \
-  --libdir="${SYSROOT}/usr/lib"
+  --libdir="${SYSROOT}/usr/lib" \
+  ${ARCH_CONFIG}
 
 make -j"$(nproc)"
 

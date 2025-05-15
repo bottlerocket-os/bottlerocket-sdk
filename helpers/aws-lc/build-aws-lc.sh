@@ -22,6 +22,13 @@ TARGET="${TARGET:?}"
 # avoid weak symbols.
 CFLAGS="${CFLAGS} -Wp,-U_FORTIFY_SOURCE -DGOBORING -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"
 
+case "${ARCH}" in
+  x86_64) ARCH_CFLAGS="" ;;
+  aarch64) ARCH_CFLAGS="" ;;
+esac
+
+CFLAGS="${CFLAGS} ${ARCH_CFLAGS}"
+
 cd "${HOME}/aws-lc/build"
 cmake \
   -DCMAKE_BUILD_TYPE=Release \

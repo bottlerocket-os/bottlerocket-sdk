@@ -11,6 +11,7 @@
 # Enable some optimization, debuginfo, and link hardening.
 %__global_rustflags_base %{shrink: \
   -Copt-level=3 -Cdebuginfo=2 -Cforce-frame-pointers=yes \
+  %{_cross_arch_rust_flags} \
   -Clink-arg=-Wl,-z,relro,-z,now \
   -Clink-arg=-Wl,-z,pack-relative-relocs \
   %{nil}}

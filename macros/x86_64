@@ -1,4 +1,8 @@
 %_cross_arch x86_64
+%_cross_arch_cflags %{nil}
+%_cross_arch_ldflags %{nil}
+%_cross_arch_rust_flags %{nil}
+
 %_cross_karch x86
 %_cross_kimage bzImage
 %_cross_cpu_family x86

@@ -15,6 +15,7 @@
   -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer \
   -ftrivial-auto-var-init=zero \
   -flto=auto -ffat-lto-objects \
+  %{_cross_arch_cflags} \
   %{nil}}
 
 %_cross_cxxflags %_cross_cflags
@@ -23,6 +24,7 @@
   -Wl,-z,relro -Wl,-z,now \
   -Wl,-z,noexecstack -Wl,--as-needed  \
   -Wl,-Bsymbolic-functions -Wl,-z,pack-relative-relocs \
+  %{_cross_arch_ldflags} \
   %{nil}}
 
 %_cross_quoted_list() %{lua:

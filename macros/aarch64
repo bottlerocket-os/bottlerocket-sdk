@@ -1,4 +1,8 @@
 %_cross_arch aarch64
+%_cross_arch_cflags %{nil}
+%_cross_arch_ldflags %{nil}
+%_cross_arch_rust_flags %{nil}
+
 %_cross_karch arm64
 %_cross_kimage Image
 %_cross_cpu_family arm
