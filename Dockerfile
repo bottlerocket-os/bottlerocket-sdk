@@ -555,6 +555,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.23-prep AS sdk-go-1.23-aws-lc-gnu-aarch64
+COPY --chown=0:0 --from=sdk-go-1.23-aws-lc-gnu-x86_64 /etc/group /etc/group
 ENV ARCH="aarch64"
 ENV LIBC="gnu"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -563,6 +564,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.23-prep AS sdk-go-1.23-aws-lc-musl-x86_64
+COPY --chown=0:0 --from=sdk-go-1.23-aws-lc-gnu-aarch64 /etc/group /etc/group
 ENV ARCH="x86_64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -571,6 +573,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.23-prep AS sdk-go-1.23-aws-lc-musl-aarch64
+COPY --chown=0:0 --from=sdk-go-1.23-aws-lc-musl-x86_64 /etc/group /etc/group
 ENV ARCH="aarch64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -587,6 +590,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.24-prep AS sdk-go-1.24-aws-lc-gnu-aarch64
+COPY --chown=0:0 --from=sdk-go-1.24-aws-lc-gnu-x86_64 /etc/group /etc/group
 ENV ARCH="aarch64"
 ENV LIBC="gnu"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -595,6 +599,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.24-prep AS sdk-go-1.24-aws-lc-musl-x86_64
+COPY --chown=0:0 --from=sdk-go-1.24-aws-lc-gnu-aarch64 /etc/group /etc/group
 ENV ARCH="x86_64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
@@ -603,6 +608,7 @@ RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sd
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.24-prep AS sdk-go-1.24-aws-lc-musl-aarch64
+COPY --chown=0:0 --from=sdk-go-1.24-aws-lc-musl-x86_64 /etc/group /etc/group
 ENV ARCH="aarch64"
 ENV LIBC="musl"
 ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
