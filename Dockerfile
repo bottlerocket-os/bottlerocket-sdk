@@ -783,16 +783,16 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.23 AS sdk-govc
+FROM sdk-go-1.24 AS sdk-govc
 
 USER root
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ENV GOVMOMIVER="0.30.2"
-ENV GOVMOMISHORTCOMMIT="9078b0b"
-ENV GOVMOMIDATE="2023-02-01T04:38:23Z"
+ENV GOVMOMIVER="0.46.3"
+ENV GOVMOMISHORTCOMMIT="e5dcb5f"
+ENV GOVMOMIDATE="2024-12-12T20:11:39Z"
 
 USER builder
 WORKDIR /home/builder/go/src/github.com/vmware/govmomi
