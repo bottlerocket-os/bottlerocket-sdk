@@ -17,8 +17,8 @@ OUTPUT="${ROOTDIR}/hashes/aws-lc"
 
 # Get the AWS-LC-FIPS source package
 # e.g. FIXME
-AWS_LC_SRC_PACKAGE="AWS-LC-FIPS-${VERSION}.tar.gz"
-AWS_LC_SRC_URL="https://github.com/aws/aws-lc/archive/refs/tags/${AWS_LC_SRC_PACKAGE}"
+AWS_LC_SRC_PACKAGE="aws-lc-AWS-LC-FIPS-${VERSION}.tar.gz"
+AWS_LC_SRC_URL="https://github.com/aws/aws-lc/archive/AWS-LC-FIPS-${VERSION}/${AWS_LC_SRC_PACKAGE}"
 
 curl -s -L -O -C - "${AWS_LC_SRC_URL}"
 

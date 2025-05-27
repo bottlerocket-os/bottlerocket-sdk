@@ -1,0 +1,44 @@
+From 9083ae0244fbab6064c892e6e7e8e9fc47a7b9f7 Mon Sep 17 00:00:00 2001
+From: Sean McGrail <549813+skmcgrail@users.noreply.github.com>
+Date: Thu, 6 Mar 2025 17:31:04 +0000
+Subject: [PATCH] Move OCSP ASN1 type functions to public header (#2239)
+
+### Description of changes:
+Improve compatibility with OpenSSL APIs for OCSP.
+
+By submitting this pull request, I confirm that my contribution is made
+under the terms of the Apache 2.0 license and the ISC license.
+
+(cherry picked from commit b74d80de10cbeccbd357262c0402f90102d21ce8)
+---
+ crypto/ocsp/internal.h | 1 -
+ include/openssl/ocsp.h | 1 +
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/crypto/ocsp/internal.h b/crypto/ocsp/internal.h
+index c780fb6bf..04c17d22c 100644
+--- a/crypto/ocsp/internal.h
++++ b/crypto/ocsp/internal.h
+@@ -233,7 +233,6 @@ struct ocsp_basic_response_st {
+   STACK_OF(X509) *certs;
+ };
+ 
+-DECLARE_ASN1_FUNCTIONS(OCSP_ONEREQ)
+ DECLARE_ASN1_FUNCTIONS(OCSP_RESPDATA)
+ DECLARE_ASN1_FUNCTIONS(OCSP_REQINFO)
+ DECLARE_ASN1_FUNCTIONS(OCSP_SIGNATURE)
+diff --git a/include/openssl/ocsp.h b/include/openssl/ocsp.h
+index 2f7d249f6..32936ec0e 100644
+--- a/include/openssl/ocsp.h
++++ b/include/openssl/ocsp.h
+@@ -112,6 +112,7 @@ DECLARE_ASN1_FUNCTIONS(OCSP_RESPONSE)
+ DECLARE_ASN1_FUNCTIONS(OCSP_CERTID)
+ DECLARE_ASN1_FUNCTIONS(OCSP_REQUEST)
+ DECLARE_ASN1_FUNCTIONS(OCSP_SINGLERESP)
++DECLARE_ASN1_FUNCTIONS(OCSP_ONEREQ)
+ 
+ // d2i_OCSP_REQUEST_bio parses a DER-encoded OCSP request from |bp|, converts it
+ // into an |OCSP_REQUEST|, and writes the result in |preq|.
+-- 
+2.47.0
+

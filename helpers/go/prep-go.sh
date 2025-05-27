@@ -28,8 +28,9 @@ git apply --whitespace=nowarn "${HOME}"/patches-go/*.patch
 mkdir -p "${HOME}/aws-lc"
 cd "${HOME}/aws-lc"
 sdk-fetch "${HOME}/hashes-aws-lc"
-tar --strip-components=1 -xf AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz
-rm AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz
+AWS_LC_SRC_PACKAGE="aws-lc-AWS-LC-FIPS-${AWS_LC_FIPS_VER}.tar.gz"
+tar --strip-components=1 -xf ${AWS_LC_SRC_PACKAGE}
+rm ${AWS_LC_SRC_PACKAGE}
 
 # Patch AWS-LC sources to avoid weak symbols for memory management functions
 # when GOBORING is defined.

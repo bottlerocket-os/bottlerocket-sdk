@@ -1,0 +1,38 @@
+From 6f95c7dfa9d569b2c78475aee0516e36df5b2c4a Mon Sep 17 00:00:00 2001
+From: Sean McGrail <mcgrails@amazon.com>
+Date: Mon, 10 Mar 2025 17:54:59 +0000
+Subject: [PATCH] Add test around OpenSSL behavior for BIO_get_mem_data macro
+
+(cherry picked from commit 94b8cb68e8f3f93c5bdd78a3c23fc23baf410132)
+---
+ crypto/bio/bio_test.cc | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/crypto/bio/bio_test.cc b/crypto/bio/bio_test.cc
+index 822a831ba..8fe742568 100644
+--- a/crypto/bio/bio_test.cc
++++ b/crypto/bio/bio_test.cc
+@@ -1275,3 +1275,20 @@ TEST(BIOTest, TestCtrlCallback) {
+   bio_callback_cleanup();
+   ASSERT_EQ(BIO_free(bio), 1);
+ }
++
++TEST(BIOTest, GetMemDataBackwardsCompat) {
++  bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
++  ASSERT_TRUE(bio);
++
++  const uint8_t contents[] = {0x72, 0x61, 0x63, 0x63, 0x6f, 0x6f, 0x6e};
++
++  // Write some test data
++  int write_len = BIO_write(bio.get(), contents, sizeof(contents));
++  ASSERT_EQ(sizeof(contents), (size_t)write_len);
++
++  // Yes, this is something gRPC does
++  const uint8_t *ptr = NULL;
++  long data_len = BIO_get_mem_data(bio.get(), &ptr);
++  ASSERT_EQ((size_t)data_len, sizeof(contents));
++  EXPECT_EQ(Bytes(contents, sizeof(contents)), Bytes(ptr, data_len));
++}
+-- 
+2.47.0
+
