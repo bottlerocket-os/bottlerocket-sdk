@@ -1,0 +1,220 @@
+From 7d3a0cc7dc7a11d21d12506d147fd568c11e992b Mon Sep 17 00:00:00 2001
+From: Nevine Ebeid <66388554+nebeid@users.noreply.github.com>
+Date: Fri, 28 Feb 2025 17:54:38 -0500
+Subject: [PATCH] Cherry-pick: Fix out-of-bound (OOB) input read in AES-XTS
+ Decrypt in AVX-512 implementation (#2228)
+
+Cherry-pick
+https://github.com/aws/aws-lc/commit/eb0c0c0d8e4e94183a608b0403d899beb9d4b949
+
+- Fix instruction that caused out-of-bound read in the input reading of
+the 16x loop (which processes a batch of 16 blocks of AES, 1 block = 16
+bytes). This was triggered on lengths that are in the range [16*k * (16
+bytes), (16*k +3)* (16 bytes)-1], k = 1, 2, ... The instruction was
+reading up to 3*16 bytes beyond the input length bound.
+
+- The fix was inspired by the 8x loop in
+https://github.com/aws/aws-lc/blob/becf5785c131012bb5a64f3da6cdb117ddc0f431/crypto/fipsmodule/aes/asm/aesni-xts-avx512.pl#L2544
+
+- The existing unit tests cover those cases but there were no explicit
+memory protections and ASAN doesn't instrument assembly code to check
+for out-of-bound reads even when the subsequent memory is explicitly
+poisoned.
+
+### Testing:
+On c6i, without the fix, the unit test segfaults
+```
+./crypto/crypto_test "--gtest_filter=XTSTest.*"
+Note: Google Test filter = XTSTest.*
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from XTSTest
+[ RUN      ] XTSTest.TestVectors
+Segmentation fault (core dumped)
+```
+By submitting this pull request, I confirm that my contribution is made
+under the terms of the Apache 2.0 license and the ISC license.
+---
+ crypto/fipsmodule/aes/asm/aesni-xts-avx512.pl |  2 +-
+ crypto/fipsmodule/modes/xts_test.cc           | 72 ++++++++++++++-----
+ .../crypto/fipsmodule/aesni-xts-avx512.S      |  2 +-
+ .../crypto/fipsmodule/aesni-xts-avx512.S      |  2 +-
+ .../crypto/fipsmodule/aesni-xts-avx512.asm    |  2 +-
+ 5 files changed, 58 insertions(+), 22 deletions(-)
+
+diff --git a/crypto/fipsmodule/aes/asm/aesni-xts-avx512.pl b/crypto/fipsmodule/aes/asm/aesni-xts-avx512.pl
+index 5190c9894..c5bb1fbeb 100644
+--- a/crypto/fipsmodule/aes/asm/aesni-xts-avx512.pl
++++ b/crypto/fipsmodule/aes/asm/aesni-xts-avx512.pl
+@@ -2493,7 +2493,7 @@ ___
+   vmovdqu8 	 0x40($input),%zmm2
+   vmovdqu8 	 0x80($input),%zmm3
+   vmovdqu8 	 0xc0($input),%zmm4
+-  vmovdqu8 	 0xf0($input),%zmm5
++  vmovdqu8 	 0xf0($input),%xmm5
+   add 	 \$0x100,$input
+ ___
+   }
+diff --git a/crypto/fipsmodule/modes/xts_test.cc b/crypto/fipsmodule/modes/xts_test.cc
+index 07f071da2..40e6e99c1 100644
+--- a/crypto/fipsmodule/modes/xts_test.cc
++++ b/crypto/fipsmodule/modes/xts_test.cc
+@@ -23,7 +23,9 @@
+ #include "internal.h"
+ #include "../../test/test_util.h"
+ 
+-
++#if defined(OPENSSL_LINUX)
++#include <sys/mman.h>
++#endif
+ struct XTSTestCase {
+   const char *key_hex;
+   const char *iv_hex;
+@@ -995,8 +997,30 @@ static const XTSTestCase kXTSTestCases[] = {
+     },
+ };
+ 
++#if defined(OPENSSL_LINUX)
++static uint8_t *get_buffer_end(int pagesize) {
++  uint8_t *two_pages_p = (uint8_t *)mmap(NULL, 2*pagesize, PROT_READ|PROT_WRITE,
++                                      MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
++  EXPECT_TRUE(two_pages_p != NULL) << "mmap returned NULL.";
++
++  int ret = mprotect(two_pages_p + pagesize, pagesize, PROT_NONE);
++  EXPECT_TRUE(ret == 0) << "mprotect failed.";
++
++  return two_pages_p + pagesize;
++}
++
++static void free_memory(uint8_t *addr, int pagesize) {
++  munmap(addr - pagesize, 2 * pagesize);
++}
++#endif
++
+ TEST(XTSTest, TestVectors) {
+   unsigned test_num = 0;
++#if defined(OPENSSL_LINUX)
++  int pagesize = sysconf(_SC_PAGE_SIZE);
++  uint8_t *in_buffer_end = get_buffer_end(pagesize);
++  uint8_t *out_buffer_end = get_buffer_end(pagesize);
++#endif
+   for (const auto &test : kXTSTestCases) {
+     test_num++;
+     SCOPED_TRACE(test_num);
+@@ -1013,45 +1037,57 @@ TEST(XTSTest, TestVectors) {
+     ASSERT_EQ(EVP_CIPHER_iv_length(cipher), iv.size());
+     ASSERT_EQ(plaintext.size(), ciphertext.size());
+ 
++    int len;
++    uint8_t *in_p, *out_p;
++  #if defined(OPENSSL_LINUX)
++    ASSERT_GE(pagesize, (int)plaintext.size());
++    in_p = in_buffer_end - plaintext.size();
++    out_p = out_buffer_end - plaintext.size();
++    OPENSSL_memset(in_p, 0x00, plaintext.size());
++    OPENSSL_memset(out_p, 0x00, plaintext.size());
++  #else
++    std::unique_ptr<uint8_t[]> in(new uint8_t[plaintext.size()]);
++    std::unique_ptr<uint8_t[]> out(new uint8_t[plaintext.size()]);
++    in_p = in.get();
++    out_p = out.get();
++  #endif
++
+     // Note XTS doesn't support streaming, so we only test single-shot inputs.
+     for (bool in_place : {false, true}) {
+       SCOPED_TRACE(in_place);
+ 
+       // Test encryption.
+-      bssl::Span<const uint8_t> in = plaintext;
+-      std::vector<uint8_t> out(plaintext.size());
++
++      OPENSSL_memcpy(in_p, plaintext.data(), plaintext.size());
+       if (in_place) {
+-        out = plaintext;
+-        in = out;
++        out_p = in_p;
+       }
+ 
+       bssl::ScopedEVP_CIPHER_CTX ctx;
+       ASSERT_TRUE(EVP_EncryptInit_ex(ctx.get(), cipher, nullptr, key.data(),
+                                      iv.data()));
+-      int len;
+       ASSERT_TRUE(
+-          EVP_EncryptUpdate(ctx.get(), out.data(), &len, in.data(), in.size()));
+-      out.resize(len);
+-      EXPECT_EQ(Bytes(ciphertext), Bytes(out));
++          EVP_EncryptUpdate(ctx.get(), out_p, &len, in_p, plaintext.size()));
++      EXPECT_EQ(Bytes(ciphertext), Bytes(out_p, static_cast<size_t>(len)));
+ 
+       // Test decryption.
+-      in = ciphertext;
+-      out.clear();
+-      out.resize(plaintext.size());
+-      if (in_place) {
+-        out = ciphertext;
+-        in = out;
++
++      if (!in_place) {
++        OPENSSL_memset(in_p, 0, len);
+       }
+ 
+       ctx.Reset();
+       ASSERT_TRUE(EVP_DecryptInit_ex(ctx.get(), cipher, nullptr, key.data(),
+                                      iv.data()));
+       ASSERT_TRUE(
+-          EVP_DecryptUpdate(ctx.get(), out.data(), &len, in.data(), in.size()));
+-      out.resize(len);
+-      EXPECT_EQ(Bytes(plaintext), Bytes(out));
++          EVP_DecryptUpdate(ctx.get(), in_p, &len, out_p, ciphertext.size()));
++      EXPECT_EQ(Bytes(plaintext), Bytes(in_p, static_cast<size_t>(len)));
+     }
+   }
++#if defined(OPENSSL_LINUX)
++  free_memory(in_buffer_end, pagesize);
++  free_memory(out_buffer_end, pagesize);
++#endif
+ }
+ 
+ // Negative test for key1 = key2
+diff --git a/generated-src/linux-x86_64/crypto/fipsmodule/aesni-xts-avx512.S b/generated-src/linux-x86_64/crypto/fipsmodule/aesni-xts-avx512.S
+index b2e31bd9e..1ec70a24c 100644
+--- a/generated-src/linux-x86_64/crypto/fipsmodule/aesni-xts-avx512.S
++++ b/generated-src/linux-x86_64/crypto/fipsmodule/aesni-xts-avx512.S
+@@ -3271,7 +3271,7 @@ aes_hw_xts_decrypt_avx512:
+ 	vmovdqu8	64(%rdi),%zmm2
+ 	vmovdqu8	128(%rdi),%zmm3
+ 	vmovdqu8	192(%rdi),%zmm4
+-	vmovdqu8	240(%rdi),%zmm5
++	vmovdqu8	240(%rdi),%xmm5
+ 	addq	$0x100,%rdi
+ 	vpxorq	%zmm9,%zmm1,%zmm1
+ 	vpxorq	%zmm10,%zmm2,%zmm2
+diff --git a/generated-src/mac-x86_64/crypto/fipsmodule/aesni-xts-avx512.S b/generated-src/mac-x86_64/crypto/fipsmodule/aesni-xts-avx512.S
+index 08a62439a..507e7141d 100644
+--- a/generated-src/mac-x86_64/crypto/fipsmodule/aesni-xts-avx512.S
++++ b/generated-src/mac-x86_64/crypto/fipsmodule/aesni-xts-avx512.S
+@@ -3271,7 +3271,7 @@ L$_main_loop_run_16_amivrujEyduiFoi:
+ 	vmovdqu8	64(%rdi),%zmm2
+ 	vmovdqu8	128(%rdi),%zmm3
+ 	vmovdqu8	192(%rdi),%zmm4
+-	vmovdqu8	240(%rdi),%zmm5
++	vmovdqu8	240(%rdi),%xmm5
+ 	addq	$0x100,%rdi
+ 	vpxorq	%zmm9,%zmm1,%zmm1
+ 	vpxorq	%zmm10,%zmm2,%zmm2
+diff --git a/generated-src/win-x86_64/crypto/fipsmodule/aesni-xts-avx512.asm b/generated-src/win-x86_64/crypto/fipsmodule/aesni-xts-avx512.asm
+index 039f0c7ac..1aabee193 100644
+--- a/generated-src/win-x86_64/crypto/fipsmodule/aesni-xts-avx512.asm
++++ b/generated-src/win-x86_64/crypto/fipsmodule/aesni-xts-avx512.asm
+@@ -3330,7 +3330,7 @@ $L$_main_loop_run_16_amivrujEyduiFoi:
+ 	vmovdqu8	zmm2,ZMMWORD[64+rcx]
+ 	vmovdqu8	zmm3,ZMMWORD[128+rcx]
+ 	vmovdqu8	zmm4,ZMMWORD[192+rcx]
+-	vmovdqu8	zmm5,ZMMWORD[240+rcx]
++	vmovdqu8	xmm5,XMMWORD[240+rcx]
+ 	add	rcx,0x100
+ 	vpxorq	zmm1,zmm1,zmm9
+ 	vpxorq	zmm2,zmm2,zmm10
+-- 
+2.47.0
+
