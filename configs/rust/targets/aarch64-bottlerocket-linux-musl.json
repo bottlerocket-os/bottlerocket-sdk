@@ -98,5 +98,6 @@
   ],
   "target-mcount": "\u0001_mcount",
   "target-pointer-width": "64",
-  "vendor": "bottlerocket"
+  "vendor": "bottlerocket",
+  "panic-strategy": "abort"
 }

@@ -56,7 +56,7 @@
 %write_cross_cmake_toolchain_conf \
 %write_cross_cmake_toolchain_conf_static \
 %{__mkdir} -p %{_builddir}/.cargo \
-cat > %{_builddir}/.cargo/config << EOF \
+cat > %{_builddir}/.cargo/config.toml << EOF \
 [build]\
 rustc = "%{__rustc}"\
 rustdoc = "%{__rustdoc}"\

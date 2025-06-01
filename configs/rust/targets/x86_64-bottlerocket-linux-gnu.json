@@ -53,5 +53,6 @@
     "unix"
   ],
   "target-pointer-width": "64",
-  "vendor": "bottlerocket"
+  "vendor": "bottlerocket",
+  "panic-strategy": "abort"
 }
