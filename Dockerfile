@@ -495,8 +495,8 @@ ENV AWS_LC_FIPS_VER="3.0.0"
 USER root
 RUN dnf -y install golang
 
-ENV GO123VER="1.23.8"
-ENV GO124VER="1.24.2"
+ENV GO123VER="1.23.9"
+ENV GO124VER="1.24.3"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
