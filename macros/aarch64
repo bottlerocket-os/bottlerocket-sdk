@@ -1,4 +1,8 @@
 %_cross_arch aarch64
+%_cross_arch_cflags -march=armv8-a+crypto+crc
+%_cross_arch_ldflags %{nil}
+%_cross_arch_rust_flags -Ctarget-feature=+crc,+aes,+sha2
+
 %_cross_karch arm64
 %_cross_kimage Image
 %_cross_cpu_family arm

@@ -7,21 +7,38 @@
 
 %_cross_cflags %{shrink: \
   -O2 -g -pipe -Wall \
+  -Werror=trampolines -Wbidi-chars=any \
   -Werror=format-security -Werror=strict-aliasing \
   -Wp,-U_FORTIFY_SOURCE -Wp,-D_FORTIFY_SOURCE=2 \
   -Wp,-D_GLIBCXX_ASSERTIONS \
-  -fexceptions -fstack-clash-protection -fno-semantic-interposition -fno-omit-frame-pointer \
+  -fexceptions -fstack-clash-protection -fno-semantic-interposition \
+  -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer \
+  -ftrivial-auto-var-init=zero \
+  -flto=auto -ffat-lto-objects \
+  %{_cross_arch_cflags} \
   %{nil}}
-%_cross_c_args %{shrink: \
-  '-O2', '-g', '-pipe', '-Wall', \
-  '-Werror=format-security', '-Werror=strict-aliasing', \
-  '-Wp,-U_FORTIFY_SOURCE', '-Wp,-D_FORTIFY_SOURCE=2', \
-  '-Wp,-D_GLIBCXX_ASSERTIONS', \
-  '-fexceptions', '-fstack-clash-protection', '-fno-semantic-interposition', '-fno-omit-frame-pointer' \
-  %{nil}}
+
 %_cross_cxxflags %_cross_cflags
-%_cross_ldflags -Wl,-z,relro -Wl,-z,now -Wl,-Bsymbolic-functions -Wl,-z,pack-relative-relocs
-%_cross_c_link_args '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-Bsymbolic-functions', '-Wl,-z,pack-relative-relocs'
+
+%_cross_ldflags %{shrink: \
+  -Wl,-z,relro -Wl,-z,now \
+  -Wl,-z,noexecstack -Wl,--as-needed  \
+  -Wl,-Bsymbolic-functions -Wl,-z,pack-relative-relocs \
+  %{_cross_arch_ldflags} \
+  %{nil}}
+
+%_cross_quoted_list() %{lua:
+  local macro = rpm.expand("%1")
+  local flags = rpm.expand("%{" .. macro .. "}")
+  local quoted_list = {}
+  for flag in flags:gmatch("%S+") do
+    table.insert(quoted_list, "'" .. flag .. "'")
+  end
+  print(table.concat(quoted_list, ", "))
+}
+
+%_cross_c_args %_cross_quoted_list _cross_cflags
+%_cross_c_link_args %_cross_quoted_list _cross_ldflags
 
 %_cross_buildsrcdir %{_topdir}/BUILD/sources
 %_cross_bootdir /boot
@@ -226,6 +243,8 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
   GOPATH="${PWD}/GOPATH" ; export GOPATH ; \
   GOOS="%{_cross_go_os}" ; export GOOS ; \
   GOARCH="%{_cross_go_arch}" ; export GOARCH ; \
+  GOAMD64="v2" ; export GOAMD64 ; \
+  GOARM64="v8.0,crypto" ; export GOARM64 ; \
   GOLIBC="%2" ; export GOLIBC ; \
   CC="%1-gcc" ; export CC ; \
   CC_FOR_TARGET="%1-gcc" ; export CC_FOR_TARGET ; \

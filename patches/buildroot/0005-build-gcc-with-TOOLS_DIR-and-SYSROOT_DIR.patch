@@ -34,7 +34,7 @@ diff --git a/package/gcc/gcc-final/gcc-final.mk b/package/gcc/gcc-final/gcc-fina
 index 99d7047b5f..3ba6adf66a 100644
 --- a/package/gcc/gcc-final/gcc-final.mk
 +++ b/package/gcc/gcc-final/gcc-final.mk
-@@ -54,9 +54,17 @@ define HOST_GCC_FINAL_CONFIGURE_CMDS
+@@ -54,9 +54,18 @@ define HOST_GCC_FINAL_CONFIGURE_CMDS
  		LDFLAGS="$(HOST_LDFLAGS)" \
  		$(HOST_GCC_FINAL_CONF_ENV) \
  		./configure \
@@ -51,6 +51,7 @@ index 99d7047b5f..3ba6adf66a 100644
 +		--with-gcc-major-version-only \
 +		--enable-default-pie \
 +		--enable-default-ssp \
++		--enable-standard-branch-protection \
  		$(QUIET) $(HOST_GCC_FINAL_CONF_OPTS) \
  	)
  endef

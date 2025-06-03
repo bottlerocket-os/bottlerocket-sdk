@@ -20,7 +20,14 @@ TARGET="${TARGET:?}"
 # Some of the AWS-LC sources are built with `-O0`. This is not compatible with
 # `-Wp,-D_FORTIFY_SOURCE=2`, which needs at least `-O2`. Add `-DGOBORING` to
 # avoid weak symbols.
-CFLAGS="${CFLAGS} -Wp,-U_FORTIFY_SOURCE -DGOBORING -fno-omit-frame-pointer"
+CFLAGS="${CFLAGS} -Wp,-U_FORTIFY_SOURCE -DGOBORING -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"
+
+case "${ARCH}" in
+  x86_64) ARCH_CFLAGS="-march=x86-64-v2 -mtune=generic -fcf-protection=full" ;;
+  aarch64) ARCH_CFLAGS="-march=armv8-a+crypto+crc" ;;
+esac
+
+CFLAGS="${CFLAGS} ${ARCH_CFLAGS}"
 
 cd "${HOME}/aws-lc/build"
 cmake \
