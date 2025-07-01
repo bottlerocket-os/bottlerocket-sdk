@@ -1,0 +1,39 @@
+[clarify."github.com/anchore/syft"]
+expression = "Apache-2.0"
+license-files = [
+    { path = "LICENSE", hash = 0xa6d4ed6 },
+]
+skip-files = [
+    # syft contains files for reading licenses for sbom generation, skip these
+    "internal/spdxlicense/license.go",
+    "syft/cataloging/license.go",
+    "syft/file/license.go",
+    "syft/format/internal/spdxutil/helpers/license.go",
+    "syft/license/license.go",
+    "syft/pkg/cataloger/gentoo/license.go",
+    "syft/pkg/license.go",
+]
+
+[clarify."github.com/cloudflare/circl"]
+expression = "BSD-3-Clause"
+license-files = [
+    { path = "LICENSE", hash = 0xc5e27124 },
+]
+
+[clarify."github.com/github/go-spdx/v2"]
+expression = "MIT"
+license-files = [
+    { path = "LICENSE", hash = 0x36787a40 },
+]
+skip-files = [
+    "spdxexp/license.go"
+]
+
+[clarify."github.com/google/licensecheck"]
+expression = "BSD-3-Clause"
+license-files = [
+    { path = "LICENSE", hash = 0xbd4450f9 },
+]
+skip-files = [
+    "license.go"
+]
