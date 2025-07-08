@@ -496,7 +496,7 @@ USER root
 RUN dnf -y install golang
 
 ENV GO123VER="1.23.11"
-ENV GO124VER="1.24.4"
+ENV GO124VER="1.24.5"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
