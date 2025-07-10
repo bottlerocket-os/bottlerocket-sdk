@@ -285,7 +285,7 @@ RUN \
 
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
-ENV RUSTVER="1.87.0"
+ENV RUSTVER="1.88.0"
 
 USER builder
 WORKDIR /home/builder
@@ -495,8 +495,8 @@ ENV AWS_LC_FIPS_VER="3.0.0"
 USER root
 RUN dnf -y install golang
 
-ENV GO123VER="1.23.10"
-ENV GO124VER="1.24.4"
+ENV GO123VER="1.23.11"
+ENV GO124VER="1.24.5"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
