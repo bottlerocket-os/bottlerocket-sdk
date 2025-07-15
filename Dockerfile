@@ -823,6 +823,35 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
+FROM sdk-go-1.24 AS sdk-sbomtool
+
+USER root
+RUN \
+  mkdir -p /usr/libexec/tools /usr/share/licenses/sbomtool && \
+  chown -R builder:builder /usr/libexec/tools /usr/share/licenses/sbomtool
+
+USER builder
+WORKDIR /home/builder/sbomtool
+
+COPY ./sbomtool /home/builder/sbomtool
+
+COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
+RUN \
+  cp -p LICENSE-* /usr/share/licenses/sbomtool/ && \
+  # Use go work vendor instead of go mod vendor
+  /home/builder/sdk-go/bin/go work vendor && \
+  /usr/libexec/tools/bottlerocket-license-scan \
+    --clarify clarify.toml \
+    --spdx-data /usr/libexec/tools/spdx-data \
+    --out-dir /usr/share/licenses/sbomtool/vendor \
+    go-vendor ./vendor
+
+# Build the sbomtool using the correct Go binary path with workspace mode
+RUN \
+  /home/builder/sdk-go/bin/go build -o sbomtool ./cmd/sbomtool
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
 FROM sdk AS sdk-cpp
 
 ENV AWS_SDK_CPP_VER="1.11.398"
@@ -1133,6 +1162,10 @@ RUN \
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/bottlerocket-license-scan/ /usr/share/licenses/bottlerocket-license-scan/
 COPY --chown=0:0 --from=sdk-rust-tools /usr/share/licenses/cargo-deny/ /usr/share/licenses/cargo-deny/
+
+# "sdk-sbomtool" has our SBOM generation tool
+COPY --chown=0:0 --from=sdk-sbomtool /home/builder/sbomtool/sbomtool /usr/libexec/tools/
+COPY --chown=0:0 --from=sdk-sbomtool /usr/share/licenses/sbomtool/ /usr/share/licenses/sbomtool/
 
 # "sdk-govc" has the VMware govc tool and licenses.
 COPY --chown=0:0 --from=sdk-govc /usr/libexec/tools/govc /usr/libexec/tools/

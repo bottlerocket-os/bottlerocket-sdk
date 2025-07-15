@@ -1,0 +1,37 @@
+# Build artifacts
+**/target/
+**/build/
+**/dist/
+**/out/
+
+# Go vendor directory
+**/vendor/
+
+# Go module cache
+**/go/pkg/mod/
+
+# Compiled binaries
+**/sbomtool
+**/cmd/sbomtool/sbomtool
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+**/*.temp
+**/*.log
+
+# Local environment files
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Cache directories
+**/.cache/
+**/cache/
+
+# SBOM output files (generated artifacts)
+**/*spdx.json
+**/*cyclonedx.json
+**/sbom/
+**/output/
