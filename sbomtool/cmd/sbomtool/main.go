@@ -97,7 +97,7 @@ and includes CPE-based package deduplication for both merge and filter operation
 	return rootCmd
 }
 
-// createGenerateCommand creates and configures the generate subcommand.
+// createGenerateCommand creates the generate subcommand for SBOM file creation.
 func createGenerateCommand() *cobra.Command {
 	generateCmd := &cobra.Command{
 		Use:   "generate",
@@ -445,33 +445,124 @@ func createMergeCommand() *cobra.Command {
 	mergeCmd := &cobra.Command{
 		Use:   "merge [flags] file1 file2 [file3...]",
 		Short: "Merge multiple SBOM files",
-		Long: `Merge multiple SBOM files into a single SBOM.
+		Long: `Merge multiple SBOM files into a single SBOM with DEDUPLICATION.
 
-This feature is not yet implemented and will return an error.
-Future versions will support merging SBOM files with configurable merge levels.`,
-		Args: cobra.MinimumNArgs(2),
-		RunE: runMerge,
+Combines multiple SBOM files while deduplicating packages based on CPE or name+version+type.
+All input files must be the same format (SPDX or CycloneDX).`,
+
+		Example: `  # Merge multiple SPDX SBOMs
+  sbomtool merge --output merged.json app1-spdx.json app2-spdx.json lib1-spdx.json
+
+  # Merge with debug logging
+  sbomtool --log-level debug merge --output final.json app1.json app2.json app3.json`,
+
+		Args:    cobra.MinimumNArgs(2),
+		PreRunE: validateMergeFlags,
+		RunE:    runMerge,
 	}
 
-	mergeCmd.Flags().Int("level", 0, "Merge level")
+	mergeCmd.Flags().String("output", "", "Output file path for merged SBOM (required)")
+	mergeCmd.Flags().Int("level", 0, "Merge level (reserved for future use)")
+	if err := mergeCmd.MarkFlagRequired("output"); err != nil {
+		slog.Error("Failed to mark output flag as required", "error", err)
+		os.Exit(1)
+	}
 
 	return mergeCmd
 }
 
+// validateMergeFlags performs validation of merge command flags and arguments.
+func validateMergeFlags(cmd *cobra.Command, args []string) error {
+	outputPath, _ := cmd.Flags().GetString("output")
+
+	if err := validate.ValidateOutputPath(outputPath); err != nil {
+		return &fileSystemError{
+			Operation:  "output path validation",
+			Path:       outputPath,
+			Cause:      err,
+			Suggestion: "Ensure the output directory exists and is writable.",
+		}
+	}
+
+	var detectedFormat string
+	for i, inputFile := range args {
+		if err := validate.ValidateFilePath(inputFile, "input SBOM", true); err != nil {
+			return &fileSystemError{
+				Operation:  "input SBOM validation",
+				Path:       inputFile,
+				Cause:      err,
+				Suggestion: "Ensure all input SBOM files exist and are readable.",
+			}
+		}
+
+		if err := validate.ValidateSBOMFormat(inputFile); err != nil {
+			return &validationError{
+				Field:      "SBOM format",
+				Value:      inputFile,
+				Message:    err.Error(),
+				Suggestion: "Ensure all input files are valid SPDX 2.3 or CycloneDX 1.6 JSON files.",
+			}
+		}
+
+		format, err := validate.DetectSBOMFormat(inputFile)
+		if err != nil {
+			return &fileSystemError{
+				Operation:  "SBOM format detection",
+				Path:       inputFile,
+				Cause:      err,
+				Suggestion: "Ensure the SBOM file contains valid JSON.",
+			}
+		}
+
+		if i == 0 {
+			detectedFormat = format
+		} else if format != detectedFormat {
+			return &validationError{
+				Field:      "SBOM format consistency",
+				Value:      format,
+				Message:    fmt.Sprintf("all input files must be the same format, expected %s but got %s", detectedFormat, format),
+				Suggestion: "Ensure all input SBOM files use the same format (all SPDX or all CycloneDX).",
+			}
+		}
+	}
+
+	return nil
+}
+
 // runMerge executes the SBOM merge process.
-//
-// Currently returns ErrNotImplemented as the merge functionality is planned for future implementation.
 func runMerge(cmd *cobra.Command, args []string) error {
+	outputPath, _ := cmd.Flags().GetString("output")
 	level, _ := cmd.Flags().GetInt("level")
 
-	slog.Debug("Starting sbomtool merge",
-		"level", level,
-		"file_count", len(args))
-
-	_, err := merge.Merge(level, args)
-	if err != nil {
-		return fmt.Errorf("SBOM merge failed: %w", err)
+	config := merge.MergeConfig{
+		Level: level,
 	}
+
+	slog.Info("Starting SBOM merge process",
+		"input_files", len(args),
+		"output_path", outputPath)
+
+	result, err := merge.Merge(config, args)
+	if err != nil {
+		return fmt.Errorf("sbom merge failed: %w", err)
+	}
+
+	// Save the merged SBOM
+	if err := processor.SaveSBOM(result.MergedSBOM, outputPath, result.OutputFormat); err != nil {
+		return &fileSystemError{
+			Operation:  "SBOM saving",
+			Path:       outputPath,
+			Cause:      err,
+			Suggestion: "Ensure you have write permissions to the output location.",
+		}
+	}
+
+	slog.Info("SBOM merge completed successfully",
+		"input_sboms", result.Statistics.InputSBOMs,
+		"input_packages", result.Statistics.TotalInputPackages,
+		"output_packages", result.Statistics.OutputPackages,
+		"deduplicated", result.Statistics.DeduplicatedPackages,
+		"processing_time", result.Statistics.ProcessingTime)
 
 	return nil
 }

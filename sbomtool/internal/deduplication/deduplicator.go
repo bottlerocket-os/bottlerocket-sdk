@@ -39,19 +39,27 @@ type DeduplicationStats struct {
 func DeduplicatePackages(packages []pkg.Package) *DeduplicationResult {
 	startTime := time.Now()
 
+	// Filter out document root packages and other metadata packages
+	var realPackages []pkg.Package
+	for _, p := range packages {
+		if p.Name != "" && !strings.Contains(string(p.ID()), "DocumentRoot") {
+			realPackages = append(realPackages, p)
+		}
+	}
+
 	result := &DeduplicationResult{
 		CanonicalPackages: make(map[string]*pkg.Package),
 		IDMapping:         make(map[string]string),
 		CPEMapping:        make(map[string]string),
 		Statistics: DeduplicationStats{
-			InputPackages: len(packages),
+			InputPackages: len(realPackages), // Use filtered count
 		},
 	}
 
 	keyToPackages := make(map[string][]*pkg.Package)
 
-	for i := range packages {
-		p := &packages[i]
+	for i := range realPackages {
+		p := &realPackages[i]
 		key := generateCanonicalKey(*p)
 		keyToPackages[key] = append(keyToPackages[key], p)
 	}
