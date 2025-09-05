@@ -16,7 +16,11 @@ import (
 func TestCloseFile(t *testing.T) {
 	tempFile, err := os.CreateTemp("", "close-test")
 	require.NoError(t, err)
-	defer os.Remove(tempFile.Name())
+	defer func() {
+		if err := os.Remove(tempFile.Name()); err != nil {
+			t.Logf("Failed to remove temp file: %v", err)
+		}
+	}()
 
 	closeFile(tempFile, "test")
 
@@ -32,7 +36,11 @@ func TestCloseFile(t *testing.T) {
 func TestGenerateNoFormats(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "sbom-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Failed to remove temp dir: %v", err)
+		}
+	}()
 
 	result, err := Generate("test", false, false, "/test/build", tempDir)
 

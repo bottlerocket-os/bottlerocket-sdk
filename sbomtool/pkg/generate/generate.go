@@ -88,7 +88,7 @@ func Generate(name string, spdx bool, cyclonedx bool, buildDir string, outDir st
 
 	slog.Debug("Creating output directory", "path", outDir)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return false, fmt.Errorf("Failed to create output directory: %w", err)
+		return false, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Syft generates the SBOM once with all the data it will need, and is then
@@ -99,14 +99,14 @@ func Generate(name string, spdx bool, cyclonedx bool, buildDir string, outDir st
 	gsc := syft.DefaultGetSourceConfig()
 	src, err := syft.GetSource(context.Background(), buildDir, gsc)
 	if err != nil {
-		return false, fmt.Errorf("Failed to get source: %w", err)
+		return false, fmt.Errorf("failed to get source: %w", err)
 	}
 
 	slog.Debug("Creating SBOM data structure")
 	sc := syft.DefaultCreateSBOMConfig()
 	sbomData, err := sc.Create(context.Background(), src)
 	if err != nil {
-		return false, fmt.Errorf("Failed to create SBOM: %w", err)
+		return false, fmt.Errorf("failed to create SBOM: %w", err)
 	}
 
 	if spdx {

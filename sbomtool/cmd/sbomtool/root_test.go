@@ -122,7 +122,9 @@ func TestLoggingConfiguration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Given: A root command with log level set
 			cmd := createRootCommand()
-			cmd.PersistentFlags().Set("log-level", tt.logLevel)
+			if err := cmd.PersistentFlags().Set("log-level", tt.logLevel); err != nil {
+				t.Fatalf("Failed to set log level: %v", err)
+			}
 
 			// When: Executing PersistentPreRunE
 			err := cmd.PersistentPreRunE(cmd, []string{})
@@ -189,7 +191,9 @@ func TestInvalidLogLevel(t *testing.T) {
 	t.Run("graceful handling of invalid log levels", func(t *testing.T) {
 		// Given: A root command with invalid log level
 		cmd := createRootCommand()
-		cmd.PersistentFlags().Set("log-level", "invalid-level")
+		if err := cmd.PersistentFlags().Set("log-level", "invalid-level"); err != nil {
+			t.Fatalf("Failed to set log level: %v", err)
+		}
 
 		// When: Executing PersistentPreRunE
 		err := cmd.PersistentPreRunE(cmd, []string{})

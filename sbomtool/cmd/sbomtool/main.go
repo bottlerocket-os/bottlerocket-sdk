@@ -62,9 +62,18 @@ At least one output format (--spdx or --cyclonedx) must be specified.`,
 	generateCmd.Flags().Bool("spdx", false, "Generate an SPDX SBOM")
 	generateCmd.Flags().Bool("cyclonedx", false, "Generate a CycloneDX SBOM")
 
-	generateCmd.MarkFlagRequired("name")
-	generateCmd.MarkFlagRequired("build-dir")
-	generateCmd.MarkFlagRequired("out-dir")
+	if err := generateCmd.MarkFlagRequired("name"); err != nil {
+		slog.Error("Failed to mark flag as required", "error", err)
+		os.Exit(1)
+	}
+	if err := generateCmd.MarkFlagRequired("build-dir"); err != nil {
+		slog.Error("Failed to mark flag as required", "error", err)
+		os.Exit(1)
+	}
+	if err := generateCmd.MarkFlagRequired("out-dir"); err != nil {
+		slog.Error("Failed to mark flag as required", "error", err)
+		os.Exit(1)
+	}
 	generateCmd.MarkFlagsOneRequired("spdx", "cyclonedx")
 
 	return generateCmd
@@ -111,7 +120,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("SBOM generation failed: %w", err)
 	}
 	if !success {
-		return fmt.Errorf("No SBOM formats were generated")
+		return fmt.Errorf("no SBOM formats were generated")
 	}
 
 	return nil
