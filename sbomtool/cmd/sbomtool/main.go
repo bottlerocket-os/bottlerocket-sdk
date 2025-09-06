@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/pkg/generate"
-	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/pkg/logging"
-	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/pkg/merge"
-	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/pkg/validate"
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/commands/generate"
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/commands/merge"
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/logging"
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/validate"
 	"github.com/spf13/cobra"
 )
 
