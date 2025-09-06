@@ -3,10 +3,13 @@ package validate
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"github.com/anchore/syft/syft/format"
 )
 
 // ValidatePackageName validates that a package name is reasonable for SBOM generation.
@@ -72,6 +75,114 @@ func ValidateDirectory(path string, purpose string, requireExists bool) error {
 
 	if !info.IsDir() {
 		return fmt.Errorf("%s path is not a directory: %s", purpose, absPath)
+	}
+
+	return nil
+}
+
+// ValidateFilePath validates that a file path exists and is readable.
+func ValidateFilePath(path string, purpose string, mustExist bool) error {
+	if path == "" {
+		return fmt.Errorf("%s path cannot be empty", purpose)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if mustExist {
+				return fmt.Errorf("%s file does not exist: %s", purpose, path)
+			}
+			return nil
+		}
+		return fmt.Errorf("cannot access %s file: %w", purpose, err)
+	}
+
+	if info.IsDir() {
+		return fmt.Errorf("%s path is a directory, not a file: %s", purpose, path)
+	}
+
+	return nil
+}
+
+// ValidateOutputPath validates that an output file path is writable.
+func ValidateOutputPath(path string) error {
+	if path == "" {
+		return fmt.Errorf("output path cannot be empty")
+	}
+
+	dir := filepath.Dir(path)
+	if err := ValidateDirectory(dir, "output directory", false); err != nil {
+		return err
+	}
+
+	if info, err := os.Stat(path); err == nil {
+		if info.IsDir() {
+			return fmt.Errorf("output path is a directory, not a file: %s", path)
+		}
+		file, err := os.OpenFile(path, os.O_WRONLY, 0)
+		if err != nil {
+			return fmt.Errorf("cannot write to output file: %w", err)
+		}
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Debug("failed to close validation file", "error", closeErr, "path", path)
+		}
+	}
+
+	return nil
+}
+
+// ValidateSBOMFormat validates that the input file is a valid SBOM format.
+func ValidateSBOMFormat(path string) error {
+	format, err := DetectSBOMFormat(path)
+	if err != nil {
+		return err
+	}
+
+	if format == "" {
+		return fmt.Errorf("unrecognized SBOM format")
+	}
+
+	return nil
+}
+
+// DetectSBOMFormat detects the format of an SBOM file using Syft's format detection.
+func DetectSBOMFormat(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("cannot open SBOM file: %w", err)
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Debug("failed to close SBOM file", "error", closeErr, "path", path)
+		}
+	}()
+
+	// Use Syft's format detection
+	formatID, _ := format.Identify(file)
+	if formatID == "" {
+		return "", nil
+	}
+
+	return formatID.String(), nil
+}
+
+// ValidateOutputDirectoryPermissions checks if the output directory is writable.
+func ValidateOutputDirectoryPermissions(outDir string) error {
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return fmt.Errorf("cannot create output directory: %w", err)
+	}
+
+	testFile := filepath.Join(outDir, ".sbomtool-write-test")
+	file, err := os.Create(testFile)
+	if err != nil {
+		return fmt.Errorf("cannot write to output directory: %w", err)
+	}
+
+	if closeErr := file.Close(); closeErr != nil {
+		slog.Debug("failed to close test file", "error", closeErr, "path", testFile)
+	}
+	if removeErr := os.Remove(testFile); removeErr != nil {
+		slog.Debug("failed to remove test file", "error", removeErr, "path", testFile)
 	}
 
 	return nil

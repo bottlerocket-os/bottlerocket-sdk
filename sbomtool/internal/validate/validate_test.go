@@ -146,3 +146,246 @@ func TestValidateDirectory(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateFilePath verifies file path validation and existence checks.
+//
+// Given: Various file paths including valid files, directories, and non-existent paths
+// When: ValidateFilePath is called with different existence requirements
+// Then: Should validate files correctly based on existence requirements
+func TestValidateFilePath(t *testing.T) {
+	tempDir := t.TempDir()
+
+	testFile := filepath.Join(tempDir, "test.json")
+	if err := os.WriteFile(testFile, []byte(`{"test": true}`), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	nonexistentFile := filepath.Join(tempDir, "missing.json")
+
+	tests := []struct {
+		name        string
+		path        string
+		purpose     string
+		mustExist   bool
+		wantErr     bool
+		errContains string
+	}{
+		{"existing file with mustExist=true", testFile, "input", true, false, ""},
+		{"existing file with mustExist=false", testFile, "input", false, false, ""},
+		{"nonexistent file with mustExist=false", nonexistentFile, "output", false, false, ""},
+		{"nonexistent file with mustExist=true", nonexistentFile, "input", true, true, "does not exist"},
+		{"empty path", "", "input", true, true, "cannot be empty"},
+		{"directory instead of file", tempDir, "input", true, true, "is a directory"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateFilePath(tt.path, tt.purpose, tt.mustExist)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ValidateFilePath() expected error but got none")
+					return
+				}
+				if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("ValidateFilePath() error = %v, want error containing %v", err, tt.errContains)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ValidateFilePath() unexpected error = %v", err)
+				}
+			}
+		})
+	}
+}
+
+// TestValidateOutputPath verifies output path validation and writability checks.
+//
+// Given: Various output paths including valid paths and invalid scenarios
+// When: ValidateOutputPath is called
+// Then: Should validate output paths and check directory writability
+func TestValidateOutputPath(t *testing.T) {
+	tempDir := t.TempDir()
+
+	validOutputPath := filepath.Join(tempDir, "output.json")
+	existingFile := filepath.Join(tempDir, "existing.json")
+	if err := os.WriteFile(existingFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("Failed to create existing file: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		path        string
+		wantErr     bool
+		errContains string
+	}{
+		{"valid new output path", validOutputPath, false, ""},
+		{"valid existing file path", existingFile, false, ""},
+		{"empty path", "", true, "cannot be empty"},
+		{"directory as output path", tempDir, true, "is a directory"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateOutputPath(tt.path)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ValidateOutputPath() expected error but got none")
+					return
+				}
+				if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("ValidateOutputPath() error = %v, want error containing %v", err, tt.errContains)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ValidateOutputPath() unexpected error = %v", err)
+				}
+			}
+		})
+	}
+}
+
+// TestDetectSBOMFormat verifies SBOM format detection from file content.
+//
+// Given: Files with different SBOM formats and invalid content
+// When: DetectSBOMFormat is called
+// Then: Should correctly identify SPDX, CycloneDX, or return empty for unknown formats
+func TestDetectSBOMFormat(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create test files with different formats
+	spdxFile := filepath.Join(tempDir, "spdx.json")
+	spdxContent := `{"spdxVersion": "SPDX-2.3", "SPDXID": "SPDXRef-DOCUMENT"}`
+	if err := os.WriteFile(spdxFile, []byte(spdxContent), 0644); err != nil {
+		t.Fatalf("Failed to create SPDX test file: %v", err)
+	}
+
+	cyclonedxFile := filepath.Join(tempDir, "cyclonedx.json")
+	cyclonedxContent := `{"bomFormat": "CycloneDX", "specVersion": "1.6"}`
+	if err := os.WriteFile(cyclonedxFile, []byte(cyclonedxContent), 0644); err != nil {
+		t.Fatalf("Failed to create CycloneDX test file: %v", err)
+	}
+
+	unknownFile := filepath.Join(tempDir, "unknown.json")
+	unknownContent := `{"format": "unknown", "version": "1.0"}`
+	if err := os.WriteFile(unknownFile, []byte(unknownContent), 0644); err != nil {
+		t.Fatalf("Failed to create unknown format test file: %v", err)
+	}
+
+	nonexistentFile := filepath.Join(tempDir, "missing.json")
+
+	tests := []struct {
+		name     string
+		path     string
+		expected string
+		wantErr  bool
+	}{
+		{"SPDX format", spdxFile, "spdx-json", false},
+		{"CycloneDX format", cyclonedxFile, "cyclonedx-json", false},
+		{"unknown format", unknownFile, "", false},
+		{"nonexistent file", nonexistentFile, "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := DetectSBOMFormat(tt.path)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("DetectSBOMFormat() expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("DetectSBOMFormat() unexpected error = %v", err)
+				return
+			}
+			if result != tt.expected {
+				t.Errorf("DetectSBOMFormat() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestValidateSBOMFormat verifies SBOM format validation.
+//
+// Given: Files with valid and invalid SBOM formats
+// When: ValidateSBOMFormat is called
+// Then: Should pass for valid SBOM formats and fail for invalid ones
+func TestValidateSBOMFormat(t *testing.T) {
+	tempDir := t.TempDir()
+
+	spdxFile := filepath.Join(tempDir, "valid-spdx.json")
+	spdxContent := `{"spdxVersion": "SPDX-2.3"}`
+	if err := os.WriteFile(spdxFile, []byte(spdxContent), 0644); err != nil {
+		t.Fatalf("Failed to create SPDX test file: %v", err)
+	}
+
+	invalidFile := filepath.Join(tempDir, "invalid.json")
+	invalidContent := `{"not": "an sbom"}`
+	if err := os.WriteFile(invalidFile, []byte(invalidContent), 0644); err != nil {
+		t.Fatalf("Failed to create invalid test file: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		path    string
+		wantErr bool
+	}{
+		{"valid SPDX format", spdxFile, false},
+		{"invalid format", invalidFile, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSBOMFormat(tt.path)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ValidateSBOMFormat() expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ValidateSBOMFormat() unexpected error = %v", err)
+				}
+			}
+		})
+	}
+}
+
+// TestValidateOutputDirectoryPermissions verifies output directory permission checks.
+//
+// Given: Various directory scenarios including writable and non-writable directories
+// When: ValidateOutputDirectoryPermissions is called
+// Then: Should create directories if needed and verify write permissions
+func TestValidateOutputDirectoryPermissions(t *testing.T) {
+	tempDir := t.TempDir()
+
+	existingDir := filepath.Join(tempDir, "existing")
+	if err := os.MkdirAll(existingDir, 0755); err != nil {
+		t.Fatalf("Failed to create existing directory: %v", err)
+	}
+
+	newDir := filepath.Join(tempDir, "new")
+
+	tests := []struct {
+		name    string
+		path    string
+		wantErr bool
+	}{
+		{"existing writable directory", existingDir, false},
+		{"new directory to create", newDir, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateOutputDirectoryPermissions(tt.path)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ValidateOutputDirectoryPermissions() expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ValidateOutputDirectoryPermissions() unexpected error = %v", err)
+				}
+			}
+		})
+	}
+}
