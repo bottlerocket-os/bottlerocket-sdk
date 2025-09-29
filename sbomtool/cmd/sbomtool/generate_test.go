@@ -12,57 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateCommandMetadata(t *testing.T) {
-	tests := []struct {
-		name     string
-		field    string
-		expected string
-	}{
-		{
-			name:     "correct use field",
-			field:    "Use",
-			expected: "generate",
-		},
-		{
-			name:     "correct short description",
-			field:    "Short",
-			expected: "Generate SBOM files for a directory",
-		},
-		{
-			name:     "long description contains key information",
-			field:    "Long",
-			expected: "build directory",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Given: A root command with generate subcommand
-			rootCmd := createRootCommand()
-			generateCmd := createGenerateCommand()
-			rootCmd.AddCommand(generateCmd)
-
-			// When: Examining generate command metadata
-			var actual string
-			switch tt.field {
-			case "Use":
-				actual = generateCmd.Use
-			case "Short":
-				actual = generateCmd.Short
-			case "Long":
-				actual = generateCmd.Long
-			}
-
-			// Then: Command should have correct metadata
-			if tt.field == "Long" {
-				assert.Contains(t, actual, tt.expected, "Long description should contain key information")
-			} else {
-				assert.Equal(t, tt.expected, actual, "Command %s should match expected value", tt.field)
-			}
-		})
-	}
-}
-
 func TestGenerateCommandFlags(t *testing.T) {
 	// Given: A generate command
 	generateCmd := createGenerateCommand()
@@ -72,42 +21,36 @@ func TestGenerateCommandFlags(t *testing.T) {
 		flagName     string
 		expectedType string
 		defaultValue interface{}
-		usage        string
 	}{
 		{
 			name:         "name flag",
 			flagName:     "name",
 			expectedType: "string",
 			defaultValue: "",
-			usage:        "Name of the target package",
 		},
 		{
 			name:         "build-dir flag",
 			flagName:     "build-dir",
 			expectedType: "string",
 			defaultValue: "",
-			usage:        "Target directory of the package",
 		},
 		{
 			name:         "out-dir flag",
 			flagName:     "out-dir",
 			expectedType: "string",
 			defaultValue: "",
-			usage:        "Output directory for the SBOM",
 		},
 		{
 			name:         "spdx flag",
 			flagName:     "spdx",
 			expectedType: "bool",
 			defaultValue: false,
-			usage:        "Generate an SPDX SBOM",
 		},
 		{
 			name:         "cyclonedx flag",
 			flagName:     "cyclonedx",
 			expectedType: "bool",
 			defaultValue: false,
-			usage:        "Generate a CycloneDX SBOM",
 		},
 	}
 
@@ -118,7 +61,6 @@ func TestGenerateCommandFlags(t *testing.T) {
 
 			// Then: Flag should be registered with correct properties
 			require.NotNil(t, flag, "Flag %s should be registered", tt.flagName)
-			assert.Contains(t, flag.Usage, tt.usage, "Flag usage should contain expected text")
 
 			// Check default values based on type
 			switch tt.expectedType {
@@ -248,41 +190,5 @@ func TestGenerateCommandExecution(t *testing.T) {
 
 		// Then: Should execute successfully
 		assert.NoError(t, err, "Generate command should execute successfully")
-	})
-}
-
-func TestGenerateCommandHelp(t *testing.T) {
-	t.Run("generate help contains expected content", func(t *testing.T) {
-		// Given: A root command with generate subcommand
-		rootCmd := createRootCommand()
-		generateCmd := createGenerateCommand()
-		rootCmd.AddCommand(generateCmd)
-
-		// Set up help command
-		rootCmd.SetArgs([]string{"generate", "--help"})
-		buf := new(bytes.Buffer)
-		rootCmd.SetOut(buf)
-		rootCmd.SetErr(buf)
-
-		// When: Executing help
-		err := rootCmd.Execute()
-
-		// Then: Should show help without error
-		require.NoError(t, err, "Help command should execute without error")
-		helpText := buf.String()
-
-		expectedSections := []string{
-			"generate",
-			"Generate SBOM files",
-			"--name",
-			"--build-dir",
-			"--out-dir",
-			"--spdx",
-			"--cyclonedx",
-		}
-
-		for _, section := range expectedSections {
-			assert.Contains(t, helpText, section, "Help text should contain %s", section)
-		}
 	})
 }

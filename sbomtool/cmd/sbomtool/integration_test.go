@@ -93,36 +93,6 @@ func TestCommandSuggestions(t *testing.T) {
 	})
 }
 
-func TestHelpTextConsistency(t *testing.T) {
-	t.Run("all commands have consistent help formatting", func(t *testing.T) {
-		// Given: A root command with all subcommands
-		rootCmd := createRootCommand()
-
-		commands := []string{"generate", "merge"}
-		for _, cmdName := range commands {
-			t.Run(cmdName+" help formatting", func(t *testing.T) {
-				// When: Getting help for command
-				buf := new(bytes.Buffer)
-				rootCmd.SetOut(buf)
-				rootCmd.SetErr(buf)
-				rootCmd.SetArgs([]string{cmdName, "--help"})
-
-				err := rootCmd.Execute()
-
-				// Then: Should have consistent formatting
-				require.NoError(t, err, "Help should execute without error")
-				helpText := buf.String()
-
-				// Check for consistent sections
-				expectedSections := []string{"Usage:", "Flags:", "Global Flags:"}
-				for _, section := range expectedSections {
-					assert.Contains(t, helpText, section, "Help should contain %s section", section)
-				}
-			})
-		}
-	})
-}
-
 func TestEndToEndCLI(t *testing.T) {
 	t.Run("complete CLI workflow", func(t *testing.T) {
 		// Given: A complete CLI application

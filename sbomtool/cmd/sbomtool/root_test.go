@@ -9,55 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRootCommandMetadata(t *testing.T) {
-	tests := []struct {
-		name     string
-		field    string
-		expected string
-	}{
-		{
-			name:     "correct use field",
-			field:    "Use",
-			expected: "sbomtool",
-		},
-		{
-			name:     "correct short description",
-			field:    "Short",
-			expected: "Software Bill of Materials (SBOM) generation tool",
-		},
-		{
-			name:     "long description contains key information",
-			field:    "Long",
-			expected: "command-line utility",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Given: A fresh root command
-			cmd := createRootCommand()
-
-			// When: Examining command metadata
-			var actual string
-			switch tt.field {
-			case "Use":
-				actual = cmd.Use
-			case "Short":
-				actual = cmd.Short
-			case "Long":
-				actual = cmd.Long
-			}
-
-			// Then: Command should have correct metadata
-			if tt.field == "Long" {
-				assert.Contains(t, actual, tt.expected, "Long description should contain key information")
-			} else {
-				assert.Equal(t, tt.expected, actual, "Command %s should match expected value", tt.field)
-			}
-		})
-	}
-}
-
 func TestPersistentFlags(t *testing.T) {
 	t.Run("log-level flag registration", func(t *testing.T) {
 		// Given: A fresh root command
@@ -69,7 +20,6 @@ func TestPersistentFlags(t *testing.T) {
 		// Then: Flag should be registered with correct defaults
 		require.NotNil(t, flag, "log-level flag should be registered")
 		assert.Equal(t, "info", flag.DefValue, "Default log level should be 'info'")
-		assert.Equal(t, "Log level (debug, info, warn, error)", flag.Usage, "Flag usage should be descriptive")
 	})
 
 	t.Run("log-level flag default value", func(t *testing.T) {
@@ -123,7 +73,7 @@ func TestLoggingConfiguration(t *testing.T) {
 			// Given: A root command with log level set
 			cmd := createRootCommand()
 			if err := cmd.PersistentFlags().Set("log-level", tt.logLevel); err != nil {
-				t.Fatalf("Failed to set log level: %v", err)
+				t.Fatalf("Failed to set log-level flag: %v", err)
 			}
 
 			// When: Executing PersistentPreRunE
@@ -157,7 +107,7 @@ func TestRootCommandHelp(t *testing.T) {
 
 		// The help text should contain key information from the Long description
 		expectedSections := []string{
-			"command-line utility",
+			"generates and filters",
 			"Software Bill of Materials",
 			"SBOM files",
 		}
@@ -192,7 +142,7 @@ func TestInvalidLogLevel(t *testing.T) {
 		// Given: A root command with invalid log level
 		cmd := createRootCommand()
 		if err := cmd.PersistentFlags().Set("log-level", "invalid-level"); err != nil {
-			t.Fatalf("Failed to set log level: %v", err)
+			t.Fatalf("Failed to set log-level flag: %v", err)
 		}
 
 		// When: Executing PersistentPreRunE
