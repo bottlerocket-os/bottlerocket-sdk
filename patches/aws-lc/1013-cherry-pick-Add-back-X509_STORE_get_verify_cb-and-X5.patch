@@ -1,0 +1,200 @@
+From c9723d6b75f415c8ba46f95876b8fa14ca787857 Mon Sep 17 00:00:00 2001
+From: Sean McGrail <549813+skmcgrail@users.noreply.github.com>
+Date: Thu, 31 Jul 2025 15:13:47 -0700
+Subject: [PATCH] [cherry-pick] Add back X509_STORE_get_verify_cb and
+ X509_STORE_set_lookup_crls_cb (#2587)
+
+Cherry-picks https://github.com/aws/aws-lc/pull/2581
+
+This change is outside of the FIPS module and does not affect its hash.
+
+---
+
+### Issues:
+Addresses V1681685441
+
+### Description of changes:
+The following symbols were removed as part of two upstream merges in
+2024, which broke the ability to build the Azure SDK for C++ on both
+main and in the FIPS 3.x release. This was previously supported in the
+FIPS 2.x line, and was a bit unexpected. This partially reverts these
+commits to include back the necessary symbols.
+
+X509_STORE_get_verify_cb:
+
+https://github.com/aws/aws-lc/commit/884ad006425903bea38cf249352dd74f9f0597f7
+X509_STORE_set_lookup_crls_cb:
+
+https://github.com/aws/aws-lc/commit/d0c25d154621528a50fcf2e01095460d6459da8c
+
+https://github.com/aws/aws-lc/pull/1527 and
+https://github.com/aws/aws-lc/pull/1621
+
+By submitting this pull request, I confirm that my contribution is made
+under the terms of the Apache 2.0 license and the ISC license.
+---
+ crypto/x509/internal.h   |  2 ++
+ crypto/x509/x509_lu.c    | 13 +++++++++++++
+ crypto/x509/x509_test.cc | 39 +++++++++++++++++++++++++++++++++++++++
+ crypto/x509/x509_vfy.c   |  8 +++++++-
+ include/openssl/x509.h   | 13 +++++++++++++
+ 5 files changed, 74 insertions(+), 1 deletion(-)
+
+diff --git a/crypto/x509/internal.h b/crypto/x509/internal.h
+index 2bb1fd45f..c72d97d1e 100644
+--- a/crypto/x509/internal.h
++++ b/crypto/x509/internal.h
+@@ -308,6 +308,7 @@ struct x509_store_st {
+ 
+   // Callbacks for various operations
+   X509_STORE_CTX_verify_cb verify_cb;       // error callback
++  X509_STORE_CTX_lookup_crls_fn lookup_crls;
+   X509_STORE_CTX_get_crl_fn get_crl;        // retrieve CRL
+   X509_STORE_CTX_check_crl_fn check_crl;    // Check CRL validity
+ 
+@@ -342,6 +343,7 @@ struct x509_store_ctx_st {
+ 
+   // Callbacks for various operations
+   X509_STORE_CTX_verify_cb verify_cb;       // error callback
++  X509_STORE_CTX_lookup_crls_fn lookup_crls;
+   X509_STORE_CTX_get_crl_fn get_crl;        // retrieve CRL
+   X509_STORE_CTX_check_crl_fn check_crl;    // Check CRL validity
+   X509_STORE_CTX_verify_crit_oids_cb
+diff --git a/crypto/x509/x509_lu.c b/crypto/x509/x509_lu.c
+index 6daed4501..976d68845 100644
+--- a/crypto/x509/x509_lu.c
++++ b/crypto/x509/x509_lu.c
+@@ -642,6 +642,19 @@ void X509_STORE_set_verify_cb(X509_STORE *ctx,
+   ctx->verify_cb = verify_cb;
+ }
+ 
++X509_STORE_CTX_verify_cb X509_STORE_get_verify_cb(X509_STORE *ctx) {
++  return ctx->verify_cb;
++}
++
++X509_STORE_CTX_lookup_crls_fn X509_STORE_get_lookup_crls(X509_STORE *ctx) {
++  return ctx->lookup_crls;
++}
++
++void X509_STORE_set_lookup_crls(X509_STORE *ctx,
++                                X509_STORE_CTX_lookup_crls_fn lookup_crls) {
++  ctx->lookup_crls = lookup_crls;
++}
++
+ void X509_STORE_set_get_crl(X509_STORE *ctx,
+                             X509_STORE_CTX_get_crl_fn get_crl) {
+   ctx->get_crl = get_crl;
+diff --git a/crypto/x509/x509_test.cc b/crypto/x509/x509_test.cc
+index 5a1eb32a1..11995c8fa 100644
+--- a/crypto/x509/x509_test.cc
++++ b/crypto/x509/x509_test.cc
+@@ -31,6 +31,7 @@
+ #include <openssl/err.h>
+ #include <openssl/nid.h>
+ #include <openssl/pem.h>
++#include <openssl/pkcs7.h>
+ #include <openssl/pool.h>
+ #include <openssl/rand.h>
+ #include <openssl/x509.h>
+@@ -8384,3 +8385,41 @@ TEST(X509Test, X509MultipleCustomExtensions) {
+   // Check that |EXFLAG_CRITICAL| has been removed after validation.
+   EXPECT_FALSE(X509_get_extension_flags(cert.get()) & EXFLAG_CRITICAL);
+ }
++
++TEST(X509Test, StoreVerifyCallback) {
++  bssl::UniquePtr<X509_STORE> store(X509_STORE_new());
++  ASSERT_TRUE(store);
++
++  // Initially verify callback should be null
++  EXPECT_EQ(nullptr, X509_STORE_get_verify_cb(store.get()));
++
++  // Store the callback pointer for comparison
++  X509_STORE_CTX_verify_cb verify_cb = [](int ok, X509_STORE_CTX *ctx) -> int {
++    return 1;
++  };
++
++  // Set a custom verify callback
++  X509_STORE_set_verify_cb(store.get(), verify_cb);
++
++  // Verify callback should now be set and match the stored pointer
++  EXPECT_EQ(verify_cb, X509_STORE_get_verify_cb(store.get()));
++}
++
++TEST(X509Test, StoreLookupCRLs) {
++  bssl::UniquePtr<X509_STORE> store(X509_STORE_new());
++  ASSERT_TRUE(store);
++
++  // Initially lookup_crls callback should be null
++  EXPECT_EQ(nullptr, X509_STORE_get_lookup_crls(store.get()));
++
++  X509_STORE_CTX_lookup_crls_fn lookup_crls = [](X509_STORE_CTX *ctx,
++                                                 X509_NAME *nm) {
++    return sk_X509_CRL_new_null();
++  };
++
++  // Set the custom lookup_crls callback
++  X509_STORE_set_lookup_crls(store.get(), lookup_crls);
++
++  // Lookup_crls callback should now be set and match the stored pointer
++  EXPECT_EQ(lookup_crls, X509_STORE_get_lookup_crls(store.get()));
++}
+diff --git a/crypto/x509/x509_vfy.c b/crypto/x509/x509_vfy.c
+index f9fde323e..84fc5d6cb 100644
+--- a/crypto/x509/x509_vfy.c
++++ b/crypto/x509/x509_vfy.c
+@@ -1257,7 +1257,7 @@ static int get_crl(X509_STORE_CTX *ctx, X509_CRL **pcrl, X509 *x) {
+   }
+ 
+   // Lookup CRLs from store
+-  skcrl = X509_STORE_CTX_get1_crls(ctx, nm);
++  skcrl = ctx->lookup_crls(ctx, nm);
+ 
+   // If no CRLs found and a near match from get_crl_sk use that
+   if (!skcrl && crl) {
+@@ -1760,6 +1760,12 @@ int X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509,
+     ctx->check_crl = check_crl;
+   }
+ 
++  if (store->lookup_crls) {
++    ctx->lookup_crls = store->lookup_crls;
++  } else {
++    ctx->lookup_crls = X509_STORE_get1_crls;
++  }
++
+   ctx->verify_custom_crit_oids = null_verify_custom_crit_oids_callback;
+ 
+   return 1;
+diff --git a/include/openssl/x509.h b/include/openssl/x509.h
+index 8a8247279..607409046 100644
+--- a/include/openssl/x509.h
++++ b/include/openssl/x509.h
+@@ -2369,6 +2369,17 @@ OPENSSL_EXPORT int X509_STORE_set_purpose(X509_STORE *store, int purpose);
+ OPENSSL_EXPORT int X509_STORE_set_trust(X509_STORE *store, int trust);
+ 
+ 
++typedef STACK_OF(X509_CRL) *(*X509_STORE_CTX_lookup_crls_fn)(
++    X509_STORE_CTX *ctx, X509_NAME *nm);
++
++OPENSSL_EXPORT X509_STORE_CTX_lookup_crls_fn X509_STORE_get_lookup_crls(X509_STORE *ctx);
++
++OPENSSL_EXPORT void X509_STORE_set_lookup_crls(
++    X509_STORE *ctx, X509_STORE_CTX_lookup_crls_fn lookup_crls);
++
++#define X509_STORE_set_lookup_crls_cb(ctx, func) \
++  X509_STORE_set_lookup_crls((ctx), (func))
++
+ // Certificate verification.
+ //
+ // An |X509_STORE_CTX| object represents a single certificate verification
+@@ -4344,6 +4355,8 @@ typedef int (*X509_STORE_CTX_verify_cb)(int, X509_STORE_CTX *);
+ OPENSSL_EXPORT void X509_STORE_CTX_set_verify_cb(
+     X509_STORE_CTX *ctx, int (*verify_cb)(int ok, X509_STORE_CTX *ctx));
+ 
++OPENSSL_EXPORT X509_STORE_CTX_verify_cb X509_STORE_get_verify_cb(X509_STORE *ctx);
++
+ // X509_STORE_set_verify_cb acts like |X509_STORE_CTX_set_verify_cb| but sets
+ // the verify callback for any |X509_STORE_CTX| created from this |X509_STORE|
+ //
+-- 
+2.51.0
+
