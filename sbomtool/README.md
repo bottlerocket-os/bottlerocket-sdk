@@ -12,7 +12,8 @@ A Software Bill of Materials (SBOM) generation tool for the Bottlerocket SDK.
 - Generate SBOM files in multiple formats:
   - SPDX 2.3 (JSON)
   - CycloneDX 1.6 (JSON)
-- Future support for merging multiple SBOM files
+- Merge multiple SBOM files with intelligent deduplication
+- Filter SBOM files based on buildroot contents
 
 ## Installation
 
@@ -46,18 +47,25 @@ Options:
 - `--spdx`: Generate an SPDX SBOM
 - `--cyclonedx`: Generate a CycloneDX SBOM
 
-#### Merge (Future Feature)
+#### Merge
 
-Merge multiple SBOM files:
+Merge multiple SBOM files into a single comprehensive SBOM:
 
 ```
 sbomtool merge [options] file1 file2 [file3...]
 ```
 
 Options:
-- `--level int`: Merge level (default 0)
+- `--output string`: Output file path for merged SBOM (required)
+- `--level int`: Merge level (reserved for future use) (default 0)
 
-Note: This feature is not yet implemented.
+The merge command combines multiple SBOM files while:
+- Deduplicating packages using CPE-based matching
+- Preserving all dependency relationships
+- Maintaining SBOM format integrity
+- Providing comprehensive merge statistics
+
+All input files must be in the same format (SPDX or CycloneDX).
 
 ### Examples
 
@@ -76,11 +84,37 @@ Generate both SPDX and CycloneDX SBOMs:
 sbomtool generate --name mypackage --build-dir ./build --out-dir ./sbom --spdx --cyclonedx
 ```
 
+Merge multiple SPDX SBOMs:
+```
+sbomtool merge --output merged.json app1-spdx.json app2-spdx.json lib1-spdx.json
+```
+
+Merge with debug logging:
+```
+sbomtool --log-level debug merge --output final.json app1.json app2.json app3.json
+```
+
 ## Output
 
 The tool generates SBOM files in the specified output directory:
 - `{name}-spdx.json`: SPDX format SBOM
 - `{name}-cyclonedx.json`: CycloneDX format SBOM
+
+## Deduplication Behavior
+
+The merge command uses deduplication to combine packages from multiple SBOMs:
+
+### CPE-Based Deduplication
+- **Primary Strategy**: Uses CPE as the canonical identifier
+- **Fallback Strategy**: Uses name + version + type for packages without CPE
+- **Metadata Merging**: Combines licenses, files, and other metadata from duplicate packages
+- **Relationship Preservation**: Updates all dependency relationships to reference canonical packages
+
+### Deduplication Process
+1. **Package Identity**: Generates canonical keys using CPE or fallback strategy
+2. **Conflict Resolution**: First occurrence with CPE becomes canonical
+3. **Metadata Consolidation**: Merges all metadata from duplicate packages
+4. **Relationship Updates**: Updates all relationships to use canonical package IDs
 
 ## Implementation Details
 

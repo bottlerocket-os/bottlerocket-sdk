@@ -1,0 +1,21 @@
+# Build artifacts
+/sbomtool
+buildroot_filtering_test
+integration.test
+*.test
+
+# Coverage files
+integration-coverage.out
+integration-coverage.html
+coverage.out
+coverage.html
+
+# Go build cache
+.cache/
+
+# Test artifacts
+/test/tmp/
+/test/data/tmp/
+
+# Planning documents
+planning/

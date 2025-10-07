@@ -1,0 +1,79 @@
+// Package processor provides Syft-based SBOM processing capabilities optimized for Bottlerocket builds.
+// It configures Syft's catalogers for comprehensive package detection including Go and Rust binary analysis.
+package processor
+
+import (
+	"fmt"
+	"log/slog"
+	"os"
+
+	"github.com/anchore/syft/syft/format"
+	"github.com/anchore/syft/syft/pkg"
+	"github.com/anchore/syft/syft/sbom"
+)
+
+// LoadSBOM loads an existing SBOM using Syft's format detection.
+// It returns the SBOM, format identifier, and any error encountered.
+func LoadSBOM(path string) (*sbom.SBOM, string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to open SBOM file: %w", err)
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Warn("Failed to close SBOM file", "error", closeErr)
+		}
+	}()
+
+	s, formatID, _, err := format.Decode(file)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to decode SBOM: %w", err)
+	}
+
+	slog.Debug("SBOM loaded successfully",
+		"format", formatID,
+		"packages", s.Artifacts.Packages.PackageCount(),
+		"relationships", len(s.Relationships))
+
+	return s, string(formatID), nil
+}
+
+// SaveSBOM saves an SBOM using Syft's format encoders.
+// It supports all formats that Syft can encode.
+func SaveSBOM(s *sbom.SBOM, path, formatName string) error {
+	// Find the encoder for the specified format
+	var encoder sbom.FormatEncoder
+	for _, enc := range format.Encoders() {
+		if string(enc.ID()) == formatName {
+			encoder = enc
+			break
+		}
+	}
+
+	if encoder == nil {
+		return fmt.Errorf("unsupported output format: %s", formatName)
+	}
+
+	bytes, err := format.Encode(*s, encoder)
+	if err != nil {
+		return fmt.Errorf("failed to encode SBOM: %w", err)
+	}
+
+	err = os.WriteFile(path, bytes, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write SBOM to file: %w", err)
+	}
+
+	return nil
+}
+
+// countPackagesByType counts packages of a specific type for logging purposes.
+func countPackagesByType(catalog *pkg.Collection, pkgType pkg.Type) int {
+	count := 0
+	for _, pkg := range catalog.Sorted() {
+		if pkg.Type == pkgType {
+			count++
+		}
+	}
+	return count
+}

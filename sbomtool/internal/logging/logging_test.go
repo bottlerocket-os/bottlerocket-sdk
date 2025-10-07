@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"log/slog"
 	"testing"
 )
@@ -45,7 +46,7 @@ func TestLogLevelConversion(t *testing.T) {
 			handler := logger.Handler()
 
 			// The expected level should be enabled
-			if !handler.Enabled(nil, tc.expectedLevel) {
+			if !handler.Enabled(context.TODO(), tc.expectedLevel) {
 				t.Errorf("Configure(%q) did not enable expected level %v", tc.input, tc.expectedLevel)
 			}
 
@@ -53,32 +54,32 @@ func TestLogLevelConversion(t *testing.T) {
 			switch tc.expectedLevel {
 			case slog.LevelDebug:
 				// Debug level should enable all levels
-				if !handler.Enabled(nil, slog.LevelDebug) || !handler.Enabled(nil, slog.LevelInfo) ||
-					!handler.Enabled(nil, slog.LevelWarn) || !handler.Enabled(nil, slog.LevelError) {
+				if !handler.Enabled(context.TODO(), slog.LevelDebug) || !handler.Enabled(context.TODO(), slog.LevelInfo) ||
+					!handler.Enabled(context.TODO(), slog.LevelWarn) || !handler.Enabled(context.TODO(), slog.LevelError) {
 					t.Errorf("Configure(%q) with debug level should enable all levels", tc.input)
 				}
 			case slog.LevelInfo:
 				// Info level should disable debug but enable info, warn, error
-				if handler.Enabled(nil, slog.LevelDebug) {
+				if handler.Enabled(context.TODO(), slog.LevelDebug) {
 					t.Errorf("Configure(%q) with info level should disable debug", tc.input)
 				}
-				if !handler.Enabled(nil, slog.LevelInfo) || !handler.Enabled(nil, slog.LevelWarn) || !handler.Enabled(nil, slog.LevelError) {
+				if !handler.Enabled(context.TODO(), slog.LevelInfo) || !handler.Enabled(context.TODO(), slog.LevelWarn) || !handler.Enabled(context.TODO(), slog.LevelError) {
 					t.Errorf("Configure(%q) with info level should enable info, warn, and error", tc.input)
 				}
 			case slog.LevelWarn:
 				// Warn level should disable debug and info but enable warn and error
-				if handler.Enabled(nil, slog.LevelDebug) || handler.Enabled(nil, slog.LevelInfo) {
+				if handler.Enabled(context.TODO(), slog.LevelDebug) || handler.Enabled(context.TODO(), slog.LevelInfo) {
 					t.Errorf("Configure(%q) with warn level should disable debug and info", tc.input)
 				}
-				if !handler.Enabled(nil, slog.LevelWarn) || !handler.Enabled(nil, slog.LevelError) {
+				if !handler.Enabled(context.TODO(), slog.LevelWarn) || !handler.Enabled(context.TODO(), slog.LevelError) {
 					t.Errorf("Configure(%q) with warn level should enable warn and error", tc.input)
 				}
 			case slog.LevelError:
 				// Error level should only enable error
-				if handler.Enabled(nil, slog.LevelDebug) || handler.Enabled(nil, slog.LevelInfo) || handler.Enabled(nil, slog.LevelWarn) {
+				if handler.Enabled(context.TODO(), slog.LevelDebug) || handler.Enabled(context.TODO(), slog.LevelInfo) || handler.Enabled(context.TODO(), slog.LevelWarn) {
 					t.Errorf("Configure(%q) with error level should disable debug, info, and warn", tc.input)
 				}
-				if !handler.Enabled(nil, slog.LevelError) {
+				if !handler.Enabled(context.TODO(), slog.LevelError) {
 					t.Errorf("Configure(%q) with error level should enable error", tc.input)
 				}
 			}

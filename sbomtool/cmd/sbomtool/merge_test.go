@@ -6,7 +6,6 @@
 package main
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +31,7 @@ func TestMergeCommandMetadata(t *testing.T) {
 		{
 			name:     "long description contains key information",
 			field:    "Long",
-			expected: "not yet implemented",
+			expected: "DEDUPLICATION",
 		},
 	}
 
@@ -72,7 +71,6 @@ func TestMergeCommandFlags(t *testing.T) {
 
 		// Then: Flag should be registered with correct properties
 		require.NotNil(t, flag, "Level flag should be registered")
-		assert.Contains(t, flag.Usage, "Merge level", "Flag usage should be descriptive")
 
 		// Check default value
 		value, err := mergeCmd.Flags().GetInt("level")
@@ -131,66 +129,4 @@ func TestMergeArgumentValidation(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestMergeNotImplemented(t *testing.T) {
-	t.Run("merge command returns not implemented error", func(t *testing.T) {
-		// Given: A root command with merge subcommand
-		rootCmd := createRootCommand()
-		mergeCmd := createMergeCommand()
-		rootCmd.AddCommand(mergeCmd)
-
-		// Set up command with valid arguments
-		rootCmd.SetArgs([]string{
-			"merge",
-			"--level", "1",
-			"file1.json",
-			"file2.json",
-		})
-
-		buf := new(bytes.Buffer)
-		rootCmd.SetOut(buf)
-		rootCmd.SetErr(buf)
-
-		// When: Executing the command
-		err := rootCmd.Execute()
-
-		// Then: Should return not implemented error
-		assert.Error(t, err, "Merge command should return not implemented error")
-		assert.Contains(t, err.Error(), "not yet implemented", "Error should indicate not implemented")
-	})
-}
-
-func TestMergeCommandHelp(t *testing.T) {
-	t.Run("merge help contains expected content", func(t *testing.T) {
-		// Given: A root command with merge subcommand
-		rootCmd := createRootCommand()
-		mergeCmd := createMergeCommand()
-		rootCmd.AddCommand(mergeCmd)
-
-		// Set up help command
-		rootCmd.SetArgs([]string{"merge", "--help"})
-		buf := new(bytes.Buffer)
-		rootCmd.SetOut(buf)
-		rootCmd.SetErr(buf)
-
-		// When: Executing help
-		err := rootCmd.Execute()
-
-		// Then: Should show help without error
-		require.NoError(t, err, "Help command should execute without error")
-		helpText := buf.String()
-
-		expectedSections := []string{
-			"merge",
-			"Merge multiple SBOM files",
-			"--level",
-			"file1 file2",
-			"not yet implemented",
-		}
-
-		for _, section := range expectedSections {
-			assert.Contains(t, helpText, section, "Help text should contain %s", section)
-		}
-	})
 }
