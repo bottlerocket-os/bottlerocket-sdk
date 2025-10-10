@@ -3,17 +3,19 @@ From: =?UTF-8?q?Alejandro=20S=C3=A1ez?= <asm@redhat.com>
 Date: Wed, 19 Jun 2024 10:18:58 +0200
 Subject: [PATCH] Default to ld.bfd on ARM64
 
+[jepiyush: adjust context for Go 1.25]
+Signed-off-by: Piyush Jena <jepiyush@amazon.com>
 ---
  src/cmd/link/internal/ld/lib.go | 20 +++++++-------------
  1 file changed, 7 insertions(+), 13 deletions(-)
 
 diff --git a/src/cmd/link/internal/ld/lib.go b/src/cmd/link/internal/ld/lib.go
-index eab74dc328..b401f58727 100644
+index 79d3d37835..3975957bfb 100644
 --- a/src/cmd/link/internal/ld/lib.go
 +++ b/src/cmd/link/internal/ld/lib.go
-@@ -1620,22 +1620,16 @@ func (ctxt *Link) hostlink() {
+@@ -1700,22 +1700,16 @@ func (ctxt *Link) hostlink() {
  		}
- 
+
  		if ctxt.Arch.InFamily(sys.ARM64) && buildcfg.GOOS == "linux" {
 -			// On ARM64, the GNU linker will fail with
 -			// -znocopyreloc if it thinks a COPY relocation is
@@ -41,6 +43,5 @@ index eab74dc328..b401f58727 100644
  				}
  			}
  		}
--- 
-2.45.1
-
+--
+2.51.0
