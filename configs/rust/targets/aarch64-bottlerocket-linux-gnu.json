@@ -6,6 +6,7 @@
   "dynamic-linking": true,
   "env": "gnu",
   "features": "+v8a,+outline-atomics",
+  "frame-pointer": "non-leaf",
   "has-rpath": true,
   "has-thread-local": true,
   "linker-flavor": "gnu-cc",
