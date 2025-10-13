@@ -108,8 +108,11 @@ for arch in x86_64 aarch64 ; do
       --target "${upstream_target}" \
       > "${upstream_spec}"
 
-    jq 'del(."is-builtin") | . += {"vendor": "bottlerocket", "panic-strategy": "abort"}' \
-      "${upstream_spec}" > "${vendor_spec}"
+    jq 'del(."is-builtin") |
+      del(."link-self-contained") |
+      ."linker-flavor" = "gnu-cc" |
+      . += {"vendor": "bottlerocket", "panic-strategy": "abort"}' \
+    "${upstream_spec}" > "${vendor_spec}"
 
     rm "${upstream_spec}"
   done
