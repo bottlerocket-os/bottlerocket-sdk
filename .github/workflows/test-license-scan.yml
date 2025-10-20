@@ -6,6 +6,10 @@ on:
         paths:
             - "license-scan/**"
             - ".github/workflows/test-license-scan.yml"
+
+permissions:
+  contents: read
+
 jobs:
     build:
         runs-on:
