@@ -1000,6 +1000,7 @@ RUN \
     protobuf-compiler \
     protobuf-devel \
     python3-devel \
+    python3-pyelftools \
     python3-jinja2 \
     python3-virt-firmware \
     qemu-img \
