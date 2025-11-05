@@ -989,6 +989,7 @@ RUN \
     groff \
     kpartx \
     less \
+    libbpf-devel \
     libcap-devel \
     libkcapi-hmaccalc \
     lz4 \
