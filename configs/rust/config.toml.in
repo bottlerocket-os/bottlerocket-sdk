@@ -26,7 +26,11 @@ debuginfo-level-std = 2
 rpath = false
 
 [llvm]
+download-ci-llvm = false
 static-libstdcpp = false
+targets = "AArch64;BPF;X86"
+clang = true
+link-shared = true
 
 [install]
 prefix = "/usr/libexec/rust"
