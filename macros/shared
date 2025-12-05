@@ -297,14 +297,52 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
 %_cross_sbom_dir %{_cross_datadir}/sboms
 %_cross_sbom_package_dir %{_cross_sbom_dir}/%{_uncross_name}
 
+%_sbom_template \
+%ifnarch noarch\
+%global __sbom_package 1\
+%{?buildsubdir:%%global __sbom_package 1}\
+%package sbom\
+Summary: SBOM (Software Bill of Materials) for %{name}\
+AutoReqProv: 0\
+Supplements: (%{_cross_os}image-metadata(sbom) and %{name})\
+%description sbom\
+This package provides SBOM files for %{name}.\
+%files sbom\
+%{_cross_sbom_package_dir}/*\
+%endif\
+%{nil}
+
+%_enable_sbom_packages 1
+
+%sbom_package \
+%ifnarch noarch\
+%global __sbom_package 1\
+%{?buildsubdir:%%global __sbom_package 1}\
+%_sbom_template\
+%endif\
+%{nil}
+
+%__sbom_install_post \
+  %cross_generate_sbom \
+  %cross_install_sbom\
+%{nil}
+
+%__spec_install_template\
+%{__spec_install_pre}\
+%[ 0%{?_enable_debug_packages} > 0 ? "%{?buildsubdir:%(echo "%{debug_package}" > %{specpartsdir}/rpm-debuginfo.specpart)}" : "" ]\
+%[ 0%{?_enable_sbom_packages} > 0 ? "%{?buildsubdir:%{expand:%%global __sbom_package 1}%(echo "%{_sbom_template}" > %{specpartsdir}/rpm-sbom.specpart)}" : "" ]\
+%{nil}
+
 %cross_generate_sbom \
   mkdir -p %{_builddir}/sbom-temp \
-  sbomtool generate --name %{name} --out-dir %{_builddir}/sbom-temp --build-dir %{_builddir} --spdx --cyclonedx
+  sbomtool generate --name %{_uncross_name} --out-dir %{_builddir}/sbom-temp --build-dir %{_builddir} --spdx --cyclonedx
 
 %cross_install_sbom \
   install -d %{buildroot}%{_cross_sbom_package_dir} \
-  install -p -m 0644 %{_builddir}/sbom-temp/%{name}-spdx.json %{buildroot}%{_cross_sbom_package_dir}/ \
-  install -p -m 0644 %{_builddir}/sbom-temp/%{name}-cyclonedx.json %{buildroot}%{_cross_sbom_package_dir}/
+  sed -i 's|%{buildroot}||g' %{_builddir}/sbom-temp/%{_uncross_name}-spdx.json \
+  sed -i 's|%{buildroot}||g' %{_builddir}/sbom-temp/%{_uncross_name}-cyclonedx.json \
+  install -p -m 0644 %{_builddir}/sbom-temp/%{_uncross_name}-spdx.json %{buildroot}%{_cross_sbom_package_dir}/ \
+  install -p -m 0644 %{_builddir}/sbom-temp/%{_uncross_name}-cyclonedx.json %{buildroot}%{_cross_sbom_package_dir}/
 
 %__nm %{_bindir}/%{_cross_target}-nm
 %__objcopy %{_bindir}/%{_cross_target}-objcopy
@@ -348,6 +386,14 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
 
 # Enable FIPS check by default.
 %cross_check_fips 1
+
+# Trigger debug package and sbom package creation
+%__spec_install_post\
+%{?__debug_package:%{__debug_install_post}}\
+%{?__sbom_package:%{__sbom_install_post}}\
+%{__arch_install_post}\
+%{__os_install_post}\
+%{nil}
 
 # Generate license attribution and check for FIPS-enabled binaries.
 # (The FIPS check is disabled by default, pending tree-wide packaging changes.)
