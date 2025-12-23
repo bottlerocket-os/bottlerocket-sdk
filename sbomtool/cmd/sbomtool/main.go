@@ -9,6 +9,7 @@ import (
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
 	"github.com/spf13/cobra"
+	_ "modernc.org/sqlite"
 
 	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/commands/filter"
 	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/commands/generate"

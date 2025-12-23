@@ -12,6 +12,7 @@ import (
 	"github.com/anchore/syft/syft/artifact"
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
+	"github.com/anchore/syft/syft/source"
 
 	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/deduplication"
 	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/processor"
@@ -136,25 +137,60 @@ func loadSBOMs(inputFiles []string) ([]*sbom.SBOM, string, error) {
 	return sboms, commonFormat, nil
 }
 
+// sourceToPackage converts an SBOM's Source (metadata.component) to a package.
+// This ensures the subject of each input SBOM is preserved in the merged output.
+func sourceToPackage(src source.Description) *pkg.Package {
+	if src.Name == "" {
+		return nil
+	}
+
+	p := pkg.Package{
+		Name:    src.Name,
+		Version: src.Version,
+		Type:    pkg.UnknownPkg,
+	}
+	p.SetID()
+
+	slog.Debug("Converted source to package", "name", src.Name, "version", src.Version)
+	return &p
+}
+
 // mergeSBOMs combines SBOM metadata and extracts all packages and relationships.
+// Each input SBOM's Source (metadata.component) is converted to a package to preserve
+// the subject of each SBOM in the merged output. Contains relationships are created
+// from the source package to all packages in that SBOM.
 func mergeSBOMs(sboms []*sbom.SBOM) (*sbom.SBOM, []pkg.Package, []artifact.Relationship) {
 	if len(sboms) == 0 {
 		return &sbom.SBOM{}, nil, nil
 	}
 
-	// Use first SBOM as base
+	// Use first SBOM as base for descriptor
 	merged := &sbom.SBOM{
 		Descriptor: sboms[0].Descriptor,
-		Source:     sboms[0].Source,
 	}
 
 	var allPackages []pkg.Package
 	var allRelationships []artifact.Relationship
 
-	// Collect all packages and relationships
+	// Collect all packages and relationships, including Source as a package
 	for _, s := range sboms {
-		allPackages = append(allPackages, s.Artifacts.Packages.Sorted()...)
+		sbomPackages := s.Artifacts.Packages.Sorted()
+		allPackages = append(allPackages, sbomPackages...)
 		allRelationships = append(allRelationships, s.Relationships...)
+
+		// Convert Source (metadata.component) to a package and create contains relationships
+		if srcPkg := sourceToPackage(s.Source); srcPkg != nil {
+			allPackages = append(allPackages, *srcPkg)
+
+			// Create "contains" relationships from source to each package in this SBOM
+			for _, p := range sbomPackages {
+				allRelationships = append(allRelationships, artifact.Relationship{
+					From: *srcPkg,
+					To:   p,
+					Type: artifact.ContainsRelationship,
+				})
+			}
+		}
 	}
 
 	slog.Debug("SBOM merge phase completed",
@@ -174,7 +210,6 @@ func createFinalSBOM(base *sbom.SBOM, canonicalPackages map[string]*pkg.Package,
 
 	return &sbom.SBOM{
 		Descriptor: base.Descriptor,
-		Source:     base.Source,
 		Artifacts: sbom.Artifacts{
 			Packages: collection,
 		},
