@@ -1,5 +1,6 @@
 // Package processor provides Syft-based SBOM processing capabilities optimized for Bottlerocket builds.
 // It configures Syft's catalogers for comprehensive package detection including Go and Rust binary analysis.
+
 package processor
 
 import (
@@ -8,6 +9,7 @@ import (
 	"os"
 
 	"github.com/anchore/syft/syft/format"
+	"github.com/anchore/syft/syft/format/cyclonedxjson"
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
 )
@@ -41,12 +43,23 @@ func LoadSBOM(path string) (*sbom.SBOM, string, error) {
 // SaveSBOM saves an SBOM using Syft's format encoders.
 // It supports all formats that Syft can encode.
 func SaveSBOM(s *sbom.SBOM, path, formatName string) error {
-	// Find the encoder for the specified format
 	var encoder sbom.FormatEncoder
-	for _, enc := range format.Encoders() {
-		if string(enc.ID()) == formatName {
-			encoder = enc
-			break
+	var err error
+
+	if formatName == "cyclonedx-json" {
+		encoder, err = cyclonedxjson.NewFormatEncoderWithConfig(cyclonedxjson.EncoderConfig{
+			Version: "1.6",
+			Pretty:  true,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create CycloneDX encoder: %w", err)
+		}
+	} else {
+		for _, enc := range format.Encoders() {
+			if string(enc.ID()) == formatName {
+				encoder = enc
+				break
+			}
 		}
 	}
 
