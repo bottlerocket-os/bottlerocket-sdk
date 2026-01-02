@@ -106,7 +106,7 @@
   "target-family": [
     "unix"
   ],
-  "target-pointer-width": "64",
+  "target-pointer-width": 64,
   "vendor": "bottlerocket",
   "panic-strategy": "abort"
 }
