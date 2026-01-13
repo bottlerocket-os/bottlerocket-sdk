@@ -245,7 +245,6 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
   GOARCH="%{_cross_go_arch}" ; export GOARCH ; \
   GOAMD64="v2" ; export GOAMD64 ; \
   GOARM64="v8.0,crypto" ; export GOARM64 ; \
-  GOLIBC="%2" ; export GOLIBC ; \
   CC="%1-gcc" ; export CC ; \
   CC_FOR_TARGET="%1-gcc" ; export CC_FOR_TARGET ; \
   CC_FOR_%{_cross_go_os}_%{_cross_go_arch}="%1-gcc" ; export CC_FOR_%{_cross_go_os}_%{_cross_go_arch} ; \
@@ -260,7 +259,7 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
   PKG_CONFIG_ALLOW_CROSS=1 ; export PKG_CONFIG_ALLOW_CROSS ; \
   GOFLAGS="-mod=vendor -a -buildmode=pie -buildvcs=false"; export GOFLAGS ; \
   GOLDFLAGS_INT="-compressdwarf=false -linkmode=external" ; export GOLDFLAGS_INT ; \
-  GOLDFLAGS_EXT="%{expand:%%%3}" ; export GOLDFLAGS_EXT ; \
+  GOLDFLAGS_EXT="%{expand:%%%2}" ; export GOLDFLAGS_EXT ; \
   GOLDFLAGS="${GOLDFLAGS_INT} -extldflags '${GOLDFLAGS_EXT}'" ; export GOLDFLAGS ; \
   GOPROXY="off"; export GOPROXY ; \
   GOSUMDB="off"; export GOSUMDB ; \
@@ -270,10 +269,10 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
 %_cross_go_extldflags_static %{_cross_ldflags} -static-pie
 
 %set_cross_go_flags \
-  %set_cross_go_env %{_cross_target} gnu _cross_go_extldflags
+  %set_cross_go_env %{_cross_target} _cross_go_extldflags
 
 %set_cross_go_flags_static \
-  %set_cross_go_env %{_cross_triple}-musl musl _cross_go_extldflags_static
+  %set_cross_go_env %{_cross_triple}-musl _cross_go_extldflags_static
 
 %cross_go_setup() \
   mkdir -p GOPATH/src/%2 ; \
