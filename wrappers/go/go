@@ -10,9 +10,4 @@ if [ -n "${GO_VERSION:-}" ] ; then
   GO_MAJOR="${GO_VERSION%.*}"
 fi
 
-# prefer the musl flavor if GOLIBC indicates that we should
-if [ "${GOLIBC:-}" = "musl" ] ; then
-  GO_MAJOR+="-musl"
-fi
-
 exec /usr/libexec/go-"${GO_MAJOR}"/bin/go "${@}"
