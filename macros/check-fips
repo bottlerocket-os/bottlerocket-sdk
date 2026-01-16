@@ -25,49 +25,6 @@ if [ ! -d "${BUILDROOT_BINDIR}" ] && [ ! -d "${BUILDROOT_LIBEXECDIR}" ] ; then
   exit 0
 fi
 
-is_go_bin() {
-  local bin
-  bin="${1:?}"
-  go version "${bin}" 2>&1 | grep -Fqw -v 'not a Go executable'
-}
-
-uses_go_crypto_tls() {
-  local bin output
-  bin="${1:?}"
-  output="$("${STRINGS}" "${bin}")"
-  grep -Fqw -m1 'crypto/tls' <<<"${output}"
-}
-
-uses_go_boring_crypto() {
-  local bin output
-  bin="${1:?}"
-  output="$("${STRINGS}" "${bin}")"
-  grep -Fq -m1 'goboringcrypto' <<<"${output}"
-}
-
-check_go_bin() {
-  local b f
-  b="${1:?}"
-  f="${2:?}"
-  if uses_go_crypto_tls "${b}" ; then
-    if [ -s "${f}" ] ; then
-      echo "${b} uses Go crypto/tls and FIPS build found in ${f}"
-      (( found+=1 ))
-      if uses_go_boring_crypto "${b}" ; then
-        echo "${b} is built with FIPS crypto rather than standard crypto" >&2
-        (( miscompiled+=1 ))
-      fi
-      if ! uses_go_boring_crypto "${f}"; then
-        echo "${f} is built with standard crypto rather than FIPS crypto" >&2
-        (( miscompiled+=1 ))
-      fi
-    else
-      echo "${b} uses Go crypto/tls but no FIPS build found in ${f}" >&2
-      (( not_found+=1 ))
-    fi
-  fi
-}
-
 is_rust_bin() {
   local bin output
   bin="${1:?}"
@@ -131,9 +88,7 @@ miscompiled=0
 for b in $(find "${BUILDROOT_BINDIR}" "${BUILDROOT_LIBEXECDIR}" -type f -executable) ; do
   f="${b/${BUILDROOT_BINDIR}/${BUILDROOT_FIPS_BINDIR}}"
   f="${f/${BUILDROOT_LIBEXECDIR}/${BUILDROOT_FIPS_LIBEXECDIR}}"
-  if is_go_bin "${b}"; then
-    check_go_bin "${b}" "${f}"
-  elif is_rust_bin "${b}"; then
+  if is_rust_bin "${b}"; then
     check_rust_bin "${b}" "${f}"
   fi
 done

@@ -12,9 +12,4 @@ if [ -z "${LATEST_GO}" ]; then
   exit 1
 fi
 
-# prefer the musl flavor if GOLIBC indicates that we should
-if [ "${GOLIBC:-}" = "musl" ] ; then
-  LATEST_GO+="-musl"
-fi
-
 exec /usr/libexec/"${LATEST_GO}"/bin/go "${@}"

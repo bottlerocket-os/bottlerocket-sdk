@@ -365,13 +365,6 @@ COPY --from=sdk-rust /usr/libexec/llvm/ /usr/
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-# Merge the LLVM install with the rest of our toolchains and C libraries for
-# later use by the AWS-LC builds.
-FROM sdk-libc AS sdk-libc-llvm
-COPY --from=sdk-llvm / /
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
 FROM sdk AS sdk-grub
 
 USER root
@@ -497,7 +490,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-libc-llvm AS sdk-go-prep
+FROM sdk-libc AS sdk-go-prep
 
 # Set up the environment for building.
 ENV GOOS="linux"
@@ -512,8 +505,6 @@ ENV GOAMD64="v2"
 ENV GOARM64="v8.0,crypto"
 
 ENV GO111MODULE="auto"
-
-ENV AWS_LC_FIPS_VER="3.0.0"
 
 USER root
 RUN dnf -y install golang
@@ -535,14 +526,7 @@ COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
 COPY ./helpers/go/prep-go.sh ./
 COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 
-COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
-COPY ./patches/aws-lc /home/builder/patches-aws-lc
-
 RUN ./prep-go.sh --go-version=${GO125VER}
-
-WORKDIR /home/builder/aws-lc/build
-COPY ./configs/aws-lc/* .
-COPY ./helpers/aws-lc/* .
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -558,104 +542,11 @@ COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
 COPY ./helpers/go/prep-go.sh ./
 COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 
-COPY ./hashes/aws-lc /home/builder/hashes-aws-lc
-COPY ./patches/aws-lc /home/builder/patches-aws-lc
-
 RUN ./prep-go.sh --go-version=${GO124VER}
-
-WORKDIR /home/builder/aws-lc/build
-COPY ./configs/aws-lc/* .
-COPY ./helpers/aws-lc/* .
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.25-prep AS sdk-go-1.25-aws-lc-gnu-x86_64
-ENV ARCH="x86_64"
-ENV LIBC="gnu"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.25-prep AS sdk-go-1.25-aws-lc-gnu-aarch64
-COPY --chown=0:0 --from=sdk-go-1.25-aws-lc-gnu-x86_64 /etc/group /etc/group
-ENV ARCH="aarch64"
-ENV LIBC="gnu"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.25-prep AS sdk-go-1.25-aws-lc-musl-x86_64
-COPY --chown=0:0 --from=sdk-go-1.25-aws-lc-gnu-aarch64 /etc/group /etc/group
-ENV ARCH="x86_64"
-ENV LIBC="musl"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.25-prep AS sdk-go-1.25-aws-lc-musl-aarch64
-COPY --chown=0:0 --from=sdk-go-1.25-aws-lc-musl-x86_64 /etc/group /etc/group
-ENV ARCH="aarch64"
-ENV LIBC="musl"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.24-prep AS sdk-go-1.24-aws-lc-gnu-x86_64
-ENV ARCH="x86_64"
-ENV LIBC="gnu"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.24-prep AS sdk-go-1.24-aws-lc-gnu-aarch64
-COPY --chown=0:0 --from=sdk-go-1.24-aws-lc-gnu-x86_64 /etc/group /etc/group
-ENV ARCH="aarch64"
-ENV LIBC="gnu"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.24-prep AS sdk-go-1.24-aws-lc-musl-x86_64
-COPY --chown=0:0 --from=sdk-go-1.24-aws-lc-gnu-aarch64 /etc/group /etc/group
-ENV ARCH="x86_64"
-ENV LIBC="musl"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-1.24-prep AS sdk-go-1.24-aws-lc-musl-aarch64
-COPY --chown=0:0 --from=sdk-go-1.24-aws-lc-musl-x86_64 /etc/group /etc/group
-ENV ARCH="aarch64"
-ENV LIBC="musl"
-ENV TARGET="${ARCH}-bottlerocket-linux-${LIBC}"
-RUN ./build-aws-lc.sh --arch="${ARCH}" --target="${TARGET}" --go-dir="${HOME}/sdk-go"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.25-prep AS sdk-go-1.25
-
-COPY --from=sdk-go-1.25-aws-lc-gnu-x86_64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_amd64.syso
-
-COPY --from=sdk-go-1.25-aws-lc-gnu-aarch64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_arm64.syso
-
-COPY --from=sdk-go-1.25-aws-lc-musl-x86_64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_musl_amd64.syso
-
-COPY --from=sdk-go-1.25-aws-lc-musl-aarch64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_musl_arm64.syso
 
 COPY ./helpers/go/build-go.sh ./
 
@@ -665,22 +556,6 @@ RUN ./build-go.sh --go-version=${GO125VER}
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
 FROM sdk-go-1.24-prep AS sdk-go-1.24
-
-COPY --from=sdk-go-1.24-aws-lc-gnu-x86_64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_amd64.syso
-
-COPY --from=sdk-go-1.24-aws-lc-gnu-aarch64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_arm64.syso
-
-COPY --from=sdk-go-1.24-aws-lc-musl-x86_64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_amd64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_musl_amd64.syso
-
-COPY --from=sdk-go-1.24-aws-lc-musl-aarch64 \
-  /home/builder/aws-lc/build/goboringcrypto_linux_arm64.syso \
-  /home/builder/sdk-go/src/crypto/internal/boring/syso/goboringcrypto_linux_musl_arm64.syso
 
 COPY ./helpers/go/build-go.sh ./
 
@@ -1160,10 +1035,6 @@ COPY --chown=0:0 --from=sdk-go-1.25 \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go-1.25/
 
-COPY --chown=0:0 --from=sdk-go-1.25 \
-  /home/builder/aws-lc/LICENSE \
-  /usr/share/licenses/aws-lc/LICENSE
-
 COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/bin /usr/libexec/go-1.24/bin/
 COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/lib /usr/libexec/go-1.24/lib/
 COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/pkg /usr/libexec/go-1.24/pkg/
@@ -1173,18 +1044,6 @@ COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/go.env /usr/libexec/go-
 COPY --chown=0:0 --from=sdk-go-1.24 \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go-1.24/
-
-# Create Go trees for the different glibc and musl builds of the AWS-LC syso.
-# Sync timestamps to avoid rebuilds of the Go standard library.
-RUN \
-  for v in 1.24 1.25 ; do \
-    find /usr/libexec/go-${v} -type f -exec touch -r /usr/libexec/go-${v}/bin/go {} \+ && \
-    rsync -aq --link-dest=/usr/libexec/go-${v}/ /usr/libexec/go-${v}{,-musl}/ && \
-    rm /usr/libexec/go-${v}/src/crypto/internal/boring/syso/goboringcrypto_linux_musl_{arm,amd}64.syso && \
-    rm /usr/libexec/go-${v}-musl/src/crypto/internal/boring/syso/goboringcrypto_linux_{arm,amd}64.syso && \
-    mv /usr/libexec/go-${v}-musl/src/crypto/internal/boring/syso/goboringcrypto_linux_{musl_,}amd64.syso && \
-    mv /usr/libexec/go-${v}-musl/src/crypto/internal/boring/syso/goboringcrypto_linux_{musl_,}arm64.syso ; \
-  done
 
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/

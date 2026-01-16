@@ -1,8 +1,0 @@
-# https://github.com/aws/aws-lc/archive/AWS-LC-FIPS-3.0.0/aws-lc-AWS-LC-FIPS-3.0.0.tar.gz
-### Additional patches from AWS-LC-FIPS 3.0 branch:
-### git clone https://github.com/aws/aws-lc
-### cd aws-lc
-### git checkout origin/fips-2024-09-27
-### git format-patch --start-number=1001 --no-numbered AWS-LC-FIPS-3.0.0..
-### Note: for above format-patch command, we use start-number 1001 to avoid precedence collision with existing patches.
-SHA512 (aws-lc-AWS-LC-FIPS-3.0.0.tar.gz) = d5d951a7aeba2986503249c02ada8fef36d0022d894ba3095bb9619155fffc66d4328028689327fefe28cfb66674123645d70153c83110e6f3c9dfe6d79c5f26
