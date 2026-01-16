@@ -481,7 +481,7 @@ FROM sdk AS sdk-ca-certificates
 
 USER root
 
-ENV CABUNDLEVER="2025-08-12"
+ENV CABUNDLEVER="2025-12-02"
 
 RUN \
   mkdir -p /usr/share/bottlerocket/ca-certificates && \
