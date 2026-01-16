@@ -13,6 +13,7 @@ import (
 
 	"github.com/anchore/syft/syft/artifact"
 	"github.com/anchore/syft/syft/cpe"
+	"github.com/anchore/syft/syft/file"
 	"github.com/anchore/syft/syft/pkg"
 )
 
@@ -39,10 +40,10 @@ type DeduplicationStats struct {
 func DeduplicatePackages(packages []pkg.Package) *DeduplicationResult {
 	startTime := time.Now()
 
-	// Filter out document root packages and other metadata packages
+	// Filter out packages with empty names
 	var realPackages []pkg.Package
 	for _, p := range packages {
-		if p.Name != "" && !strings.Contains(string(p.ID()), "DocumentRoot") {
+		if p.Name != "" {
 			realPackages = append(realPackages, p)
 		}
 	}
@@ -231,6 +232,23 @@ func mergePackages(packages []*pkg.Package) *pkg.Package {
 		for _, p := range packages {
 			if p.Version != "" {
 				canonical.Version = p.Version
+				break
+			}
+		}
+	}
+
+	// Merge Locations (union of all file locations)
+	allLocations := make([]file.Location, 0)
+	for _, p := range packages {
+		allLocations = append(allLocations, p.Locations.ToSlice()...)
+	}
+	canonical.Locations = file.NewLocationSet(allLocations...)
+
+	// Preserve Metadata from first package with non-nil metadata
+	if canonical.Metadata == nil {
+		for _, p := range packages {
+			if p.Metadata != nil {
+				canonical.Metadata = p.Metadata
 				break
 			}
 		}

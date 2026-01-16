@@ -109,6 +109,9 @@ func Generate(name string, spdx bool, cyclonedx bool, buildDir string, outDir st
 		return false, fmt.Errorf("failed to create SBOM: %w", err)
 	}
 
+	// Set the source name from the --name parameter so it appears in metadata.component
+	sbomData.Source.Name = name
+
 	if spdx {
 		slog.Info("Generating SPDX SBOM", "name", name)
 		if err := createSpdxSbom(*sbomData, name, outDir); err != nil {
