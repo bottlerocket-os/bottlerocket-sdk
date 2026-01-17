@@ -12,6 +12,7 @@ skip-files = [
     "syft/license/license.go",
     "syft/pkg/cataloger/gentoo/license.go",
     "syft/pkg/license.go",
+    "syft/pkg/cataloger/python/license.go",
 ]
 
 [clarify."github.com/cloudflare/circl"]
@@ -36,4 +37,23 @@ license-files = [
 ]
 skip-files = [
     "license.go"
+]
+
+[clarify."modernc.org/sqlite"]
+expression = "blessing"
+license-files = [
+    { path = "SQLITE-LICENSE", hash = 0x33070547 },
+    { path = "LICENSE", hash = 0x58030944 },
+]
+
+[clarify."modernc.org/memory"]
+expression = "BSD-3-Clause"
+license-files = [
+    { path = "LICENSE-GO", hash = 0xc9619ebd },
+    { path = "LICENSE", hash = 0xa15d9fd3 },
+    { path = "LICENSE-MMAP-GO", hash =  0x6c898a7c },
+]
+# This is a link to the logo used by this module
+skip-files = [
+    "LICENSE-LOGO"
 ]
