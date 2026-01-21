@@ -83,7 +83,7 @@ RUN \
 
 ARG UPSTREAM_SOURCE_FALLBACK
 ENV BRVER="2024.11.1"
-ENV KVER="5.10.232"
+ENV KVER="6.1.122"
 
 WORKDIR /home/builder
 COPY ./hashes/buildroot ./hashes
@@ -134,7 +134,7 @@ FROM base AS sdk
 USER root
 
 ARG UPSTREAM_SOURCE_FALLBACK
-ENV KVER="5.10.232"
+ENV KVER="6.1.122"
 
 WORKDIR /
 
@@ -185,7 +185,7 @@ COPY ./hashes/glibc ./hashes
 COPY ./helpers/glibc/* ./
 
 ENV GLIBCVER="2.40"
-ENV KVER="5.10.232"
+ENV KVER="6.1.122"
 RUN \
   sdk-fetch hashes && \
   tar xf glibc-${GLIBCVER}.tar.xz && \
@@ -448,7 +448,7 @@ FROM sdk AS sdk-bootconfig
 
 USER root
 
-ENV KVER="5.10.232"
+ENV KVER="6.1.122"
 
 RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/bootconfig && \

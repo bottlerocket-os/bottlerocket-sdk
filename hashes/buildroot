@@ -16,8 +16,8 @@ SHA512 (gmp-6.3.0.tar.xz) = e85a0dab5195889948a3462189f0e0598d331d3457612e2d3350
 SHA512 (isl-0.26.tar.xz) = 9b5ec16d14e48f9ac9bf9cd379d3022959cfc617ade9e0d4caf2862299564fecba09d67dbdf1a4071f2f743a4fd0fabd0b0c3d15f5cddfe7226cdd5d6c2a0c66
 # https://musl.libc.org/releases/musl-1.2.5.tar.gz
 SHA512 (musl-1.2.5.tar.gz) = 7bb7f7833923cd69c7a1a9b8a5f1784bfd5289663eb6061dcd43d583e45987df8a68a1be05d75cc1c88a3f5b610653d1a70f4a9cff4d8f7fd41ae73ee058c17c
-# https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.10.232.tar.xz
-SHA512 (linux-5.10.232.tar.xz) = d0f3c2c6f9e47ed8e5de8e99c3e7f3175b6cb015916131ea9f7a9f1ee8aa29c7ae2fa432bcd1283bd0529654874f4f67ace208d2a8d01fc6595e4abe36ff1fd0
+# https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.1.122.tar.xz
+SHA512 (linux-6.1.122.tar.xz) = e611f2c4467aa8bc1e7379e510490f708bce9c95121f268476add56259818b2bb76e14cf9e3e69e47f947826b3cd940f96f21517f7a1b3e154e6508ae2001c3d
 # https://mirrors.kernel.org/gnu/m4/m4-1.4.19.tar.xz
 SHA512 (m4-1.4.19.tar.xz) = 47f595845c89709727bda0b3fc78e3188ef78ec818965b395532e7041cabe9e49677ee4aca3d042930095a7f8df81de3da1026b23b6897be471f6cf13ddd512b
 # https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz
