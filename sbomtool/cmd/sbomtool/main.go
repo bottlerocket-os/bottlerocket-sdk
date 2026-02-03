@@ -463,6 +463,7 @@ All input files must be the same format (SPDX or CycloneDX).`,
 	}
 
 	mergeCmd.Flags().String("output", "", "Output file path for merged SBOM (required)")
+	mergeCmd.Flags().String("output-format", "", "Output format: spdx, cyclonedx, or both (default: first input's format)")
 	mergeCmd.Flags().Int("level", 0, "Merge level (reserved for future use)")
 	if err := mergeCmd.MarkFlagRequired("output"); err != nil {
 		slog.Error("Failed to mark output flag as required", "error", err)
@@ -485,8 +486,7 @@ func validateMergeFlags(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	var detectedFormat string
-	for i, inputFile := range args {
+	for _, inputFile := range args {
 		if err := validate.ValidateFilePath(inputFile, "input SBOM", true); err != nil {
 			return &fileSystemError{
 				Operation:  "input SBOM validation",
@@ -504,27 +504,6 @@ func validateMergeFlags(cmd *cobra.Command, args []string) error {
 				Suggestion: "Ensure all input files are valid SPDX 2.3 or CycloneDX 1.6 JSON files.",
 			}
 		}
-
-		format, err := validate.DetectSBOMFormat(inputFile)
-		if err != nil {
-			return &fileSystemError{
-				Operation:  "SBOM format detection",
-				Path:       inputFile,
-				Cause:      err,
-				Suggestion: "Ensure the SBOM file contains valid JSON.",
-			}
-		}
-
-		if i == 0 {
-			detectedFormat = format
-		} else if format != detectedFormat {
-			return &validationError{
-				Field:      "SBOM format consistency",
-				Value:      format,
-				Message:    fmt.Sprintf("all input files must be the same format, expected %s but got %s", detectedFormat, format),
-				Suggestion: "Ensure all input SBOM files use the same format (all SPDX or all CycloneDX).",
-			}
-		}
 	}
 
 	return nil
@@ -534,9 +513,21 @@ func validateMergeFlags(cmd *cobra.Command, args []string) error {
 func runMerge(cmd *cobra.Command, args []string) error {
 	outputPath, _ := cmd.Flags().GetString("output")
 	level, _ := cmd.Flags().GetInt("level")
+	outputFormat, _ := cmd.Flags().GetString("output-format")
+
+	// Map user-friendly format names to Syft format IDs
+	switch outputFormat {
+	case "spdx":
+		outputFormat = "spdx-json"
+	case "cyclonedx":
+		outputFormat = "cyclonedx-json"
+	case "both":
+		outputFormat = "both"
+	}
 
 	config := merge.MergeConfig{
-		Level: level,
+		OutputFormat: outputFormat,
+		Level:        level,
 	}
 
 	slog.Info("Starting SBOM merge process",
@@ -549,12 +540,29 @@ func runMerge(cmd *cobra.Command, args []string) error {
 	}
 
 	// Save the merged SBOM
-	if err := processor.SaveSBOM(result.MergedSBOM, outputPath, result.OutputFormat); err != nil {
-		return &fileSystemError{
-			Operation:  "SBOM saving",
-			Path:       outputPath,
-			Cause:      err,
-			Suggestion: "Ensure you have write permissions to the output location.",
+	// Use user-specified format if provided, otherwise use detected format from input
+	saveFormat := result.OutputFormat
+	if outputFormat != "" && outputFormat != "both" {
+		saveFormat = outputFormat
+	}
+
+	if outputFormat == "both" {
+		if err := processor.SaveSBOMBothFormats(cmd.Context(), result.MergedSBOM, outputPath); err != nil {
+			return &fileSystemError{
+				Operation:  "SBOM saving (both formats)",
+				Path:       outputPath,
+				Cause:      err,
+				Suggestion: "Ensure you have write permissions to the output location.",
+			}
+		}
+	} else {
+		if err := processor.SaveSBOM(result.MergedSBOM, outputPath, saveFormat); err != nil {
+			return &fileSystemError{
+				Operation:  "SBOM saving",
+				Path:       outputPath,
+				Cause:      err,
+				Suggestion: "Ensure you have write permissions to the output location.",
+			}
 		}
 	}
 

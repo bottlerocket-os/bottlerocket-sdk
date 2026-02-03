@@ -11,6 +11,7 @@ import (
 	"github.com/anchore/syft/syft/format/cyclonedxjson"
 	"github.com/anchore/syft/syft/format/spdxjson"
 	"github.com/anchore/syft/syft/sbom"
+	"golang.org/x/sync/errgroup"
 )
 
 // closeFile safely closes a file handle and logs any close errors without returning them.
@@ -112,20 +113,32 @@ func Generate(name string, spdx bool, cyclonedx bool, buildDir string, outDir st
 	// Set the source name from the --name parameter so it appears in metadata.component
 	sbomData.Source.Name = name
 
+	var g errgroup.Group
+
 	if spdx {
-		slog.Info("Generating SPDX SBOM", "name", name)
-		if err := createSpdxSbom(*sbomData, name, outDir); err != nil {
-			return false, err
-		}
-		slog.Info("SPDX SBOM generated successfully")
+		g.Go(func() error {
+			slog.Info("Generating SPDX SBOM", "name", name)
+			if err := createSpdxSbom(*sbomData, name, outDir); err != nil {
+				return err
+			}
+			slog.Info("SPDX SBOM generated successfully")
+			return nil
+		})
 	}
 
 	if cyclonedx {
-		slog.Info("Generating CycloneDX SBOM", "name", name)
-		if err := createCyclonedxSbom(*sbomData, name, outDir); err != nil {
-			return false, err
-		}
-		slog.Info("CycloneDX SBOM generated successfully")
+		g.Go(func() error {
+			slog.Info("Generating CycloneDX SBOM", "name", name)
+			if err := createCyclonedxSbom(*sbomData, name, outDir); err != nil {
+				return err
+			}
+			slog.Info("CycloneDX SBOM generated successfully")
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return false, err
 	}
 
 	slog.Info("All requested SBOM formats generated successfully")

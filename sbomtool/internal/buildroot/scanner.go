@@ -6,29 +6,36 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 )
 
 // Scanner provides comprehensive buildroot directory scanning functionality.
-// It implements efficient recursive directory traversal with configurable depth limits,
-// file type detection, and path normalization for integration with Syft's file coordinate system.
 type Scanner struct {
 	maxDepth        int
 	excludePatterns []string
 }
 
 // ScanResult contains the complete results of a buildroot directory scan.
-// It includes categorized file lists, normalized paths for Syft compatibility,
-// and performance metrics from the scanning operation.
+// Note: mu is only initialized by ScanDirectory(); zero-value ScanResults have nil mu.
 type ScanResult struct {
 	AllFiles        []string
 	RegularFiles    []string
 	SymbolicLinks   []string
 	Directories     []string
-	NormalizedPaths map[string]string // buildroot path -> installed path
+	NormalizedPaths map[string]string
 	TotalSize       int64
 	ScanDuration    time.Duration
+	mu              *sync.RWMutex
+}
+
+// fileWork represents a file to be processed by workers.
+type fileWork struct {
+	path  string
+	entry os.DirEntry
 }
 
 // NewScanner creates a new buildroot scanner with the specified configuration.
@@ -40,13 +47,9 @@ func NewScanner(maxDepth int, excludePatterns []string) *Scanner {
 }
 
 // ScanDirectory performs comprehensive recursive scanning of the buildroot directory.
-//
-// It discovers all files, categorizes them by type, and normalizes paths for Syft compatibility.
-// The scan respects depth limits and exclusion patterns to optimize performance.
 func (s *Scanner) ScanDirectory(buildrootPath string) (*ScanResult, error) {
 	startTime := time.Now()
 
-	// Verify buildroot exists and is accessible
 	if _, err := os.Stat(buildrootPath); err != nil {
 		return nil, fmt.Errorf("buildroot path not accessible: %w", err)
 	}
@@ -57,14 +60,53 @@ func (s *Scanner) ScanDirectory(buildrootPath string) (*ScanResult, error) {
 		SymbolicLinks:   make([]string, 0),
 		Directories:     make([]string, 0),
 		NormalizedPaths: make(map[string]string),
+		mu:              &sync.RWMutex{},
 	}
 
-	err := s.scanRecursive(buildrootPath, 0, result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to scan buildroot: %w", err)
+	// Start worker pool for parallel file processing
+	numWorkers := runtime.GOMAXPROCS(0)
+	// Buffer 100 items per worker to reduce contention while limiting memory usage
+	workCh := make(chan fileWork, numWorkers*100)
+	var wg sync.WaitGroup
+	var workerErr error
+	var errMu sync.Mutex
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for work := range workCh {
+				if err := s.processFile(work.path, work.entry, result); err != nil {
+					errMu.Lock()
+					if workerErr == nil {
+						workerErr = err
+					} else {
+						slog.Debug("Additional worker error", "path", work.path, "error", err)
+					}
+					errMu.Unlock()
+				}
+			}
+		}()
 	}
 
-	// Normalize all paths for Syft compatibility
+	// Walk directories sequentially, send files to workers
+	walkErr := s.walkDirectories(buildrootPath, 0, result, workCh)
+	close(workCh)
+	wg.Wait()
+
+	if walkErr != nil {
+		return nil, fmt.Errorf("failed to scan buildroot: %w", walkErr)
+	}
+	if workerErr != nil {
+		return nil, fmt.Errorf("failed to scan buildroot: %w", workerErr)
+	}
+
+	// Sort for deterministic output (parallel workers append in arbitrary order)
+	slices.Sort(result.AllFiles)
+	slices.Sort(result.RegularFiles)
+	slices.Sort(result.SymbolicLinks)
+	slices.Sort(result.Directories)
+
+	// Build normalized paths (safe after workers complete)
 	for _, filePath := range result.AllFiles {
 		normalized, err := BuildrootToInstalled(filePath, buildrootPath)
 		if err != nil {
@@ -89,17 +131,8 @@ func (s *Scanner) ScanDirectory(buildrootPath string) (*ScanResult, error) {
 	return result, nil
 }
 
-// GetNormalizedPaths extracts normalized paths from scan results for Syft file coordinate matching.
-func (sr *ScanResult) GetNormalizedPaths() []string {
-	var normalizedPaths []string
-	for _, normalized := range sr.NormalizedPaths {
-		normalizedPaths = append(normalizedPaths, normalized)
-	}
-	return normalizedPaths
-}
-
-// scanRecursive performs recursive directory scanning with depth control.
-func (s *Scanner) scanRecursive(currentPath string, depth int, result *ScanResult) error {
+// walkDirectories walks directories sequentially and sends files to workCh.
+func (s *Scanner) walkDirectories(currentPath string, depth int, result *ScanResult, workCh chan<- fileWork) error {
 	if depth > s.maxDepth {
 		return nil
 	}
@@ -120,33 +153,75 @@ func (s *Scanner) scanRecursive(currentPath string, depth int, result *ScanResul
 			continue
 		}
 
-		info, err := entry.Info()
-		if err != nil {
-			return fmt.Errorf("failed to get file info for %s: %w", fullPath, err)
-		}
-
-		result.TotalSize += info.Size()
-		result.AllFiles = append(result.AllFiles, fullPath)
-
-		switch {
-		case info.Mode().IsRegular():
-			result.RegularFiles = append(result.RegularFiles, fullPath)
-
-		case info.Mode()&os.ModeSymlink != 0:
-			result.SymbolicLinks = append(result.SymbolicLinks, fullPath)
-
-		case info.IsDir():
+		if entry.IsDir() {
+			// Process directory info inline (cheap)
+			info, err := entry.Info()
+			if err != nil {
+				return fmt.Errorf("failed to get dir info for %s: %w", fullPath, err)
+			}
+			size := info.Size()
+			result.mu.Lock()
+			result.AllFiles = append(result.AllFiles, fullPath)
 			result.Directories = append(result.Directories, fullPath)
-			if err := s.scanRecursive(fullPath, depth+1, result); err != nil {
+			result.TotalSize += size
+			result.mu.Unlock()
+
+			// Recurse into subdirectory
+			if err := s.walkDirectories(fullPath, depth+1, result, workCh); err != nil {
 				return err
 			}
+		} else {
+			// Send file to worker pool for parallel processing
+			workCh <- fileWork{path: fullPath, entry: entry}
 		}
 	}
 
 	return nil
 }
 
-// shouldExclude checks if a path should be excluded from scanning based on configured patterns.
+// processFile processes a single file (called by workers).
+func (s *Scanner) processFile(fullPath string, entry os.DirEntry, result *ScanResult) error {
+	info, err := os.Lstat(fullPath)
+	if err != nil {
+		return fmt.Errorf("failed to get file info for %s: %w", fullPath, err)
+	}
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		size := info.Size()
+		result.mu.Lock()
+		result.AllFiles = append(result.AllFiles, fullPath)
+		result.SymbolicLinks = append(result.SymbolicLinks, fullPath)
+		result.TotalSize += size
+		result.mu.Unlock()
+		return nil
+	}
+
+	size := info.Size()
+	result.mu.Lock()
+	result.AllFiles = append(result.AllFiles, fullPath)
+	result.TotalSize += size
+	if info.Mode().IsRegular() {
+		result.RegularFiles = append(result.RegularFiles, fullPath)
+	}
+	result.mu.Unlock()
+
+	return nil
+}
+
+// GetNormalizedPaths extracts normalized paths from scan results.
+func (sr *ScanResult) GetNormalizedPaths() []string {
+	if sr.mu != nil {
+		sr.mu.RLock()
+		defer sr.mu.RUnlock()
+	}
+	var normalizedPaths []string
+	for _, normalized := range sr.NormalizedPaths {
+		normalizedPaths = append(normalizedPaths, normalized)
+	}
+	return normalizedPaths
+}
+
+// shouldExclude checks if a path should be excluded from scanning.
 func (s *Scanner) shouldExclude(path string) (bool, error) {
 	for _, pattern := range s.excludePatterns {
 		matched, err := filepath.Match(pattern, path)
@@ -168,22 +243,16 @@ func (s *Scanner) shouldExclude(path string) (bool, error) {
 	return false, nil
 }
 
-// BuildrootToInstalled converts a buildroot path to an installed path for Syft coordinate matching.
-//
-// It removes the buildroot prefix and ensures the path starts with "/" for consistency
-// with Syft's file coordinate system.
+// BuildrootToInstalled converts a buildroot path to an installed path.
 func BuildrootToInstalled(buildrootFile, buildrootPath string) (string, error) {
-	if !strings.HasPrefix(buildrootFile, buildrootPath) {
-		return "", fmt.Errorf("file %s is not under buildroot %s", buildrootFile, buildrootPath)
+	cleanFile := filepath.Clean(buildrootFile)
+	cleanBuildroot := filepath.Clean(buildrootPath)
+	rel, err := filepath.Rel(cleanBuildroot, cleanFile)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return "", fmt.Errorf("path outside buildroot: %s", buildrootFile)
 	}
 
-	relativePath := strings.TrimPrefix(buildrootFile, buildrootPath)
-
-	if !strings.HasPrefix(relativePath, "/") {
-		relativePath = "/" + relativePath
-	}
-
-	installedPath := filepath.Clean(relativePath)
+	installedPath := filepath.Clean("/" + rel)
 
 	return installedPath, nil
 }
