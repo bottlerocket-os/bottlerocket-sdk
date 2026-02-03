@@ -232,7 +232,7 @@ func TestGenerateCanonicalKey_CPEPreferred(t *testing.T) {
 		},
 	}
 
-	key := generateCanonicalKey(p)
+	key := generateCanonicalKey(&p)
 
 	assert.Equal(t, "cpe:2.3:a:test:test:1.0:*:*:*:*:*:*:*", key)
 	assert.NotContains(t, key, "fallback:")
@@ -249,7 +249,7 @@ func TestGenerateCanonicalKey_FallbackStrategy(t *testing.T) {
 		Type:    pkg.RpmPkg,
 	}
 
-	key := generateCanonicalKey(p)
+	key := generateCanonicalKey(&p)
 
 	assert.Equal(t, "test|1.0|rpm", key)
 }

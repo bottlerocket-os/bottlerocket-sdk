@@ -191,8 +191,8 @@ func TestCreateFinalSBOM(t *testing.T) {
 
 	relationships := []artifact.Relationship{
 		{
-			From: pkg.Package{Name: "pkg1"},
-			To:   pkg.Package{Name: "pkg2"},
+			From: *canonicalPackages["key1"],
+			To:   *canonicalPackages["key2"],
 			Type: artifact.DependencyOfRelationship,
 		},
 	}

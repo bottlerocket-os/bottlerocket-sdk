@@ -8,6 +8,7 @@ package deduplication
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,6 +16,8 @@ import (
 	"github.com/anchore/syft/syft/cpe"
 	"github.com/anchore/syft/syft/file"
 	"github.com/anchore/syft/syft/pkg"
+
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/unionfind"
 )
 
 // DeduplicationResult contains the results of package deduplication.
@@ -61,7 +64,7 @@ func DeduplicatePackages(packages []pkg.Package) *DeduplicationResult {
 
 	for i := range realPackages {
 		p := &realPackages[i]
-		key := generateCanonicalKey(*p)
+		key := generateCanonicalKey(p)
 		keyToPackages[key] = append(keyToPackages[key], p)
 	}
 
@@ -107,26 +110,49 @@ func DeduplicatePackages(packages []pkg.Package) *DeduplicationResult {
 // UpdateRelationships rebuilds relationships using canonical packages from deduplication.
 func UpdateRelationships(relationships []artifact.Relationship, canonicalPackages map[string]*pkg.Package, idMapping map[string]string) []artifact.Relationship {
 	updated := make([]artifact.Relationship, 0, len(relationships))
-	relationshipSet := make(map[string]bool)
+	relationshipSet := make(map[string]bool, len(relationships))
 
-	idToCanonical := make(map[string]*pkg.Package)
+	idToCanonical := make(map[string]*pkg.Package, len(canonicalPackages))
+	cpeToCanonical := make(map[string]*pkg.Package, len(canonicalPackages))
+	nvtToCanonical := make(map[string]*pkg.Package, len(canonicalPackages))
+	prefixToCanonical := make(map[string]*pkg.Package, len(canonicalPackages))
 	for _, canonical := range canonicalPackages {
+		if canonical == nil {
+			continue
+		}
 		idToCanonical[string(canonical.ID())] = canonical
+		for _, c := range canonical.CPEs {
+			cpeToCanonical[c.Attributes.String()] = canonical
+		}
+		nvtKey := nvtKeyFromPackage(canonical)
+		nvtToCanonical[nvtKey] = canonical
+		// Build prefix lookup: SPDX ID without trailing hash
+		idStr := string(canonical.ID())
+		if idx := strings.LastIndex(idStr, "-"); idx > 0 {
+			prefixToCanonical[idStr[:idx]] = canonical
+		}
 	}
 
 	for _, rel := range relationships {
+		if rel.From == nil || rel.To == nil {
+			continue
+		}
 		newRel := rel
 
 		if canonicalID, exists := idMapping[string(rel.From.ID())]; exists {
 			if canonical, found := idToCanonical[canonicalID]; found {
 				newRel.From = canonical
 			}
+		} else {
+			newRel.From = resolveEndpoint(rel.From, cpeToCanonical, nvtToCanonical, prefixToCanonical)
 		}
 
 		if canonicalID, exists := idMapping[string(rel.To.ID())]; exists {
 			if canonical, found := idToCanonical[canonicalID]; found {
 				newRel.To = canonical
 			}
+		} else {
+			newRel.To = resolveEndpoint(rel.To, cpeToCanonical, nvtToCanonical, prefixToCanonical)
 		}
 
 		relKey := fmt.Sprintf("%s|%s|%s", newRel.From.ID(), newRel.To.ID(), newRel.Type)
@@ -145,8 +171,54 @@ func UpdateRelationships(relationships []artifact.Relationship, canonicalPackage
 	return updated
 }
 
+// resolveEndpoint attempts to find a canonical package for a relationship endpoint.
+func resolveEndpoint(endpoint artifact.Identifiable, cpeToCanonical, nvtToCanonical, prefixToCanonical map[string]*pkg.Package) artifact.Identifiable {
+	if endpoint == nil {
+		return nil
+	}
+	var p *pkg.Package
+	switch v := endpoint.(type) {
+	case *pkg.Package:
+		p = v
+	case pkg.Package:
+		p = &v
+	default:
+		// Not a pkg.Package - try SPDX ID prefix matching
+		idStr := string(endpoint.ID())
+		if idx := strings.LastIndex(idStr, "-"); idx > 0 {
+			if canonical, found := prefixToCanonical[idStr[:idx]]; found {
+				return canonical
+			}
+		}
+		return endpoint
+	}
+
+	// Try CPE lookup
+	for _, c := range p.CPEs {
+		if canonical, found := cpeToCanonical[c.Attributes.String()]; found {
+			return canonical
+		}
+	}
+
+	// Try NVT lookup
+	nvtKey := nvtKeyFromPackage(p)
+	if canonical, found := nvtToCanonical[nvtKey]; found {
+		return canonical
+	}
+
+	return endpoint
+}
+
+// nvtKeyFromPackage creates a name+version+type key for package lookup.
+func nvtKeyFromPackage(p *pkg.Package) string {
+	if p == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s|%s|%s", strings.ToLower(strings.TrimSpace(p.Name)), normalizeVersion(p.Version), string(p.Type))
+}
+
 // generateCanonicalKey creates a unique key for package deduplication.
-func generateCanonicalKey(p pkg.Package) string {
+func generateCanonicalKey(p *pkg.Package) string {
 	// Use CPE as primary deduplication key when available
 	if len(p.CPEs) > 0 {
 		return p.CPEs[0].Attributes.String()
@@ -263,64 +335,87 @@ func isUnknownOrNoAssertion(value string) bool {
 	return normalized == "unknown" || normalized == "noassertion" || normalized == ""
 }
 
-// mergeOverlappingCPEGroups merges package groups that have overlapping CPEs
+// mergeOverlappingCPEGroups merges package groups that share CPEs using Union-Find.
+//
+// Problem: Packages from different SBOMs may represent the same software but have
+// different canonical keys (e.g., different CPE variants). If any CPE appears in
+// multiple groups, those groups should be merged.
+//
+// Solution: Union-Find (disjoint set) provides O(α(n)) amortized operations where
+// α is the inverse Ackermann function (effectively constant). This replaces the
+// previous O(n²) pairwise comparison approach.
+//
+// Algorithm:
+//  1. Build an inverted index: CPE string -> list of group indices that contain it
+//  2. Initialize Union-Find with each group as its own set
+//  3. For each CPE that appears in multiple groups, union those groups together
+//  4. Collect all packages belonging to the same root into merged groups
 func mergeOverlappingCPEGroups(keyToPackages map[string][]*pkg.Package) map[string][]*pkg.Package {
+	if len(keyToPackages) == 0 {
+		return keyToPackages
+	}
+
+	// Convert map to slices for index-based Union-Find operations
+	// Sort keys for deterministic results
+	keys := make([]string, 0, len(keyToPackages))
+	for k := range keyToPackages {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
 	groups := make([][]*pkg.Package, 0, len(keyToPackages))
-	for _, group := range keyToPackages {
-		groups = append(groups, group)
+	for _, k := range keys {
+		groups = append(groups, keyToPackages[k])
 	}
 
-	merged := make([][]*pkg.Package, 0)
-	used := make([]bool, len(groups))
-
-	for i, group1 := range groups {
-		if used[i] {
-			continue
-		}
-
-		mergedGroup := make([]*pkg.Package, len(group1))
-		copy(mergedGroup, group1)
-		used[i] = true
-
-		for j := i + 1; j < len(groups); j++ {
-			if used[j] {
-				continue
-			}
-
-			if hasOverlappingCPEs(mergedGroup, groups[j]) {
-				mergedGroup = append(mergedGroup, groups[j]...)
-				used[j] = true
+	// Step 1: Build inverted index from CPE -> group indices
+	cpeToGroups := make(map[string][]int)
+	for idx, group := range groups {
+		for _, p := range group {
+			for _, c := range p.CPEs {
+				cpeStr := c.Attributes.String()
+				cpeToGroups[cpeStr] = append(cpeToGroups[cpeStr], idx)
 			}
 		}
-
-		merged = append(merged, mergedGroup)
 	}
 
+	// Step 2: Initialize Union-Find
+	uf := unionfind.New(len(groups))
+
+	// Step 3: Union all groups that share any CPE
+	for _, indices := range cpeToGroups {
+		for i := 1; i < len(indices); i++ {
+			uf.Union(indices[0], indices[i], keys)
+		}
+	}
+
+	// Step 3b: Build inverted index from name+version+type -> group indices
+	// This catches packages that should merge but have different/no CPEs
+	nvtToGroups := make(map[string][]int)
+	for idx, group := range groups {
+		for _, p := range group {
+			nvtKey := fmt.Sprintf("%s|%s|%s", strings.ToLower(strings.TrimSpace(p.Name)), normalizeVersion(p.Version), string(p.Type))
+			nvtToGroups[nvtKey] = append(nvtToGroups[nvtKey], idx)
+		}
+	}
+
+	// Step 3c: Union all groups that share name+version+type
+	for _, indices := range nvtToGroups {
+		for i := 1; i < len(indices); i++ {
+			uf.Union(indices[0], indices[i], keys)
+		}
+	}
+
+	// Step 4: Collect packages by their root group
+	merged := make(map[int][]*pkg.Package)
+	for i, group := range groups {
+		root := uf.Find(i)
+		merged[root] = append(merged[root], group...)
+	}
+
+	// Convert back to map keyed by the root's canonical key
 	result := make(map[string][]*pkg.Package)
-	for i, group := range merged {
-		key := fmt.Sprintf("merged_group_%d", i)
-		result[key] = group
+	for root, pkgs := range merged {
+		result[keys[root]] = pkgs
 	}
-
 	return result
-}
-
-// hasOverlappingCPEs checks if two package groups have any overlapping CPEs
-func hasOverlappingCPEs(group1, group2 []*pkg.Package) bool {
-	cpes1 := make(map[string]bool)
-	for _, pkg := range group1 {
-		for _, cpe := range pkg.CPEs {
-			cpes1[cpe.Attributes.String()] = true
-		}
-	}
-
-	for _, pkg := range group2 {
-		for _, cpe := range pkg.CPEs {
-			if cpes1[cpe.Attributes.String()] {
-				return true
-			}
-		}
-	}
-
-	return false
 }
