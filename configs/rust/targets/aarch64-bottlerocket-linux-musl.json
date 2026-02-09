@@ -15,7 +15,7 @@
   "llvm-target": "aarch64-unknown-linux-musl",
   "max-atomic-width": 128,
   "metadata": {
-    "description": "ARM64 Linux with musl 1.2.3",
+    "description": "ARM64 Linux with musl 1.2.5",
     "host_tools": true,
     "std": true,
     "tier": 2

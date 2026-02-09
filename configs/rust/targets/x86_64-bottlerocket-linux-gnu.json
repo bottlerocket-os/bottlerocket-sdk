@@ -42,7 +42,8 @@
     "cfi",
     "kcfi",
     "safestack",
-    "dataflow"
+    "dataflow",
+    "realtime"
   ],
   "supported-split-debuginfo": [
     "packed",

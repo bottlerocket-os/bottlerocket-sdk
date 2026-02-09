@@ -285,7 +285,7 @@ RUN \
 
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
-ENV RUSTVER="1.92.0"
+ENV RUSTVER="1.93.0"
 
 USER builder
 WORKDIR /home/builder

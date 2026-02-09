@@ -14,7 +14,7 @@
   "llvm-target": "x86_64-unknown-linux-musl",
   "max-atomic-width": 64,
   "metadata": {
-    "description": "64-bit Linux with musl 1.2.3",
+    "description": "64-bit Linux with musl 1.2.5",
     "host_tools": true,
     "std": true,
     "tier": 2

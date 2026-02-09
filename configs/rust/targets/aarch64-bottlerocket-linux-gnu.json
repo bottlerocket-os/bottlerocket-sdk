@@ -33,7 +33,8 @@
     "hwaddress",
     "cfi",
     "memtag",
-    "kcfi"
+    "kcfi",
+    "realtime"
   ],
   "supported-split-debuginfo": [
     "packed",
