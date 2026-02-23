@@ -1150,7 +1150,6 @@ RUN \
 COPY ./wrappers/go/go /usr/bin/go
 COPY ./wrappers/go/go-latest /usr/bin/go-latest
 COPY ./wrappers/go/gofmt /usr/bin/gofmt
-COPY ./wrappers/go/gofips /usr/bin/gofips
 
 # Strip and add tools to the path.
 RUN \
