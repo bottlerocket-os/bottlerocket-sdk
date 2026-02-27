@@ -5,6 +5,7 @@
   "crt-static-default": true,
   "crt-static-respected": true,
   "data-layout": "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128",
+  "default-uwtable": true,
   "dynamic-linking": true,
   "env": "musl",
   "has-rpath": true,
@@ -13,7 +14,7 @@
   "llvm-target": "x86_64-unknown-linux-musl",
   "max-atomic-width": 64,
   "metadata": {
-    "description": "64-bit Linux with musl 1.2.3",
+    "description": "64-bit Linux with musl 1.2.5",
     "host_tools": true,
     "std": true,
     "tier": 2
@@ -106,7 +107,7 @@
   "target-family": [
     "unix"
   ],
-  "target-pointer-width": "64",
+  "target-pointer-width": 64,
   "vendor": "bottlerocket",
   "panic-strategy": "abort"
 }
