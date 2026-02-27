@@ -1,4 +1,4 @@
-From dc9a878ba1b4a6d86f6ed828fcbcc6188feab43e Mon Sep 17 00:00:00 2001
+From 5e06ec2142f57b32a45e003bba58fdb544fb1300 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:58:27 +0000
 Subject: [PATCH] build gcc with TOOLS_DIR and SYSROOT_DIR
@@ -25,16 +25,16 @@ with the fixed pthreads.h and glibc 2.40.
 
 Signed-off-by: Ben Cressey <bcressey@amazon.com>
 ---
- package/gcc/gcc-final/gcc-final.mk     | 57 +++++++++++++++++++-------
+ package/gcc/gcc-final/gcc-final.mk     | 56 ++++++++++++++++++++------
  package/gcc/gcc-initial/gcc-initial.mk |  3 ++
  package/gcc/gcc.mk                     |  2 +-
- 3 files changed, 47 insertions(+), 15 deletions(-)
+ 3 files changed, 47 insertions(+), 14 deletions(-)
 
 diff --git a/package/gcc/gcc-final/gcc-final.mk b/package/gcc/gcc-final/gcc-final.mk
-index 99d7047b5f..3ba6adf66a 100644
+index 97a64ae2fa..db9b28cd84 100644
 --- a/package/gcc/gcc-final/gcc-final.mk
 +++ b/package/gcc/gcc-final/gcc-final.mk
-@@ -54,9 +54,18 @@ define HOST_GCC_FINAL_CONFIGURE_CMDS
+@@ -57,9 +57,18 @@ define HOST_GCC_FINAL_CONFIGURE_CMDS
  		LDFLAGS="$(HOST_LDFLAGS)" \
  		$(HOST_GCC_FINAL_CONF_ENV) \
  		./configure \
@@ -55,7 +55,7 @@ index 99d7047b5f..3ba6adf66a 100644
  		$(QUIET) $(HOST_GCC_FINAL_CONF_OPTS) \
  	)
  endef
-@@ -77,12 +85,12 @@ HOST_GCC_FINAL_CONF_OPTS = \
+@@ -80,19 +89,17 @@ HOST_GCC_FINAL_CONF_OPTS = \
  # doesn't use floating point operations.
  ifeq ($(BR2_sh4)$(BR2_sh4eb),y)
  HOST_GCC_FINAL_CONF_OPTS += "--with-multilib-list=m4,m4-nofpu"
@@ -70,19 +70,6 @@ index 99d7047b5f..3ba6adf66a 100644
 +HOST_GCC_FINAL_GCC_LIB_DIR = $(TOOLS_DIR)/usr/$(GNU_TARGET_NAME)/lib*
  endif
  
- ifeq ($(BR2_GCC_SUPPORTS_LIBCILKRTS),y)
-@@ -97,7 +105,7 @@ ifeq ($(BR2_PTHREADS_NONE),y)
- HOST_GCC_FINAL_CONF_OPTS += --disable-libcilkrts
- endif
- 
--ifeq ($(BR2_STATIC_LIBS),y)
-+ifeq (y,y)
- # disable libcilkrts as there is no static version
- HOST_GCC_FINAL_CONF_OPTS += --disable-libcilkrts
- endif
-@@ -105,10 +113,8 @@ endif
- endif # BR2_GCC_SUPPORTS_LIBCILKRTS
- 
  # Disable shared libs like libstdc++ if we do static since it confuses linking
 -ifeq ($(BR2_STATIC_LIBS),y)
 -HOST_GCC_FINAL_CONF_OPTS += --disable-shared
@@ -93,7 +80,7 @@ index 99d7047b5f..3ba6adf66a 100644
  endif
  
  ifeq ($(BR2_GCC_ENABLE_OPENMP),y)
-@@ -127,22 +133,27 @@ HOST_GCC_FINAL_CONF_ENV = \
+@@ -111,22 +118,27 @@ HOST_GCC_FINAL_CONF_ENV = \
  
  HOST_GCC_FINAL_MAKE_OPTS += $(HOST_GCC_COMMON_MAKE_OPTS)
  
@@ -124,7 +111,7 @@ index 99d7047b5f..3ba6adf66a 100644
  
  GCC_FINAL_LIBS =
  
-@@ -176,6 +187,7 @@ endif
+@@ -160,6 +172,7 @@ endif
  
  GCC_FINAL_USR_LIBS += $(call qstrip,$(BR2_TOOLCHAIN_EXTRA_LIBS))
  
@@ -132,7 +119,7 @@ index 99d7047b5f..3ba6adf66a 100644
  define GCC_FINAL_INSTALL_STAGING_CMDS
  	$(foreach lib,$(GCC_FINAL_LIBS), \
  		cp -dpf $(HOST_GCC_FINAL_GCC_LIB_DIR)/$(lib)* \
-@@ -186,8 +198,9 @@ define GCC_FINAL_INSTALL_STAGING_CMDS
+@@ -170,8 +183,9 @@ define GCC_FINAL_INSTALL_STAGING_CMDS
  			$(STAGING_DIR)/usr/lib/
  	)
  endef
@@ -143,7 +130,7 @@ index 99d7047b5f..3ba6adf66a 100644
  define GCC_FINAL_INSTALL_TARGET_CMDS
  	mkdir -p $(TARGET_DIR)/lib $(TARGET_DIR)/usr/lib
  	$(foreach lib,$(GCC_FINAL_LIBS), \
-@@ -210,5 +223,21 @@ endef
+@@ -194,5 +208,21 @@ endef
  GCC_FINAL_POST_INSTALL_STAGING_HOOKS += HOST_GCC_FINAL_M68K_LIBGCC_FIXUP
  endif
  
@@ -190,7 +177,7 @@ index 1f8b76a942..6188710a01 100644
  
  $(eval $(host-autotools-package))
 diff --git a/package/gcc/gcc.mk b/package/gcc/gcc.mk
-index b39ca8566d..c10db5fb41 100644
+index 658f5a6b4f..58aae9ec26 100644
 --- a/package/gcc/gcc.mk
 +++ b/package/gcc/gcc.mk
 @@ -71,7 +71,6 @@ HOST_GCC_COMMON_DEPENDENCIES = \
@@ -209,6 +196,3 @@ index b39ca8566d..c10db5fb41 100644
  	--with-gmp=$(HOST_DIR) \
  	--with-mpc=$(HOST_DIR) \
  	--with-mpfr=$(HOST_DIR) \
--- 
-2.47.0
-

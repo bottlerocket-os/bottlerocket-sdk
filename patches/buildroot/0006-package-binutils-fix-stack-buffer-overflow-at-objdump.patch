@@ -1,4 +1,4 @@
-From 7fbf8d620537d8afd43cdfd2588f552a6ea284ee Mon Sep 17 00:00:00 2001
+From 513b209a00390038141d5e18e6a6847434009d57 Mon Sep 17 00:00:00 2001
 From: Piyush Jena <piyushjena1996@gmail.com>
 Date: Mon, 14 Apr 2025 19:52:22 +0000
 Subject: [PATCH] package/binutils: fix stack buffer overflow at objdump
@@ -69,6 +69,3 @@ index 0000000000..7d24dfecc6
 +--
 +2.43.5
 +
---
-2.47.1
-

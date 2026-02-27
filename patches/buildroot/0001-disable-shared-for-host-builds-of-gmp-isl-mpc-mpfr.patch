@@ -1,4 +1,4 @@
-From e8f7676338cf4d7b69d58cfcb4b2e72af0e058b6 Mon Sep 17 00:00:00 2001
+From 246f16b6a08d2be95934821b23178e50d849ada3 Mon Sep 17 00:00:00 2001
 From: Ben Cressey <bcressey@amazon.com>
 Date: Sun, 6 Aug 2017 23:15:02 +0000
 Subject: [PATCH] disable shared for host builds of gmp, isl, mpc, mpfr
@@ -30,10 +30,10 @@ index 829636900b..69ce149e25 100644
  # host-intltool should be executed with the system perl, so we save
  # the path to the system perl, before a host-perl built by Buildroot
 diff --git a/package/gmp/gmp.mk b/package/gmp/gmp.mk
-index 7e8da9025c..db2b90c50f 100644
+index 07aa4aefdf..6ccec99335 100644
 --- a/package/gmp/gmp.mk
 +++ b/package/gmp/gmp.mk
-@@ -16,6 +16,10 @@ HOST_GMP_DEPENDENCIES = host-m4
+@@ -20,6 +20,10 @@ HOST_GMP_AUTORECONF = YES
  
  GMP_CONF_ENV += CC_FOR_BUILD="$(HOSTCC) -std=c99"
  
@@ -85,6 +85,3 @@ index c0c8c04646..d827cbfc3b 100644
 +
  $(eval $(autotools-package))
  $(eval $(host-autotools-package))
--- 
-2.47.0
-
