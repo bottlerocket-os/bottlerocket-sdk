@@ -257,7 +257,7 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
   CGO_LDFLAGS="%{_cross_ldflags}" ; export CGO_LDFLAGS ; \
   PKG_CONFIG_PATH="%{_cross_pkgconfigdir}" ; export PKG_CONFIG_PATH ; \
   PKG_CONFIG_ALLOW_CROSS=1 ; export PKG_CONFIG_ALLOW_CROSS ; \
-  GOFLAGS="-mod=vendor -a -buildmode=pie -buildvcs=false"; export GOFLAGS ; \
+  GOFLAGS="-mod=vendor -a -buildmode=pie -buildvcs=false -trimpath"; export GOFLAGS ; \
   GOLDFLAGS_INT="-compressdwarf=false -linkmode=external" ; export GOLDFLAGS_INT ; \
   GOLDFLAGS_EXT="%{expand:%%%2}" ; export GOLDFLAGS_EXT ; \
   GOLDFLAGS="${GOLDFLAGS_INT} -extldflags '${GOLDFLAGS_EXT}'" ; export GOLDFLAGS ; \
