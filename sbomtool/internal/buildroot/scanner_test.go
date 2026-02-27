@@ -3,6 +3,7 @@ package buildroot
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -463,6 +464,7 @@ func TestGetNormalizedPaths(t *testing.T) {
 			"/tmp/buildroot/usr/lib/lib.so": "/usr/lib/lib.so",
 			"/tmp/buildroot/etc/config":     "/etc/config",
 		},
+		mu: &sync.RWMutex{},
 	}
 
 	normalizedPaths := result.GetNormalizedPaths()

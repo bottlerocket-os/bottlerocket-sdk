@@ -65,7 +65,7 @@ The merge command combines multiple SBOM files while:
 - Maintaining SBOM format integrity
 - Providing comprehensive merge statistics
 
-All input files must be in the same format (SPDX or CycloneDX).
+Input files can be mixed formats (SPDX and CycloneDX). The output format is determined by the first input file.
 
 ### Examples
 

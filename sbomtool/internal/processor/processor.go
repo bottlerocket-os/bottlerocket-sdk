@@ -4,14 +4,17 @@
 package processor
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/anchore/syft/syft/format"
 	"github.com/anchore/syft/syft/format/cyclonedxjson"
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
+	"golang.org/x/sync/errgroup"
 )
 
 // LoadSBOM loads an existing SBOM using Syft's format detection.
@@ -89,4 +92,35 @@ func countPackagesByType(catalog *pkg.Collection, pkgType pkg.Type) int {
 		}
 	}
 	return count
+}
+
+// SaveSBOMBothFormats saves the SBOM in both SPDX and CycloneDX formats in parallel.
+func SaveSBOMBothFormats(ctx context.Context, s *sbom.SBOM, basePath string) error {
+	base := strings.TrimSuffix(basePath, ".json")
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	formats := []struct {
+		name string
+		id   string
+	}{
+		{"spdx", "spdx-json"},
+		{"cyclonedx", "cyclonedx-json"},
+	}
+
+	for _, f := range formats {
+		name, formatID := f.name, f.id
+		g.Go(func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			path := fmt.Sprintf("%s-%s.json", base, name)
+			if err := SaveSBOM(s, path, formatID); err != nil {
+				return fmt.Errorf("%s: %w", name, err)
+			}
+			return nil
+		})
+	}
+
+	return g.Wait()
 }
