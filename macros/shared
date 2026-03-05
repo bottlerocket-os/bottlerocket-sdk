@@ -330,11 +330,9 @@ This package provides SBOM files for %{name}.\
 %[ 0%{?_enable_sbom_packages} > 0 ? "%{expand:%%global __sbom_package 1}%(echo "%{_sbom_template}" > %{specpartsdir}/rpm-sbom.specpart)" : "" ]\
 %{nil}
 
-%_cross_sbom_build_dir %{_builddir}
-
 %cross_generate_sbom \
   mkdir -p %{_builddir}/sbom-temp \
-  sbomtool generate --name %{_uncross_name} --out-dir %{_builddir}/sbom-temp --build-dir %{_cross_sbom_build_dir} --spdx --cyclonedx
+  sbomtool generate --name %{_uncross_name} --out-dir %{_builddir}/sbom-temp --build-dir %{_builddir} --spdx --cyclonedx
 
 %cross_install_sbom \
   install -d %{buildroot}%{_cross_sbom_package_dir} \
