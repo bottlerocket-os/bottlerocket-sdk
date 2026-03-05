@@ -299,6 +299,7 @@ CROSS_CMAKE_TOOLCHAIN_EOF\
 %_sbom_template \
 %ifnarch noarch\
 %global __sbom_package 1\
+%{?buildsubdir:%%global __sbom_package 1}\
 %package sbom\
 Summary: SBOM (Software Bill of Materials) for %{name}\
 AutoReqProv: 0\
@@ -315,6 +316,7 @@ This package provides SBOM files for %{name}.\
 %sbom_package \
 %ifnarch noarch\
 %global __sbom_package 1\
+%{?buildsubdir:%%global __sbom_package 1}\
 %_sbom_template\
 %endif\
 %{nil}
@@ -327,7 +329,7 @@ This package provides SBOM files for %{name}.\
 %__spec_install_template\
 %{__spec_install_pre}\
 %[ 0%{?_enable_debug_packages} > 0 ? "%{?buildsubdir:%(echo "%{debug_package}" > %{specpartsdir}/rpm-debuginfo.specpart)}" : "" ]\
-%[ 0%{?_enable_sbom_packages} > 0 ? "%{expand:%%global __sbom_package 1}%(echo "%{_sbom_template}" > %{specpartsdir}/rpm-sbom.specpart)" : "" ]\
+%[ 0%{?_enable_sbom_packages} > 0 ? "%{?buildsubdir:%{expand:%%global __sbom_package 1}%(echo "%{_sbom_template}" > %{specpartsdir}/rpm-sbom.specpart)}" : "" ]\
 %{nil}
 
 %cross_generate_sbom \
