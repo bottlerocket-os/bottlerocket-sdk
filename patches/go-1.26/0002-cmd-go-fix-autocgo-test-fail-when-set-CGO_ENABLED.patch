@@ -1,0 +1,76 @@
+From 224489f11c2e0b394e93980fc8292c52f60b18a8 Mon Sep 17 00:00:00 2001
+From: qiulaidongfeng <2645477756@qq.com>
+Date: Sat, 21 Mar 2026 09:25:14 +0800
+Subject: [PATCH] cmd/go: fix autocgo test fail when set CGO_ENABLED during
+ make.bash
+
+Details see CL 706095
+
+Fixes #75340
+
+Change-Id: Ic7276f2fb3abc5f02f224d82e1f26844888f0a1e
+Reviewed-on: https://go-review.googlesource.com/c/go/+/757182
+Reviewed-by: Cherry Mui <cherryyz@google.com>
+Reviewed-by: Michael Matloob <matloob@golang.org>
+LUCI-TryBot-Result: Go LUCI <golang-scoped@luci-project-accounts.iam.gserviceaccount.com>
+Reviewed-by: Michael Matloob <matloob@google.com>
+---
+ src/cmd/go/scriptconds_test.go         | 6 ++++++
+ src/cmd/go/testdata/script/README      | 2 ++
+ src/cmd/go/testdata/script/autocgo.txt | 2 +-
+ 3 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/src/cmd/go/scriptconds_test.go b/src/cmd/go/scriptconds_test.go
+index f24b74bfda3dd0..6bf8eb0953c67f 100644
+--- a/src/cmd/go/scriptconds_test.go
++++ b/src/cmd/go/scriptconds_test.go
+@@ -10,6 +10,7 @@ import (
+ 	"cmd/internal/script/scripttest"
+ 	"errors"
+ 	"fmt"
++	"internal/buildcfg"
+ 	"internal/testenv"
+ 	"os"
+ 	"os/exec"
+@@ -47,6 +48,7 @@ func scriptConditions(t *testing.T) map[string]script.Cond {
+ 	add("git-sha256", script.OnceCondition("the local 'git' version is recent enough to support sha256 object/commit hashes", gitSupportsSHA256))
+ 	add("net", script.PrefixCondition("can connect to external network host <suffix>", hasNet))
+ 	add("trimpath", script.OnceCondition("test binary was built with -trimpath", isTrimpath))
++	add("default-cgo", lazyBool("when CGO_ENABLED=1|0 was set in make.bash", defaultCgo))
+ 
+ 	return conds
+ }
+@@ -194,3 +196,7 @@ func hasWorkingBzr() bool {
+ 	err = exec.Command(bzr, "help").Run()
+ 	return err == nil
+ }
++
++func defaultCgo() bool {
++	return buildcfg.DefaultCGO_ENABLED == "1" || buildcfg.DefaultCGO_ENABLED == "0"
++}
+diff --git a/src/cmd/go/testdata/script/README b/src/cmd/go/testdata/script/README
+index 2b5ab6948bdff1..89ce561f898f27 100644
+--- a/src/cmd/go/testdata/script/README
++++ b/src/cmd/go/testdata/script/README
+@@ -391,6 +391,8 @@ The available conditions are:
+ 	runtime.Compiler == <suffix>
+ [cross]
+ 	cmd/go GOOS/GOARCH != GOHOSTOS/GOHOSTARCH
++[default-cgo]
++	when CGO_ENABLED=1|0 was set in make.bash
+ [exec:*]
+ 	<suffix> names an executable in the test binary's PATH
+ [fuzz]
+diff --git a/src/cmd/go/testdata/script/autocgo.txt b/src/cmd/go/testdata/script/autocgo.txt
+index 586c80251da319..33e72016b4dd29 100644
+--- a/src/cmd/go/testdata/script/autocgo.txt
++++ b/src/cmd/go/testdata/script/autocgo.txt
+@@ -1,7 +1,7 @@
+ # Test automatic setting of CGO_ENABLED based on $CC and what's in $PATH.
+ 
+ [!cgo] skip
+-[cross] skip
++[default-cgo] skip
+ 
+ # Assume we're on a system that can enable cgo normally.
+ env CGO_ENABLED=
