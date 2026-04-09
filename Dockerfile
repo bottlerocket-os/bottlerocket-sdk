@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/fedora:41 AS base
+FROM public.ecr.aws/docker/library/fedora:43 AS base
 
 # Everything we need to build our SDK and packages.
 RUN \
