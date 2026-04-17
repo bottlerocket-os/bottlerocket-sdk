@@ -509,8 +509,8 @@ ENV GO111MODULE="auto"
 USER root
 RUN dnf -y install golang
 
-ENV GO125VER="1.25.8"
-ENV GO124VER="1.24.13"
+ENV GO125VER="1.25.9"
+ENV GO126VER="1.26.2"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -530,9 +530,9 @@ RUN ./prep-go.sh --go-version=${GO125VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-prep AS sdk-go-1.24-prep
+FROM sdk-go-prep AS sdk-go-1.26-prep
 
-ENV GOMAJOR="1.24"
+ENV GOMAJOR="1.26"
 
 USER builder
 
@@ -542,7 +542,7 @@ COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
 COPY ./helpers/go/prep-go.sh ./
 COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
 
-RUN ./prep-go.sh --go-version=${GO124VER}
+RUN ./prep-go.sh --go-version=${GO126VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -555,12 +555,12 @@ RUN ./build-go.sh --go-version=${GO125VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.24-prep AS sdk-go-1.24
+FROM sdk-go-1.26-prep AS sdk-go-1.26
 
 COPY ./helpers/go/build-go.sh ./
 
 # Build Go - finally!
-RUN ./build-go.sh --go-version=${GO124VER}
+RUN ./build-go.sh --go-version=${GO126VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -681,7 +681,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.24 AS sdk-govc
+FROM sdk-go-1.25 AS sdk-govc
 
 USER root
 RUN \
@@ -721,7 +721,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.24 AS sdk-sbomtool
+FROM sdk-go-1.25 AS sdk-sbomtool
 
 USER root
 RUN \
@@ -1035,15 +1035,14 @@ COPY --chown=0:0 --from=sdk-go-1.25 \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go-1.25/
 
-COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/bin /usr/libexec/go-1.24/bin/
-COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/lib /usr/libexec/go-1.24/lib/
-COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/pkg /usr/libexec/go-1.24/pkg/
-COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/src /usr/libexec/go-1.24/src/
-COPY --chown=0:0 --from=sdk-go-1.24 /home/builder/sdk-go/go.env /usr/libexec/go-1.24/go.env
-
-COPY --chown=0:0 --from=sdk-go-1.24 \
+COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/bin /usr/libexec/go-1.26/bin/
+COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/lib /usr/libexec/go-1.26/lib/
+COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/pkg /usr/libexec/go-1.26/pkg/
+COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/src /usr/libexec/go-1.26/src/
+COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/go.env /usr/libexec/go-1.26/go.env
+COPY --chown=0:0 --from=sdk-go-1.26 \
   /home/builder/sdk-go/licenses/ \
-  /usr/share/licenses/go-1.24/
+  /usr/share/licenses/go-1.26/
 
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
@@ -1198,7 +1197,7 @@ USER builder
 WORKDIR /home/builder
 
 # Set the default Go major version.
-ENV GO_MAJOR="1.24"
+ENV GO_MAJOR="1.25"
 
 # In NSS 3.101, lib::pkix was enabled as the default X.509 validator.
 # This causes signature checking of secureboot artifacts to fail during build.
