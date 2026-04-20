@@ -4,8 +4,8 @@ SHA512 (buildroot-2025.05.1.tar.xz) = 651d1e4bd629011fdd8e1a9174c60f15f685c25425
 SHA512 (autoconf-2.72.tar.xz) = c4e9fbd858666d3e5c3b4fe7f89aa3e8e3a0a00dc7e166f8147d937d911b77ba3ac6a016f9d223ccdd830bc8960b3e60397c0607cc6a1fd2c50c7492839ddd17
 # https://mirrors.kernel.org/gnu/automake/automake-1.16.5.tar.xz
 SHA512 (automake-1.16.5.tar.xz) = 3084ae543aa3fb5a05104ffb2e66cfa9a53080f2343c44809707fd648516869511500dba50dae67ff10f92a1bf3b5a92b2a0fa01cda30adb69b9da03994d9d88
-# https://mirrors.kernel.org/gnu/binutils/binutils-2.43.1.tar.xz
-SHA512 (binutils-2.43.1.tar.xz) = 20977ad17729141a2c26d358628f44a0944b84dcfefdec2ba029c2d02f40dfc41cc91c0631044560d2bd6f9a51e1f15846b4b311befbe14f1239f14ff7d57824
+# https://mirrors.kernel.org/gnu/binutils/binutils-2.44.tar.xz
+SHA512 (binutils-2.44.tar.xz) = b85d3bbc0e334cf67a96219d3c7c65fbf3e832b2c98a7417bf131f3645a0307057ec81cd2b29ff2563cec53e3d42f73e2c60cc5708e80d4a730efdcc6ae14ad7
 # https://mirrors.kernel.org/gnu/bison/bison-3.8.2.tar.xz
 SHA512 (bison-3.8.2.tar.xz) = d4d23af6671406e97257892f90651b67f2ab95219831372be032190b7156c10a3435d457857e677445df8b2327aacccc15344acbbc3808a6f332a93cce23b444
 # https://mirrors.kernel.org/gnu/gawk/gawk-5.3.1.tar.xz
