@@ -1,6 +1,6 @@
-# https://static.rust-lang.org/dist/rustc-1.94.0-src.tar.xz
-SHA512 (rustc-1.94.0-src.tar.xz) = 8397fa68055827363bff5a1dd228a05e4c4ca5a179d072ecc1b330a874c183529cb9346ec9c531fb3f066b7b6094fc8711d7c341a49755af7b50d63bf0ecff2b
-### See https://raw.githubusercontent.com/rust-lang/rust/1.94.0/src/stage0 for what to use below. ###
+# https://static.rust-lang.org/dist/rustc-1.94.1-src.tar.xz
+SHA512 (rustc-1.94.1-src.tar.xz) = 4d20f5b2df042517b14aa4d1a7e4b149b7490ac6be9977d9273f5f81b70ca110b35c554693e1c8a8e4722bdb06532d3972a88c0cb7a8081d3d1bdb23e01e1546
+### See https://raw.githubusercontent.com/rust-lang/rust/1.94.1/src/stage0 for what to use below. ###
 # https://static.rust-lang.org/dist/2026-01-22/rust-std-1.93.0-x86_64-unknown-linux-gnu.tar.xz
 SHA512 (rust-std-1.93.0-x86_64-unknown-linux-gnu.tar.xz) = d4b6e31014c933eb4bd923023c3ec6d35b040684a664c4cdf8f442e562d6442de870cd68dd4ffe0dcd1b575328d7bc56ae15fe721518a7b2deb7af7066efddd9
 # https://static.rust-lang.org/dist/2026-01-22/rustc-1.93.0-x86_64-unknown-linux-gnu.tar.xz
