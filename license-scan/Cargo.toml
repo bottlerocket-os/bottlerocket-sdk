@@ -19,7 +19,7 @@ serde = { version = "1", features = ["derive"] }
 spdx = "0.13"
 clap = { version = "4", features = ["derive"] }
 tempfile = "3"
-toml = "0.8"
+toml = "1"
 twox-hash = "1"
 walkdir = "2"
 
