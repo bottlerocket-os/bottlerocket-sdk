@@ -11,7 +11,7 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1"
-askalono = "0.4"
+askalono = "0.5"
 cargo_metadata = "0.18"
 ignore = "0.4"
 semver = { version = "1", features = ["serde"] }
