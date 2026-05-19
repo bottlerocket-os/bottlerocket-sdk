@@ -326,18 +326,17 @@ where
     deserializer.deserialize_str(Visitor)
 }
 
-lazy_static::lazy_static! {
-    static ref TYPES: Types = {
-        let mut builder = TypesBuilder::new();
-        // there's a package with a "License" file and that isn't covered in ignore::types
-        builder.add("moarlicense", "License").unwrap();
-        builder.add_defaults()
-            .select("license")
-            .select("moarlicense")
-            .build()
-            .unwrap()
-    };
-}
+static TYPES: std::sync::LazyLock<Types> = std::sync::LazyLock::new(|| {
+    let mut builder = TypesBuilder::new();
+    // there's a package with a "License" file and that isn't covered in ignore::types
+    builder.add("moarlicense", "License").unwrap();
+    builder
+        .add_defaults()
+        .select("license")
+        .select("moarlicense")
+        .build()
+        .unwrap()
+});
 
 /// Replace '/' characters in a license string with 'OR'. (crates.io allows '/' instead of 'OR' for
 /// compatibility.)
