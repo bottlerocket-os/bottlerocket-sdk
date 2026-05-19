@@ -6,6 +6,7 @@ mod license_store;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use askalono::{ScanStrategy, Store, TextData};
+use clap::Parser;
 use ignore::types::{Types, TypesBuilder};
 use ignore::WalkBuilder;
 use license_store::SPDXOptions;
@@ -19,28 +20,27 @@ use std::fmt;
 use std::fs;
 use std::hash::Hasher;
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
 use walkdir::WalkDir;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 struct Opt {
     /// An optional clarification file.
-    #[structopt(long)]
+    #[arg(long)]
     clarify: Option<PathBuf>,
 
     /// Path to the SPDX license data (json/details in license-list-data)
-    #[structopt(long)]
+    #[arg(long)]
     spdx_data: PathBuf,
 
     /// Where to write attribution.txt and copies of license files.
-    #[structopt(long)]
+    #[arg(long)]
     out_dir: PathBuf,
 
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     cmd: Cmd,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 enum Cmd {
     GoVendor {
         /// Path to the vendor directory of a project.
@@ -51,17 +51,17 @@ enum Cmd {
         manifest_path: PathBuf,
 
         /// Equivalent to `cargo --locked`
-        #[structopt(long)]
+        #[arg(long)]
         locked: bool,
 
         /// Equivalent to `cargo --offline`
-        #[structopt(long)]
+        #[arg(long)]
         offline: bool,
     },
 }
 
 fn main() -> Result<()> {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     let clarify = match opt.clarify {
         None => Clarifications::default(),

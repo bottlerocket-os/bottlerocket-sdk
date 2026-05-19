@@ -17,7 +17,7 @@ ignore = "0.4"
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 spdx = "0.10"
-structopt = { version = "0.3", default-features = false }
+clap = { version = "4", features = ["derive"] }
 tempfile = "3"
 toml = "0.8"
 twox-hash = "1"

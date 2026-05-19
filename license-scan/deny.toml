@@ -28,10 +28,6 @@ skip = [
     { name = "windows-sys" },
 ]
 
-skip-tree = [
-    # structopt is using an older syn
-    { name = "structopt", version = "0.3.26" },
-]
 
 [sources]
 # Deny crates from unknown registries or git repositories.
