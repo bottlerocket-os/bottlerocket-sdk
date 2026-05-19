@@ -16,7 +16,7 @@ cargo_metadata = "0.18"
 ignore = "0.4"
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
-spdx = "0.10"
+spdx = "0.13"
 clap = { version = "4", features = ["derive"] }
 tempfile = "3"
 toml = "0.8"
