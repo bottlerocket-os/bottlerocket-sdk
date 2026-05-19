@@ -285,10 +285,7 @@ impl Clarifications {
                 .collect::<BTreeMap<_, _>>();
             ensure!(
                 files == clarify_files,
-                "file mismatch in clarification for {}\nclarification: {:#x?}\nscanned: {:#x?}",
-                name,
-                clarify_files,
-                files,
+                "file mismatch in clarification for {name}\nclarification: {clarify_files:#x?}\nscanned: {files:#x?}",
             );
             Ok(Some(Clarified {
                 expression: &clarification.expression,
@@ -380,7 +377,7 @@ fn write_attribution(
     let mut files = HashMap::new();
     for entry in WalkBuilder::new(scan_dir).types(TYPES.clone()).build() {
         let entry = entry?;
-        if entry.file_type().map_or(false, |ft| ft.is_file()) {
+        if entry.file_type().is_some_and(|ft| ft.is_file()) {
             let rel_path = entry.path().strip_prefix(scan_dir)?;
             let data = fs::read_to_string(entry.path())
                 .with_context(|| format!("failed to read {}", entry.path().display()))?;
