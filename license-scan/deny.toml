@@ -20,15 +20,6 @@ exceptions = [
 multiple-versions = "deny"
 wildcards = "deny"
 
-skip = [
-    # transient: getrandom 0.2 from twox-hash (removed when default features disabled)
-    # and 0.3 from cc build-dep (removed when askalono bumps to 0.5)
-    { name = "getrandom" },
-    # transient: tempfile 3.15 pins rustix 0.38 which needs windows-sys 0.59
-    { name = "windows-sys" },
-]
-
-
 [sources]
 # Deny crates from unknown registries or git repositories.
 unknown-registry = "deny"

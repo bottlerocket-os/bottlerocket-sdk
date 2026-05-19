@@ -20,7 +20,7 @@ spdx = "0.13"
 clap = { version = "4", features = ["derive"] }
 tempfile = "3"
 toml = "1"
-twox-hash = "1"
+twox-hash = { version = "1", default-features = false }
 walkdir = "2"
 
 [dev-dependencies]
