@@ -5,7 +5,7 @@ confidence-threshold = 0.93
 
 allow = [
     "Apache-2.0",
-    "BSL-1.0",
+    # "BSL-1.0",
     "MIT",
     "Unlicense",
     "Unicode-3.0",
@@ -19,6 +19,14 @@ exceptions = [
 # Deny multiple versions or wildcard dependencies.
 multiple-versions = "deny"
 wildcards = "deny"
+
+skip = [
+    # transient: getrandom 0.2 from twox-hash (removed when default features disabled)
+    # and 0.3 from cc build-dep (removed when askalono bumps to 0.5)
+    { name = "getrandom" },
+    # transient: tempfile 3.15 pins rustix 0.38 which needs windows-sys 0.59
+    { name = "windows-sys" },
+]
 
 skip-tree = [
     # structopt is using an older syn
