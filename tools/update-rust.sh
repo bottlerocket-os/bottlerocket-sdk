@@ -110,6 +110,7 @@ for arch in x86_64 aarch64 ; do
 
     jq 'del(."is-builtin") |
       del(."link-self-contained") |
+      ."crt-objects-fallback" //= "false" |
       ."linker-flavor" = "gnu-cc" |
       . += {"vendor": "bottlerocket", "panic-strategy": "abort"}' \
     "${upstream_spec}" > "${vendor_spec}"
