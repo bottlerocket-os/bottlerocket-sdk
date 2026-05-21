@@ -30,6 +30,7 @@
 %__cargo_cross_pkg_config PKG_CONFIG_PATH="%{_cross_pkgconfigdir}" PKG_CONFIG_ALLOW_CROSS=1
 
 %__cargo_cross_env_base \
+  RUSTC_BOOTSTRAP=1 ; \
   CMAKE_TOOLCHAIN_FILE="%{_cross_cmake_toolchain_conf}" ; \
   export CMAKE_TOOLCHAIN_FILE ; \
   BINDGEN_EXTRA_CLANG_ARGS="--target=%{_cross_target} --sysroot=%{_cross_rootdir}" ; \
@@ -37,6 +38,7 @@
   %{__cargo_cross_pkg_config}
 
 %__cargo_cross_env_static_base \
+  RUSTC_BOOTSTRAP=1 ; \
   CMAKE_TOOLCHAIN_FILE="%{_cross_cmake_toolchain_conf_static}" ; \
   export CMAKE_TOOLCHAIN_FILE ; \
   BINDGEN_EXTRA_CLANG_ARGS="--target=%{_cross_triple}-musl --sysroot=/%{_cross_triple}-musl/sys-root" ; \
