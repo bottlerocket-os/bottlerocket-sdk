@@ -285,7 +285,7 @@ RUN \
 
 ARG HOST_ARCH
 ENV VENDOR="bottlerocket"
-ENV RUSTVER="1.93.1"
+ENV RUSTVER="1.95.0"
 
 USER builder
 WORKDIR /home/builder
@@ -509,8 +509,8 @@ ENV GO111MODULE="auto"
 USER root
 RUN dnf -y install golang
 
-ENV GO125VER="1.25.9"
-ENV GO126VER="1.26.2"
+ENV GO125VER="1.25.10"
+ENV GO126VER="1.26.3"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
