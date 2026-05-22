@@ -39,11 +39,11 @@ skip-files = [
     "license.go"
 ]
 
-[clarify."modernc.org/sqlite"]
-expression = "blessing"
+[clarify."modernc.org/libc"]
+expression = "BSD-3-Clause AND MIT"
 license-files = [
-    { path = "SQLITE-LICENSE", hash = 0x33070547 },
-    { path = "LICENSE", hash = 0x58030944 },
+    { path = "LICENSE", hash = 0xf8178af6 },
+    { path = "LICENSE-3RD-PARTY.md", hash = 0xfc999d84 },
 ]
 
 [clarify."modernc.org/memory"]
@@ -56,4 +56,11 @@ license-files = [
 # This is a link to the logo used by this module
 skip-files = [
     "LICENSE-LOGO"
+]
+
+[clarify."modernc.org/sqlite"]
+expression = "blessing"
+license-files = [
+    { path = "SQLITE-LICENSE", hash = 0x33070547 },
+    { path = "LICENSE", hash = 0x58030944 },
 ]
