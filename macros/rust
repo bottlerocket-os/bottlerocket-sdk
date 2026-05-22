@@ -14,7 +14,6 @@
   %{_cross_arch_rust_flags} \
   -Clink-arg=-Wl,-z,relro,-z,now \
   -Clink-arg=-Wl,-z,pack-relative-relocs \
-  -Zunstable-options \
   %{nil}}
 
 # Optimize generated code by using one codegen unit
