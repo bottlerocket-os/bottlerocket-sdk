@@ -6,6 +6,7 @@ mod license_store;
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use askalono::{ScanStrategy, Store, TextData};
+use clap::Parser;
 use ignore::types::{Types, TypesBuilder};
 use ignore::WalkBuilder;
 use license_store::SPDXOptions;
@@ -19,28 +20,27 @@ use std::fmt;
 use std::fs;
 use std::hash::Hasher;
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
 use walkdir::WalkDir;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 struct Opt {
     /// An optional clarification file.
-    #[structopt(long)]
+    #[arg(long)]
     clarify: Option<PathBuf>,
 
     /// Path to the SPDX license data (json/details in license-list-data)
-    #[structopt(long)]
+    #[arg(long)]
     spdx_data: PathBuf,
 
     /// Where to write attribution.txt and copies of license files.
-    #[structopt(long)]
+    #[arg(long)]
     out_dir: PathBuf,
 
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     cmd: Cmd,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 enum Cmd {
     GoVendor {
         /// Path to the vendor directory of a project.
@@ -51,17 +51,17 @@ enum Cmd {
         manifest_path: PathBuf,
 
         /// Equivalent to `cargo --locked`
-        #[structopt(long)]
+        #[arg(long)]
         locked: bool,
 
         /// Equivalent to `cargo --offline`
-        #[structopt(long)]
+        #[arg(long)]
         offline: bool,
     },
 }
 
 fn main() -> Result<()> {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     let clarify = match opt.clarify {
         None => Clarifications::default(),
@@ -285,10 +285,7 @@ impl Clarifications {
                 .collect::<BTreeMap<_, _>>();
             ensure!(
                 files == clarify_files,
-                "file mismatch in clarification for {}\nclarification: {:#x?}\nscanned: {:#x?}",
-                name,
-                clarify_files,
-                files,
+                "file mismatch in clarification for {name}\nclarification: {clarify_files:#x?}\nscanned: {files:#x?}",
             );
             Ok(Some(Clarified {
                 expression: &clarification.expression,
@@ -326,18 +323,17 @@ where
     deserializer.deserialize_str(Visitor)
 }
 
-lazy_static::lazy_static! {
-    static ref TYPES: Types = {
-        let mut builder = TypesBuilder::new();
-        // there's a package with a "License" file and that isn't covered in ignore::types
-        builder.add("moarlicense", "License").unwrap();
-        builder.add_defaults()
-            .select("license")
-            .select("moarlicense")
-            .build()
-            .unwrap()
-    };
-}
+static TYPES: std::sync::LazyLock<Types> = std::sync::LazyLock::new(|| {
+    let mut builder = TypesBuilder::new();
+    // there's a package with a "License" file and that isn't covered in ignore::types
+    builder.add("moarlicense", "License").unwrap();
+    builder
+        .add_defaults()
+        .select("license")
+        .select("moarlicense")
+        .build()
+        .unwrap()
+});
 
 /// Replace '/' characters in a license string with 'OR'. (crates.io allows '/' instead of 'OR' for
 /// compatibility.)
@@ -381,7 +377,7 @@ fn write_attribution(
     let mut files = HashMap::new();
     for entry in WalkBuilder::new(scan_dir).types(TYPES.clone()).build() {
         let entry = entry?;
-        if entry.file_type().map_or(false, |ft| ft.is_file()) {
+        if entry.file_type().is_some_and(|ft| ft.is_file()) {
             let rel_path = entry.path().strip_prefix(scan_dir)?;
             let data = fs::read_to_string(entry.path())
                 .with_context(|| format!("failed to read {}", entry.path().display()))?;

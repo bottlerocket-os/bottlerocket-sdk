@@ -11,17 +11,16 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1"
-askalono = "0.4"
-cargo_metadata = "0.18"
+askalono = "0.5"
+cargo_metadata = "0.23"
 ignore = "0.4"
-lazy_static = "1"
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
-spdx = "0.10"
-structopt = { version = "0.3", default-features = false }
+spdx = "0.13"
+clap = { version = "4", features = ["derive"] }
 tempfile = "3"
-toml = "0.8"
-twox-hash = "1"
+toml = "1"
+twox-hash = { version = "1", default-features = false }
 walkdir = "2"
 
 [dev-dependencies]

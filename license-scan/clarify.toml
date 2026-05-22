@@ -65,10 +65,12 @@ license-files = [
 ]
 
 [clarify.spdx]
-expression = "MIT OR Apache-2.0"
+expression = "Apache-2.0"
 license-files = [
-    { path = "LICENSE-MIT", hash = 0xa502ee8a },
     { path = "LICENSE-APACHE", hash = 0x4fccb6b7 },
+]
+skip-files = [
+    "src/detection/license.rs",
 ]
 skip-dirs = [
     # The spdx crate contains the full text of referred licenses
