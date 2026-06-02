@@ -5,6 +5,9 @@
 %_cross_target %{_cross_triple}-%{_cross_libc}
 %dist %{nil}
 
+# Fedora 42 unified /usr/bin and /usr/sbin making the latter symlink of the former
+%_sbindir /usr/sbin
+
 %_cross_cflags %{shrink: \
   -O2 -g1 -pipe -Wall \
   -Werror=trampolines -Wbidi-chars=any \
