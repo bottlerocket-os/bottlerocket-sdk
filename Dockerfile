@@ -866,6 +866,7 @@ RUN \
     less \
     libbpf-devel \
     libcap-devel \
+    libseccomp-devel \
     libkcapi-hmaccalc \
     lz4 \
     mtools \
