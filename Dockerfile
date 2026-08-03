@@ -36,6 +36,7 @@ RUN \
     perl-IPC-Cmd \
     perl-open \
     python \
+    systemd-ukify \
     rsync \
     wget \
     which \
