@@ -689,9 +689,9 @@ RUN \
   mkdir -p /usr/libexec/tools /usr/share/licenses/govmomi && \
   chown -R builder:builder /usr/libexec/tools /usr/share/licenses/govmomi
 
-ENV GOVMOMIVER="0.46.3"
-ENV GOVMOMISHORTCOMMIT="e5dcb5f"
-ENV GOVMOMIDATE="2024-12-12T20:11:39Z"
+ENV GOVMOMIVER="0.55.1"
+ENV GOVMOMISHORTCOMMIT="1e372f1"
+ENV GOVMOMIDATE="2026-07-03T14:30:07Z"
 
 USER builder
 WORKDIR /home/builder/go/src/github.com/vmware/govmomi
@@ -704,16 +704,16 @@ RUN \
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
 RUN \
   cp -p LICENSE.txt /usr/share/licenses/govmomi && \
-  go mod vendor && \
+  go -C govc mod vendor && \
   /usr/libexec/tools/bottlerocket-license-scan \
     --spdx-data /usr/libexec/tools/spdx-data \
     --out-dir /usr/share/licenses/govmomi/vendor \
-    go-vendor ./vendor
+    go-vendor ./govc/vendor
 
 RUN \
   export CGO_ENABLED=0 ; \
-  export BUILD_VERSION_PKG="github.com/vmware/govmomi/govc/flags" ; \
-  go build -mod=vendor -o /usr/libexec/tools/govc -ldflags " \
+  export BUILD_VERSION_PKG="github.com/vmware/govmomi/cli/flags" ; \
+  go -C govc build -mod=vendor -o /usr/libexec/tools/govc -ldflags " \
     -s -w \
     -X ${BUILD_VERSION_PKG}.BuildVersion=${GOVMOMIVER} \
     -X ${BUILD_VERSION_PKG}.BuildCommit=${GOVMOMISHORTCOMMIT} \
