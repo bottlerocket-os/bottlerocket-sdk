@@ -54,6 +54,7 @@
     "unix"
   ],
   "target-pointer-width": 64,
+  "crt-objects-fallback": "false",
   "vendor": "bottlerocket",
   "panic-strategy": "abort"
 }
