@@ -19,22 +19,21 @@ exceptions = [
     { name = "target-lexicon", allow = ["Apache-2.0 WITH LLVM-exception"] },
     { name = "unicode-ident", allow = ["MIT", "Apache-2.0", "Unicode-3.0"] },
     { name = "icu_collections", allow = ["Unicode-3.0"] },
-    { name = "icu_locid", allow = ["Unicode-3.0"] },
-    { name = "icu_locid_transform", allow = ["Unicode-3.0"] },
-    { name = "icu_locid_transform_data", allow = ["Unicode-3.0"] },
+    { name = "icu_locale_core", allow = ["Unicode-3.0"] },
     { name = "icu_normalizer", allow = ["Unicode-3.0"] },
     { name = "icu_normalizer_data", allow = ["Unicode-3.0"] },
     { name = "icu_properties", allow = ["Unicode-3.0"] },
     { name = "icu_properties_data", allow = ["Unicode-3.0"] },
     { name = "icu_provider", allow = ["Unicode-3.0"] },
-    { name = "icu_provider_macros", allow = ["Unicode-3.0"] },
     { name = "litemap", allow = ["Unicode-3.0"] },
+    { name = "potential_utf", allow = ["Unicode-3.0"] },
     { name = "tinystr", allow = ["Unicode-3.0"] },
     { name = "writeable", allow = ["Unicode-3.0"] },
     { name = "yoke", allow = ["Unicode-3.0"] },
     { name = "yoke-derive", allow = ["Unicode-3.0"] },
     { name = "zerofrom", allow = ["Unicode-3.0"] },
     { name = "zerofrom-derive", allow = ["Unicode-3.0"] },
+    { name = "zerotrie", allow = ["Unicode-3.0"] },
     { name = "zerovec", allow = ["Unicode-3.0"] },
     { name = "zerovec-derive", allow = ["Unicode-3.0"] },
 ]
@@ -58,9 +57,9 @@ skip = [
     { name = "thiserror", version = "1.0.69" },
     { name = "thiserror-impl", version = "1.0.69" },
 
-    # older version from gix-hashtable
+    # older version from petgraph (via krates)
     # newer version from indexmap
-    { name = "hashbrown", version = "0.14.5" },
+    { name = "hashbrown", version = "0.15.5" },
 
     # older version from ring
     # newer version from tempfile

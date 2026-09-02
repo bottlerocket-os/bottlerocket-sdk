@@ -604,7 +604,7 @@ RUN cargo build --release --locked
 
 FROM sdk-cargo AS sdk-cargo-deny
 
-ENV DENYVER="0.18.1"
+ENV DENYVER="0.19.9"
 
 USER builder
 WORKDIR /home/builder

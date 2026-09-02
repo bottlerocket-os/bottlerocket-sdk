@@ -36,12 +36,16 @@ license-files = [
     { path = "LICENSE-MIT", hash = 0xa502ee8a },
     { path = "LICENSE-APACHE", hash = 0x4fccb6b7 },
 ]
-# we aren't using the tests
+# we aren't using the tests or examples
 skip-files = [
     "tests/LICENSE-RING",
     "tests/LICENSE-SUMMARY",
     "tests/test_data/so-annoying/LICENSE-APACHE",
     "tests/test_data/so-annoying/LICENSE-PIXAR",
+    "examples/14_license_detection/LICENSE",
+    "examples/14_license_detection/LICENSE-AGPL-3.0",
+    "examples/14_license_detection/LICENSE-BSD",
+    "examples/14_license_detection/LICENSE-MIT",
 ]
 
 [clarify.crossbeam-channel]
@@ -201,13 +205,13 @@ license-files = [
 ]
 
 [clarify.spdx]
-expression = "MIT OR Apache-2.0"
+expression = "Apache-2.0"
 license-files = [
     { path = "LICENSE-APACHE", hash = 0x4fccb6b7 },
-    { path = "LICENSE-MIT", hash = 0xa502ee8a },
 ]
 # skip files that contain the text of licenses
 skip-files = [
+    "src/detection/license.rs", # source code named "license"...
     "src/text/exceptions/GPL-3.0-389-ds-base-exception",
     "src/text/exceptions/GPL-3.0-interface-exception",
     "src/text/exceptions/GPL-3.0-linking-exception",
@@ -228,6 +232,7 @@ skip-files = [
     "src/text/licenses/BSD-2-Clause-NetBSD",
     "src/text/licenses/BSD-2-Clause-Patent",
     "src/text/licenses/BSD-2-Clause-Views",
+    "src/text/licenses/BSD-2-Clause-pkgconf-disclaimer",
     "src/text/licenses/BSD-3-Clause",
     "src/text/licenses/BSD-3-Clause-acpica",
     "src/text/licenses/BSD-3-Clause-Attribution",
@@ -242,6 +247,7 @@ skip-files = [
     "src/text/licenses/BSD-3-Clause-No-Nuclear-Warranty",
     "src/text/licenses/BSD-3-Clause-Open-MPI",
     "src/text/licenses/BSD-3-Clause-Sun",
+    "src/text/licenses/BSD-3-Clause-Tso",
     "src/text/licenses/BSD-4-Clause",
     "src/text/licenses/BSD-4-Clause-Shortened",
     "src/text/licenses/BSD-4-Clause-UC",
