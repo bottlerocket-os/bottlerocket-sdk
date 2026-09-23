@@ -851,6 +851,7 @@ FROM sdk AS sdk-plus
 USER root
 RUN \
   dnf -y install --setopt=install_weak_deps=False \
+    autoconf-archive \
     ccache \
     createrepo_c \
     dosfstools \
