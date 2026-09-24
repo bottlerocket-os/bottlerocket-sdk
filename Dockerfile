@@ -510,24 +510,8 @@ ENV GO111MODULE="auto"
 USER root
 RUN dnf -y install golang
 
-ENV GO125VER="1.25.14"
 ENV GO126VER="1.26.8"
-
-# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
-
-FROM sdk-go-prep AS sdk-go-1.25-prep
-
-ENV GOMAJOR="1.25"
-
-USER builder
-
-WORKDIR /home/builder/sdk-go
-
-COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
-COPY ./helpers/go/prep-go.sh ./
-COPY ./patches/go-${GOMAJOR} /home/builder/patches-go
-
-RUN ./prep-go.sh --go-version=${GO125VER}
+ENV GO127VER="1.27.1"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -547,12 +531,18 @@ RUN ./prep-go.sh --go-version=${GO126VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.25-prep AS sdk-go-1.25
+FROM sdk-go-prep AS sdk-go-1.27-prep
 
-COPY ./helpers/go/build-go.sh ./
+ENV GOMAJOR="1.27"
 
-# Build Go - finally!
-RUN ./build-go.sh --go-version=${GO125VER}
+USER builder
+
+WORKDIR /home/builder/sdk-go
+
+COPY ./hashes/go-${GOMAJOR} /home/builder/hashes-go
+COPY ./helpers/go/prep-go.sh ./
+
+RUN ./prep-go.sh --go-version=${GO127VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -562,6 +552,15 @@ COPY ./helpers/go/build-go.sh ./
 
 # Build Go - finally!
 RUN ./build-go.sh --go-version=${GO126VER}
+
+# =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
+
+FROM sdk-go-1.27-prep AS sdk-go-1.27
+
+COPY ./helpers/go/build-go.sh ./
+
+# Build Go - finally!
+RUN ./build-go.sh --go-version=${GO127VER}
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
@@ -682,7 +681,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.25 AS sdk-govc
+FROM sdk-go-1.26 AS sdk-govc
 
 USER root
 RUN \
@@ -722,7 +721,7 @@ RUN \
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
-FROM sdk-go-1.25 AS sdk-sbomtool
+FROM sdk-go-1.26 AS sdk-sbomtool
 
 USER root
 RUN \
@@ -1028,15 +1027,6 @@ COPY --chown=0:0 --from=sdk-rust \
 COPY --chown=0:0 --from=sdk-llvm / /
 
 # "sdk-go" has the Go toolchain and standard library builds.
-COPY --chown=0:0 --from=sdk-go-1.25 /home/builder/sdk-go/bin /usr/libexec/go-1.25/bin/
-COPY --chown=0:0 --from=sdk-go-1.25 /home/builder/sdk-go/lib /usr/libexec/go-1.25/lib/
-COPY --chown=0:0 --from=sdk-go-1.25 /home/builder/sdk-go/pkg /usr/libexec/go-1.25/pkg/
-COPY --chown=0:0 --from=sdk-go-1.25 /home/builder/sdk-go/src /usr/libexec/go-1.25/src/
-COPY --chown=0:0 --from=sdk-go-1.25 /home/builder/sdk-go/go.env /usr/libexec/go-1.25/go.env
-COPY --chown=0:0 --from=sdk-go-1.25 \
-  /home/builder/sdk-go/licenses/ \
-  /usr/share/licenses/go-1.25/
-
 COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/bin /usr/libexec/go-1.26/bin/
 COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/lib /usr/libexec/go-1.26/lib/
 COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/pkg /usr/libexec/go-1.26/pkg/
@@ -1045,6 +1035,15 @@ COPY --chown=0:0 --from=sdk-go-1.26 /home/builder/sdk-go/go.env /usr/libexec/go-
 COPY --chown=0:0 --from=sdk-go-1.26 \
   /home/builder/sdk-go/licenses/ \
   /usr/share/licenses/go-1.26/
+
+COPY --chown=0:0 --from=sdk-go-1.27 /home/builder/sdk-go/bin /usr/libexec/go-1.27/bin/
+COPY --chown=0:0 --from=sdk-go-1.27 /home/builder/sdk-go/lib /usr/libexec/go-1.27/lib/
+COPY --chown=0:0 --from=sdk-go-1.27 /home/builder/sdk-go/pkg /usr/libexec/go-1.27/pkg/
+COPY --chown=0:0 --from=sdk-go-1.27 /home/builder/sdk-go/src /usr/libexec/go-1.27/src/
+COPY --chown=0:0 --from=sdk-go-1.27 /home/builder/sdk-go/go.env /usr/libexec/go-1.27/go.env
+COPY --chown=0:0 --from=sdk-go-1.27 \
+  /home/builder/sdk-go/licenses/ \
+  /usr/share/licenses/go-1.27/
 
 # "sdk-rust-tools" has our attribution generation and license scan tools.
 COPY --chown=0:0 --from=sdk-rust-tools /usr/libexec/tools/ /usr/libexec/tools/
@@ -1199,7 +1198,7 @@ USER builder
 WORKDIR /home/builder
 
 # Set the default Go major version.
-ENV GO_MAJOR="1.25"
+ENV GO_MAJOR="1.26"
 
 # In NSS 3.101, lib::pkix was enabled as the default X.509 validator.
 # This causes signature checking of secureboot artifacts to fail during build.
