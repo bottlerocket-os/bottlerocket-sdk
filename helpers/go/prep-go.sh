@@ -17,6 +17,8 @@ sdk-fetch "${HOME}/hashes-go"
 tar --strip-components=1 -xf go${GOVER}.src.tar.gz
 rm go${GOVER}.src.tar.gz
 
-# Apply Go patches.
-git init
-git apply --whitespace=nowarn "${HOME}"/patches-go/*.patch
+# Apply Go patches, if any exist.
+if [[ -d "${HOME}/patches-go" ]] && compgen -G "${HOME}/patches-go/*.patch" > /dev/null; then
+  git init
+  git apply --whitespace=nowarn "${HOME}"/patches-go/*.patch
+fi
