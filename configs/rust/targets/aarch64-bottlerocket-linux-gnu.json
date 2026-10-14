@@ -20,6 +20,14 @@
   },
   "os": "linux",
   "position-independent-executables": true,
+  "pre-link-args": {
+    "gnu-cc": [
+      "-Wl,--fix-cortex-a53-843419"
+    ],
+    "gnu-lld-cc": [
+      "-Wl,--fix-cortex-a53-843419"
+    ]
+  },
   "relro-level": "full",
   "stack-probes": {
     "kind": "inline"
