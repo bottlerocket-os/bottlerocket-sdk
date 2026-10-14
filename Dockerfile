@@ -510,7 +510,7 @@ ENV GO111MODULE="auto"
 USER root
 RUN dnf -y install golang
 
-ENV GO126VER="1.26.8"
+ENV GO126VER="1.26.9"
 ENV GO127VER="1.27.1"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
