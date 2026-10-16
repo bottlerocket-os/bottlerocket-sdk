@@ -420,3 +420,15 @@ This package provides SBOM files for %{name}.\
 %_debugsource_template %{nil}
 %_enable_debug_packages %{nil}
 %debug_package %{nil}
+
+# Define the branch-namespaced NVIDIA path macros for the given branch (%1),
+# shared by the kmod-*-nvidia-* packages. The branch-namespaced storage root
+# holds files that are overlaid onto canonical paths at boot; e.g. branch "lts"
+# resolves nvidia_root to %{_cross_datadir}/.nvidia/lts (/usr/share/.nvidia/lts).
+%cross_nvidia_paths() %{expand: \
+%%global nvidia_branch %1 \
+%%global nvidia_root %%{_cross_datadir}/.nvidia/%%{nvidia_branch} \
+%%global nvidia_datadir %%{nvidia_root}/share \
+%%global nvidia_libdir %%{nvidia_root}/lib64 \
+%%global nvidia_bindir %%{nvidia_root}/bin \
+%%global nvidia_sysconfdir %%{nvidia_root}/etc}
