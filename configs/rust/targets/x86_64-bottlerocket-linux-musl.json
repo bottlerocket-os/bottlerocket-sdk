@@ -103,6 +103,7 @@
     "unpacked",
     "off"
   ],
+  "supports-fentry": true,
   "supports-xray": true,
   "target-family": [
     "unix"
