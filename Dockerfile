@@ -475,7 +475,7 @@ FROM sdk AS sdk-ca-certificates
 
 USER root
 
-ENV CABUNDLEVER="2026-08-13"
+ENV CABUNDLEVER="2026-10-20"
 
 RUN \
   mkdir -p /usr/share/bottlerocket/ca-certificates && \
@@ -510,8 +510,8 @@ ENV GO111MODULE="auto"
 USER root
 RUN dnf -y install golang
 
-ENV GO126VER="1.26.9"
-ENV GO127VER="1.27.2"
+ENV GO126VER="1.26.10"
+ENV GO127VER="1.27.3"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 
