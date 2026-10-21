@@ -32,6 +32,7 @@
   "stack-probes": {
     "kind": "inline"
   },
+  "static-position-independent-executables": true,
   "supported-sanitizers": [
     "address",
     "leak",
