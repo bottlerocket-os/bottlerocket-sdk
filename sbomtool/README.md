@@ -120,6 +120,17 @@ The tool generates SBOM files in the specified output directory:
 - `{name}-spdx.json`: SPDX format SBOM
 - `{name}-cyclonedx.json`: CycloneDX format SBOM
 
+### Reproducible output
+
+For the same inputs, `generate`, `merge`, and `filter` write byte-for-byte identical SPDX and CycloneDX JSON:
+
+- If `SOURCE_DATE_EPOCH` is set (see the [specification](https://reproducible-builds.org/specs/source-date-epoch/)), it is used for the creation time (SPDX `creationInfo.created`, CycloneDX `metadata.timestamp`), in UTC with second precision.
+  If it is not set, the current time is used. A malformed value is an error.
+- The SPDX `documentNamespace` and CycloneDX `serialNumber` end in a UUIDv5 derived from the document content (including the creation time) instead of a random UUID.
+- When `merge` or `filter` combines duplicate packages, their CPEs and licenses are unioned in input order, so the primary CPE (CycloneDX `cpe`, the first SPDX `cpe23Type` reference) comes from the first input that defined the package.
+
+Note that CycloneDX output records the absolute paths of scanned files, so `generate` must also be run on the same `--build-dir` path for identical results.
+
 ## Reading a generated SBOM
 
 Both output files are JSON, so you can inspect them directly with `jq` or hand them to any SPDX- or CycloneDX-aware tool.
@@ -164,7 +175,7 @@ The merge command uses deduplication to combine packages from multiple SBOMs:
 
 ### Deduplication Process
 1. **Package Identity**: Generates canonical keys using CPE or fallback strategy
-2. **Conflict Resolution**: First occurrence with CPE becomes canonical
+2. **Conflict Resolution**: The first occurrence (in input order) becomes canonical; CPEs and licenses of later duplicates are appended in order
 3. **Metadata Consolidation**: Merges all metadata from duplicate packages
 4. **Relationship Updates**: Updates all relationships to use canonical package IDs
 

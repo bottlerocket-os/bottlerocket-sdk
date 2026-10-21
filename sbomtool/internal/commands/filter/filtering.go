@@ -137,7 +137,8 @@ func findPackagesWithBuildrootFiles(
 
 	var rootPackages []pkg.Package
 
-	for p := range packages.Enumerate() {
+	// Sorted: root order drives DFS order and thus output order.
+	for _, p := range packages.Sorted() {
 		// Check if any of the package's file locations match buildroot files
 		hasBuildrootFile := false
 		for _, location := range p.Locations.ToSlice() {
