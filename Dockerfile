@@ -976,7 +976,7 @@ RUN \
   done && \
   vendor_dir="/usr/lib/rpm/bottlerocket" && \
   mkdir -p "${vendor_dir}" && \
-  cp -a check-fips "${vendor_dir}"
+  cp -a check-fips sign-kernel-modules "${vendor_dir}"
 
 # =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=   =^..^=
 #
@@ -1126,6 +1126,10 @@ COPY --chown=0:0 --from=sdk-macros \
 COPY --chown=0:0 --from=sdk-macros \
   /usr/lib/rpm/bottlerocket/check-fips \
   /usr/lib/rpm/bottlerocket/check-fips
+
+COPY --chown=0:0 --from=sdk-macros \
+  /usr/lib/rpm/bottlerocket/sign-kernel-modules \
+  /usr/lib/rpm/bottlerocket/sign-kernel-modules
 
 COPY --chown=0:0 --from=sdk-find-debuginfo-symlinks \
   /usr/x86_64-bottlerocket-linux-gnu/debuginfo/bin/ \

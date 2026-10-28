@@ -1,0 +1,95 @@
+#!/bin/bash
+#
+# Sign every kernel module in the buildroot with the kit module-signing key,
+# replacing any existing signature.
+
+set -euo pipefail
+
+for opt in "$@"; do
+   optarg="$(expr "${opt}" : '[^=]*=\(.*\)')"
+   case "${opt}" in
+      --target=*) TARGET="${optarg}" ;;
+      --key=*) KEY="${optarg}" ;;
+   esac
+done
+
+if [[ ! -f "${KEY:-}" ]]; then
+  echo "error: module signing is enabled, but the module-signing key '${KEY:-}' does not exist" >&2
+  exit 1
+fi
+
+OBJCOPY="${TARGET}-objcopy"
+MARKER='~Module signature appended~'
+work="$(mktemp -d)"
+trap 'rm -rf "${work}"' EXIT
+
+is_signed() {
+  tail -c 28 "${1:?}" | cmp -s - <(printf '%s\n' "${MARKER}")
+}
+
+# Never sign a module whose license the kernel doesn't treat as GPL-compatible
+# (include/linux/license.h). A module has one license entry for each of its
+# objects that declares one; like modpost, require every one to be compatible.
+check_license() {
+  local ko license
+  local -a licenses
+  ko="${1:?}"
+  "${OBJCOPY}" -O binary --only-section=.modinfo "${ko}" "${work}/modinfo"
+  mapfile -t licenses < <(tr '\0' '\n' < "${work}/modinfo" | sed -n 's/^license=//p')
+  if (( ${#licenses[@]} == 0 )); then
+    echo "error: ${ko#"${RPM_BUILD_ROOT}"} declares no license, so the kit module-signing key must not sign it" >&2
+    exit 1
+  fi
+  for license in "${licenses[@]}"; do
+    case "${license}" in
+      "GPL"|"GPL v2"|"GPL and additional rights"|"Dual BSD/GPL"|"Dual MIT/GPL"|"Dual MPL/GPL") ;;
+      *)
+        echo "error: ${ko#"${RPM_BUILD_ROOT}"} declares license '${license}', which is not GPL-compatible, so the kit module-signing key must not sign it" >&2
+        exit 1
+        ;;
+    esac
+  done
+}
+
+# The kernel's module signature format, as scripts/sign-file writes it: the
+# PKCS#7 signature, struct module_signature (id_type PKEY_ID_PKCS7, big-endian
+# signature length) and the marker.
+sign() {
+  local ko len
+  ko="${1:?}"
+  openssl cms -sign -binary -noattr -nosmimecap -nocerts -md sha512 \
+    -outform DER -signer "${KEY}" -inkey "${KEY}" \
+    -in "${ko}" -out "${work}/sig"
+  len="$(stat -c %s "${work}/sig")"
+  {
+    cat "${work}/sig"
+    printf '\x00\x00\x02\x00\x00\x00\x00\x00'
+    printf "$(printf '\\x%02x\\x%02x\\x%02x\\x%02x' \
+      $((len >> 24 & 255)) $((len >> 16 & 255)) $((len >> 8 & 255)) $((len & 255)))"
+    printf '%s\n' "${MARKER}"
+  } >> "${ko}"
+}
+
+# Drop an appended signature: the PKCS#7 signature, the 12-byte struct
+# module_signature (whose last 4 bytes are the big-endian signature length) and
+# the marker.
+strip_signature() {
+  local ko size sig_len
+  ko="${1:?}"
+  size="$(stat -c %s "${ko}")"
+  sig_len="$(tail -c $((${#MARKER} + 5)) "${ko}" | head -c 4 | od -An -tu1 \
+    | awk 'NF { print $1 * 16777216 + $2 * 65536 + $3 * 256 + $4; exit }')"
+  truncate -s $((size - sig_len - 12 - ${#MARKER} - 1)) "${ko}"
+}
+
+signed=0
+while IFS= read -r -d '' ko; do
+  check_license "${ko}"
+  if is_signed "${ko}"; then
+    strip_signature "${ko}"
+  fi
+  sign "${ko}"
+  signed=$((signed + 1))
+done < <(find "${RPM_BUILD_ROOT}" -type f -name '*.ko' -print0 | sort -z)
+
+echo "signed ${signed} kernel modules with the kit module-signing key"
