@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# A regular-path binary may carry the FIPS backend for runtime selection.
+# Keep validating a supplied FIPS copy for legacy packaging.
+
 set -euo pipefail
 shopt -qs failglob
 
@@ -20,7 +23,12 @@ BUILDROOT_FIPS_BINDIR="${RPM_BUILD_ROOT}${FIPS_BINDIR}"
 BUILDROOT_LIBEXECDIR="${RPM_BUILD_ROOT}${LIBEXECDIR}"
 BUILDROOT_FIPS_LIBEXECDIR="${RPM_BUILD_ROOT}${FIPS_LIBEXECDIR}"
 
-if [ ! -d "${BUILDROOT_BINDIR}" ] && [ ! -d "${BUILDROOT_LIBEXECDIR}" ] ; then
+scan_dirs=()
+for dir in "${BUILDROOT_BINDIR}" "${BUILDROOT_LIBEXECDIR}"; do
+  [ ! -d "${dir}" ] || scan_dirs+=("${dir}")
+done
+
+if [ "${#scan_dirs[@]}" -eq 0 ]; then
   echo "no binaries found, skipping FIPS check"
   exit 0
 fi
@@ -28,28 +36,40 @@ fi
 is_rust_bin() {
   local bin output
   bin="${1:?}"
-  output="$("${STRINGS}" "${bin}")"
+  output="$("${STRINGS}" "${bin}")" || {
+    echo "${bin}: failed to read strings" >&2
+    exit 1
+  }
   grep -Fq -m1 -e 'rust_alloc' -e 'rust_begin' <<<"${output}"
 }
 
 uses_ring() {
   local bin output
   bin="${1:?}"
-  output="$("${STRINGS}" "${bin}")"
+  output="$("${STRINGS}" "${bin}")" || {
+    echo "${bin}: failed to read strings" >&2
+    exit 1
+  }
   grep -Fq -m1 '/ring' <<<"${output}"
 }
 
 uses_aws_lc_rs() {
   local bin output
   bin="${1:?}"
-  output="$("${STRINGS}" "${bin}")"
+  output="$("${STRINGS}" "${bin}")" || {
+    echo "${bin}: failed to read strings" >&2
+    exit 1
+  }
   grep -Fq -m1 'aws-lc-rs' <<<"${output}"
 }
 
 uses_aws_lc_fips_sys() {
   local bin output
   bin="${1:?}"
-  output="$("${STRINGS}" "${bin}")"
+  output="$("${STRINGS}" "${bin}")" || {
+    echo "${bin}: failed to read strings" >&2
+    exit 1
+  }
   grep -Fq -m1 'aws-lc-fips-sys' <<<"${output}"
 }
 
@@ -59,17 +79,20 @@ check_rust_bin() {
   f="${2:?}"
 
   if uses_aws_lc_rs "${b}"; then
-    if [ -s "${f}" ] ; then
-      echo "${b} uses aws-lc-rs and FIPS build found in ${f}"
-      (( found+=1 ))
-      if uses_aws_lc_fips_sys "${b}" ; then
-        echo "${b} is built with aws-lc-rs in FIPS mode rather than standard aws-lc-rs" >&2
+    if [ -e "${f}" ] || [ -L "${f}" ]; then
+      if [ ! -f "${f}" ] || [ ! -s "${f}" ]; then
+        echo "${f} is not a nonempty regular FIPS binary" >&2
         (( miscompiled+=1 ))
-      fi
-      if ! uses_aws_lc_fips_sys "${f}"; then
+      elif uses_aws_lc_fips_sys "${f}"; then
+        echo "${b} uses aws-lc-rs and FIPS build found in ${f}"
+        (( found+=1 ))
+      else
         echo "${f} is built with standard aws-lc-rs rather than in FIPS mode" >&2
         (( miscompiled+=1 ))
       fi
+    elif uses_aws_lc_fips_sys "${b}"; then
+      echo "${b} uses aws-lc-rs with the FIPS backend"
+      (( found+=1 ))
     else
       echo "${b} uses aws-lc-rs but no FIPS build found in ${f}" >&2
       (( not_found+=1 ))
@@ -85,7 +108,12 @@ check_rust_bin() {
 found=0
 not_found=0
 miscompiled=0
-for b in $(find "${BUILDROOT_BINDIR}" "${BUILDROOT_LIBEXECDIR}" -type f -executable) ; do
+if ! binaries="$(find "${scan_dirs[@]}" -type f -executable)"; then
+  echo "failed to scan binaries" >&2
+  exit 1
+fi
+
+for b in ${binaries} ; do
   f="${b/${BUILDROOT_BINDIR}/${BUILDROOT_FIPS_BINDIR}}"
   f="${f/${BUILDROOT_LIBEXECDIR}/${BUILDROOT_FIPS_LIBEXECDIR}}"
   if is_rust_bin "${b}"; then
@@ -95,7 +123,7 @@ done
 
 if [ "${found}" -gt 0 ] ; then
   [ "${found}" -eq 1 ] && what="binary" || what="binaries"
-  echo "Found ${found} ${what} built for FIPS."
+  echo "Found ${found} ${what} with FIPS crypto support."
 fi
 
 if [ "${not_found}" -gt 0 ] ; then
