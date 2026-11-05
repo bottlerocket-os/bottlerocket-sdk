@@ -8,12 +8,12 @@ package deduplication
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/anchore/syft/syft/artifact"
-	"github.com/anchore/syft/syft/cpe"
 	"github.com/anchore/syft/syft/file"
 	"github.com/anchore/syft/syft/pkg"
 
@@ -70,7 +70,20 @@ func DeduplicatePackages(packages []pkg.Package) *DeduplicationResult {
 
 	mergedGroups := mergeOverlappingCPEGroups(keyToPackages)
 
-	for key, pkgGroup := range mergedGroups {
+	// Restore input order within each group so the first input's package is the merge base.
+	inputIndex := make(map[*pkg.Package]int, len(realPackages))
+	for i := range realPackages {
+		inputIndex[&realPackages[i]] = i
+	}
+	for _, group := range mergedGroups {
+		slices.SortFunc(group, func(a, b *pkg.Package) int {
+			return inputIndex[a] - inputIndex[b]
+		})
+	}
+
+	// Key order keeps CPEMapping deterministic when groups share a primary CPE.
+	for _, key := range slices.Sorted(maps.Keys(mergedGroups)) {
+		pkgGroup := mergedGroups[key]
 		canonical := mergePackages(pkgGroup)
 
 		result.CanonicalPackages[key] = canonical
@@ -116,7 +129,9 @@ func UpdateRelationships(relationships []artifact.Relationship, canonicalPackage
 	cpeToCanonical := make(map[string]*pkg.Package, len(canonicalPackages))
 	nvtToCanonical := make(map[string]*pkg.Package, len(canonicalPackages))
 	prefixToCanonical := make(map[string]*pkg.Package, len(canonicalPackages))
-	for _, canonical := range canonicalPackages {
+	// Key order: the lookup maps below are last-writer-wins on collisions.
+	for _, key := range slices.Sorted(maps.Keys(canonicalPackages)) {
+		canonical := canonicalPackages[key]
 		if canonical == nil {
 			continue
 		}
@@ -241,6 +256,7 @@ func normalizeVersion(version string) string {
 }
 
 // mergePackages merges multiple packages into a single canonical package.
+// CPEs and licenses are unioned in first-appearance order, so CPEs[0] comes from packages[0].
 func mergePackages(packages []*pkg.Package) *pkg.Package {
 	if len(packages) == 1 {
 		return packages[0]
@@ -250,44 +266,47 @@ func mergePackages(packages []*pkg.Package) *pkg.Package {
 	canonical := *packages[0]
 	canonical.SetID() // Generate new ID for merged package
 
-	// Merge CPEs (union, deduplicated)
-	cpeSet := make(map[string]cpe.CPE)
+	// Merge CPEs (union, deduplicated, in order of first appearance)
+	seenCPEs := make(map[string]struct{})
+	canonical.CPEs = nil
 	for _, p := range packages {
 		for _, c := range p.CPEs {
-			cpeSet[c.Attributes.String()] = c
+			key := c.Attributes.String()
+			if _, seen := seenCPEs[key]; seen {
+				continue
+			}
+			seenCPEs[key] = struct{}{}
+			canonical.CPEs = append(canonical.CPEs, c)
 		}
 	}
-	canonical.CPEs = make([]cpe.CPE, 0, len(cpeSet))
-	for _, c := range cpeSet {
-		canonical.CPEs = append(canonical.CPEs, c)
-	}
 
-	// Merge licenses (union, deduplicated, skip UNKNOWN/NOASSERTION)
-	licenseSet := make(map[string]pkg.License)
+	// Merge licenses (union by value, last seen wins, skip UNKNOWN/NOASSERTION)
+	licenseIndex := make(map[string]int)
+	var licenses []pkg.License
 	for _, p := range packages {
-		for _, license := range p.Licenses.ToUnorderedSlice() {
-			if !isUnknownOrNoAssertion(license.Value) {
-				licenseSet[license.Value] = license
+		for _, license := range p.Licenses.ToSlice() {
+			if isUnknownOrNoAssertion(license.Value) {
+				continue
 			}
+			if i, seen := licenseIndex[license.Value]; seen {
+				licenses[i] = license
+				continue
+			}
+			licenseIndex[license.Value] = len(licenses)
+			licenses = append(licenses, license)
 		}
 	}
 	// If no valid licenses found, keep one UNKNOWN/NOASSERTION if it exists
-	if len(licenseSet) == 0 {
+	if len(licenses) == 0 {
+	findUnknown:
 		for _, p := range packages {
-			for _, license := range p.Licenses.ToUnorderedSlice() {
+			for _, license := range p.Licenses.ToSlice() {
 				if isUnknownOrNoAssertion(license.Value) {
-					licenseSet[license.Value] = license
-					break
+					licenses = append(licenses, license)
+					break findUnknown
 				}
 			}
-			if len(licenseSet) > 0 {
-				break
-			}
 		}
-	}
-	licenses := make([]pkg.License, 0, len(licenseSet))
-	for _, license := range licenseSet {
-		licenses = append(licenses, license)
 	}
 	canonical.Licenses = pkg.NewLicenseSet(licenses...)
 
@@ -335,21 +354,9 @@ func isUnknownOrNoAssertion(value string) bool {
 	return normalized == "unknown" || normalized == "noassertion" || normalized == ""
 }
 
-// mergeOverlappingCPEGroups merges package groups that share CPEs using Union-Find.
-//
-// Problem: Packages from different SBOMs may represent the same software but have
-// different canonical keys (e.g., different CPE variants). If any CPE appears in
-// multiple groups, those groups should be merged.
-//
-// Solution: Union-Find (disjoint set) provides O(α(n)) amortized operations where
-// α is the inverse Ackermann function (effectively constant). This replaces the
-// previous O(n²) pairwise comparison approach.
-//
-// Algorithm:
-//  1. Build an inverted index: CPE string -> list of group indices that contain it
-//  2. Initialize Union-Find with each group as its own set
-//  3. For each CPE that appears in multiple groups, union those groups together
-//  4. Collect all packages belonging to the same root into merged groups
+// mergeOverlappingCPEGroups merges package groups that share any CPE or name+version+type,
+// since the same software can land under different canonical keys across SBOMs. Uses
+// Union-Find over inverted indexes for near-linear time.
 func mergeOverlappingCPEGroups(keyToPackages map[string][]*pkg.Package) map[string][]*pkg.Package {
 	if len(keyToPackages) == 0 {
 		return keyToPackages
@@ -381,7 +388,7 @@ func mergeOverlappingCPEGroups(keyToPackages map[string][]*pkg.Package) map[stri
 	// Step 2: Initialize Union-Find
 	uf := unionfind.New(len(groups))
 
-	// Step 3: Union all groups that share any CPE
+	// Step 3: Union all groups that share any CPE (root choice is order-independent).
 	for _, indices := range cpeToGroups {
 		for i := 1; i < len(indices); i++ {
 			uf.Union(indices[0], indices[i], keys)

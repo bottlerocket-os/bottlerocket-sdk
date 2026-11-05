@@ -7,11 +7,7 @@ import (
 	"strings"
 )
 
-// Configure sets up structured logging with the specified level string.
-// It handles case-insensitive input and defaults to info level for unknown values.
-// After calling this, use slog directly throughout the application.
-// We use JSON structured logging to enable better log parsing and analysis
-// in automated systems, which is essential for SBOM generation workflows.
+// Configure installs a JSON slog handler at the given level (case-insensitive, default info).
 func Configure(levelStr string) {
 	normalized := strings.ToLower(strings.TrimSpace(levelStr))
 
