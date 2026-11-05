@@ -383,12 +383,24 @@ This package provides SBOM files for %{name}.\
 # Enable FIPS check by default.
 %cross_check_fips 1
 
+# Invocation for the sign-kernel-modules buildroot policy script.
+%__cross_sign_kernel_modules_cmd %{shrink: \
+  /usr/lib/rpm/bottlerocket/sign-kernel-modules \
+    --target="%{_cross_target}" \
+    --key="%{_cross_module_signing_key}" \
+    %{nil}}
+
+# Disable kernel module signing by default. Twoliter sets it to 1, and defines
+# _cross_module_signing_key, for packages that set module-signing = true.
+%cross_sign_kernel_modules 0
+
 # Trigger debug package and sbom package creation
 %__spec_install_post\
 %{?__debug_package:%{__debug_install_post}}\
 %{?__sbom_package:%{__sbom_install_post}}\
 %{__arch_install_post}\
 %{__os_install_post}\
+%[0%{?cross_sign_kernel_modules} ? "%{__cross_sign_kernel_modules_cmd}" : ""]\
 %{nil}
 
 # Generate license attribution and check for FIPS-enabled binaries.
