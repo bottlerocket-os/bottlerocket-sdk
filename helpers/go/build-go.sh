@@ -13,7 +13,7 @@ done
 GOVER="${GOVER:?}"
 
 cd "${HOME}/sdk-go/src"
-./all.bash
+./make.bash
 
 # Install the Go standard library and toolchain.
 cd "${HOME}/sdk-go"
