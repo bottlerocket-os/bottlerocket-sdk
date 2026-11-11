@@ -404,7 +404,6 @@ This package provides SBOM files for %{name}.\
 %{nil}
 
 # Generate license attribution and check for FIPS-enabled binaries.
-# (The FIPS check is disabled by default, pending tree-wide packaging changes.)
 %__arch_install_post \
   /usr/lib/rpm/check-buildroot \
   %{?cross_check_fips:%{__cross_check_fips_cmd}} \
