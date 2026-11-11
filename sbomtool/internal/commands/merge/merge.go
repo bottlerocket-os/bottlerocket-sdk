@@ -8,7 +8,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"runtime"
+	"slices"
 	"time"
 
 	"github.com/anchore/syft/syft/artifact"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/deduplication"
 	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/processor"
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/reproducible"
 	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/validate"
 )
 
@@ -100,6 +103,11 @@ func Merge(config MergeConfig, inputFiles []string) (*MergeResult, error) {
 
 // validateInputs validates all input files and configuration.
 func validateInputs(config MergeConfig, inputFiles []string) error {
+	// Reject a malformed SOURCE_DATE_EPOCH before doing any work.
+	if _, err := reproducible.Timestamp(); err != nil {
+		return err
+	}
+
 	if len(inputFiles) < 2 {
 		return fmt.Errorf("at least 2 input files required, got %d", len(inputFiles))
 	}
@@ -272,10 +280,10 @@ func mergeSBOMs(sboms []*sbom.SBOM) (*sbom.SBOM, []pkg.Package, []artifact.Relat
 
 // createFinalSBOM creates the final SBOM with deduplicated packages and relationships.
 func createFinalSBOM(base *sbom.SBOM, canonicalPackages map[string]*pkg.Package, relationships []artifact.Relationship) *sbom.SBOM {
-	// Create new package collection
+	// Add in key order so ID collisions resolve independently of map order.
 	collection := pkg.NewCollection()
-	for _, p := range canonicalPackages {
-		if p != nil {
+	for _, key := range slices.Sorted(maps.Keys(canonicalPackages)) {
+		if p := canonicalPackages[key]; p != nil {
 			collection.Add(*p)
 		}
 	}

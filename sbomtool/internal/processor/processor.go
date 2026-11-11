@@ -4,6 +4,7 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -11,10 +12,11 @@ import (
 	"strings"
 
 	"github.com/anchore/syft/syft/format"
-	"github.com/anchore/syft/syft/format/cyclonedxjson"
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/reproducible"
 )
 
 // LoadSBOM loads an existing SBOM using Syft's format detection.
@@ -43,40 +45,40 @@ func LoadSBOM(path string) (*sbom.SBOM, string, error) {
 	return s, string(formatID), nil
 }
 
-// SaveSBOM saves an SBOM using Syft's format encoders.
-// It supports all formats that Syft can encode.
+// SaveSBOM saves an SBOM in any Syft-encodable format; SPDX and CycloneDX JSON are written
+// via package reproducible.
 func SaveSBOM(s *sbom.SBOM, path, formatName string) error {
-	var encoder sbom.FormatEncoder
-	var err error
+	var buf bytes.Buffer
 
-	if formatName == "cyclonedx-json" {
-		encoder, err = cyclonedxjson.NewFormatEncoderWithConfig(cyclonedxjson.EncoderConfig{
-			Version: "1.6",
-			Pretty:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create CycloneDX encoder: %w", err)
+	switch formatName {
+	case "cyclonedx-json":
+		if err := reproducible.EncodeCycloneDX(&buf, *s, "1.6", true); err != nil {
+			return fmt.Errorf("failed to encode SBOM: %w", err)
 		}
-	} else {
+	case "spdx-json":
+		// Syft's default spdx-json encoder (the first one registered) is SPDX 2.2, compact.
+		if err := reproducible.EncodeSPDX(&buf, *s, "2.2", false); err != nil {
+			return fmt.Errorf("failed to encode SBOM: %w", err)
+		}
+	default:
+		var encoder sbom.FormatEncoder
 		for _, enc := range format.Encoders() {
 			if string(enc.ID()) == formatName {
 				encoder = enc
 				break
 			}
 		}
+		if encoder == nil {
+			return fmt.Errorf("unsupported output format: %s", formatName)
+		}
+		encoded, err := format.Encode(*s, encoder)
+		if err != nil {
+			return fmt.Errorf("failed to encode SBOM: %w", err)
+		}
+		buf.Write(encoded)
 	}
 
-	if encoder == nil {
-		return fmt.Errorf("unsupported output format: %s", formatName)
-	}
-
-	bytes, err := format.Encode(*s, encoder)
-	if err != nil {
-		return fmt.Errorf("failed to encode SBOM: %w", err)
-	}
-
-	err = os.WriteFile(path, bytes, 0644)
-	if err != nil {
+	if err := os.WriteFile(path, buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write SBOM to file: %w", err)
 	}
 

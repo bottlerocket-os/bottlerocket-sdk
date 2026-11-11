@@ -4,7 +4,9 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 
 	"github.com/anchore/syft/syft/pkg"
 	"github.com/anchore/syft/syft/sbom"
@@ -299,8 +301,8 @@ func runFilter(cmd *cobra.Command, args []string) error {
 
 	// Create new SBOM with deduplicated packages and updated relationships
 	canonicalPackages := make([]pkg.Package, 0, len(dedupResult.CanonicalPackages))
-	for _, p := range dedupResult.CanonicalPackages {
-		canonicalPackages = append(canonicalPackages, *p)
+	for _, key := range slices.Sorted(maps.Keys(dedupResult.CanonicalPackages)) {
+		canonicalPackages = append(canonicalPackages, *dedupResult.CanonicalPackages[key])
 	}
 
 	deduplicatedSBOM := &sbom.SBOM{

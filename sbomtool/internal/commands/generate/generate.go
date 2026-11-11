@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 
 	"github.com/anchore/syft/syft"
-	"github.com/anchore/syft/syft/format/cyclonedxjson"
-	"github.com/anchore/syft/syft/format/spdxjson"
 	"github.com/anchore/syft/syft/sbom"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/bottlerocket-os/bottlerocket-sdk/sbomtool/go/internal/reproducible"
 )
 
 // closeFile safely closes a file handle and logs any close errors without returning them.
@@ -25,15 +25,6 @@ func closeFile(f *os.File, operation string) {
 
 // createSpdxSbom generates an SPDX 2.3 format SBOM file from the provided SBOM data.
 func createSpdxSbom(sbom sbom.SBOM, name string, outDir string) error {
-	cfg := spdxjson.DefaultEncoderConfig()
-	cfg.Pretty = false
-	cfg.Version = "2.3"
-
-	encoder, err := spdxjson.NewFormatEncoderWithConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create SPDX encoder: %w", err)
-	}
-
 	outputPath := filepath.Join(outDir, name+"-spdx.json")
 	f, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
@@ -41,7 +32,7 @@ func createSpdxSbom(sbom sbom.SBOM, name string, outDir string) error {
 	}
 	defer closeFile(f, "SPDX")
 
-	if err = encoder.Encode(f, sbom); err != nil {
+	if err = reproducible.EncodeSPDX(f, sbom, "2.3", false); err != nil {
 		return fmt.Errorf("failed to encode SPDX SBOM: %w", err)
 	}
 
@@ -50,15 +41,6 @@ func createSpdxSbom(sbom sbom.SBOM, name string, outDir string) error {
 
 // createCyclonedxSbom generates a CycloneDX 1.6 format SBOM file from the provided SBOM data.
 func createCyclonedxSbom(sbom sbom.SBOM, name string, outDir string) error {
-	cfg := cyclonedxjson.DefaultEncoderConfig()
-	cfg.Pretty = false
-	cfg.Version = "1.6"
-
-	encoder, err := cyclonedxjson.NewFormatEncoderWithConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create CycloneDX encoder: %w", err)
-	}
-
 	outputPath := filepath.Join(outDir, name+"-cyclonedx.json")
 	f, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
@@ -66,7 +48,7 @@ func createCyclonedxSbom(sbom sbom.SBOM, name string, outDir string) error {
 	}
 	defer closeFile(f, "CycloneDX")
 
-	if err = encoder.Encode(f, sbom); err != nil {
+	if err = reproducible.EncodeCycloneDX(f, sbom, "1.6", false); err != nil {
 		return fmt.Errorf("failed to encode CycloneDX SBOM: %w", err)
 	}
 
@@ -85,6 +67,11 @@ func Generate(name string, spdx bool, cyclonedx bool, buildDir string, outDir st
 	if !cyclonedx && !spdx {
 		slog.Warn("No SBOM format selected")
 		return false, nil
+	}
+
+	// Reject a malformed SOURCE_DATE_EPOCH before the slow scan.
+	if _, err := reproducible.Timestamp(); err != nil {
+		return false, err
 	}
 
 	slog.Debug("Creating output directory", "path", outDir)

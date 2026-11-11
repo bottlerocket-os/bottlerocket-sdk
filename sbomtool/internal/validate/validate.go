@@ -43,13 +43,8 @@ func ValidatePackageName(name string) error {
 	return nil
 }
 
-// ValidateDirectory validates that a directory path is safe and accessible.
-// Security-focused validation prevents path traversal and ensures consistent behavior.
-// We use absolute path resolution to prevent relative path attacks and ensure
-// consistent behavior regardless of the current working directory.
-//
-// If requireExists is true, the directory must exist. If false, non-existent
-// directories are considered valid (useful for output directories that will be created).
+// ValidateDirectory resolves path to an absolute path and checks it is a usable directory.
+// If requireExists is false, a missing directory is accepted (e.g. an output dir to create).
 func ValidateDirectory(path string, purpose string, requireExists bool) error {
 	if path == "" {
 		return fmt.Errorf("%s directory cannot be empty", purpose)
