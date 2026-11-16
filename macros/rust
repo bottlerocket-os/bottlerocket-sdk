@@ -21,13 +21,14 @@
 %__global_rustflags -Ccodegen-units=1 %__global_rustflags_base
 
 # Pessimize AWS SDK binaries in favor of faster builds
-%__global_rustflags_aws_sdk -Cprefer-dynamic %__global_rustflags_base
+# aws_sdk and static add --cfg aws_sdk_unstable for aws-smithy-http-client's CryptoMode::Custom
+%__global_rustflags_aws_sdk -Cprefer-dynamic %__global_rustflags_base --cfg aws_sdk_unstable
 
 # Enable dynamic linking.
 %__global_rustflags_shared -Cprefer-dynamic %__global_rustflags
 
 # Enable LTO and static C runtime.
-%__global_rustflags_static -Clto=thin -Cembed-bitcode=yes -Ctarget-feature=+crt-static -Clink-arg=-lgcc %__global_rustflags
+%__global_rustflags_static -Clto=thin -Cembed-bitcode=yes -Ctarget-feature=+crt-static -Clink-arg=-lgcc %__global_rustflags --cfg aws_sdk_unstable
 
 %__global_rustflags_shared_toml [%{lua:
     for arg in string.gmatch(rpm.expand("%{__global_rustflags_shared}"), "%S+") do
