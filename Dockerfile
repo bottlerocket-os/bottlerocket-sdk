@@ -794,6 +794,7 @@ RUN \
 WORKDIR /home/builder/aws-sdk-cpp-src/build
 RUN \
   cmake .. \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_ONLY="kms;acm-pca" \
     -DENABLE_TESTING=OFF \
