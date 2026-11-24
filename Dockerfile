@@ -351,7 +351,11 @@ RUN \
   rsync -aq "build/${HOST_ARCH}-unknown-linux-gnu/llvm/" /usr/libexec/llvm/
 
 RUN \
-  install -p -m 0644 -Dt licenses COPYRIGHT LICENSE-*
+  install -p -m 0644 -Dt licenses COPYRIGHT LICENSE-* && \
+  install -p -m 0644 -Dt licenses/rustdoc \
+    src/librustdoc/html/static/COPYRIGHT.txt \
+    src/librustdoc/html/static/LICENSE-*.txt \
+    src/librustdoc/html/static/fonts/*-LICENSE.*
 
 # Set appropriate environment for using this Rust compiler to build tools
 ENV PATH="/usr/libexec/rust/bin:$PATH" LD_LIBRARY_PATH="/usr/libexec/rust/lib"
